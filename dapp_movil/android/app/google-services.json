@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "548527457047",
+    "project_id": "ttc-wallet-fcc09",
+    "storage_bucket": "ttc-wallet-fcc09.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:548527457047:android:733983af38e07ed1d7ed52",
+        "android_client_info": {
+          "package_name": "com.example.dapp_movil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZUXq6w2IpBc2OJUNCT0nzTetqrHcyi6A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
