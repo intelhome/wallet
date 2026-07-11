@@ -36,12 +36,68 @@ class _LoginScreenState extends State<LoginScreen> {
   //   });
   // }
 
- Future<void> _unlock() async {
+//  Future<void> _unlock() async {
+//     if (_passController.text.isEmpty) return;
+
+//     setState(() => _isLoading = true);
+//     String pinIngresado = _passController.text;
+
+//     String? localPanicPin = await _vault.read(key: 'panic_pin');
+
+//     if (localPanicPin != null && localPanicPin == pinIngresado) {
+//       print("💀 [LOGIN] PIN DE PÁNICO DETECTADO EN MEMORIA LOCAL.");
+//       String? decoyPrivKey = await _vault.read(key: 'decoy_private_key');
+//       String? decoyAddress = await _vault.read(key: 'decoy_address');
+      
+//       if (decoyPrivKey != null && decoyAddress != null) {
+//         String result = await authCore.unlockWallet(pinIngresado);
+//         if (mounted) setState(() => _isLoading = false);
+//         _navegarAlDashboard();
+//         return; 
+//       }
+//     }
+
+//     print("✅ [LOGIN] PIN normal detectado. Procediendo a desencriptar bóveda principal...");
+
+//     // final panicData = await widget.service.checkPanicPin(pinIngresado);
+    
+//     // if (panicData['isPanic'] == "true") {
+//     //   String decoyAddress = panicData['decoyAddress'];
+//     //   String privateKey = panicData['privateKey']; // Extraemos la llave
+      
+//     //   widget.service.activatePanicMode(decoyAddress, privateKey);
+      
+//     //   if (mounted) setState(() => _isLoading = false);
+//     //   _navegarAlDashboard(); 
+//     //   return; 
+//     // }
+
+//     String result = await authCore.unlockWallet(pinIngresado);
+
+//     if (mounted) setState(() => _isLoading = false);
+
+//     if (result == "SUCCESS") {
+//       _navegarAlDashboard();
+//     } else if (result == "2FA_REQUIRED") {
+//       _mostrarDialogo2FA(pinIngresado);
+//     } else if (result == "ERROR_PIN" || result == "ERROR_CREDENTIALS") {
+   
+//       _passController.clear();
+//       UIHelper.showCustomSnackbar("Contraseña incorrecta. Inténtalo de nuevo.", isError: true);
+//     } else {
+//       // Ej: "Tu cuenta de empresa está en revisión..."
+//       _passController.clear();
+//       UIHelper.showCustomSnackbar(result, isError: true);
+//     }
+//   }
+
+Future<void> _unlock() async {
     if (_passController.text.isEmpty) return;
 
     setState(() => _isLoading = true);
     String pinIngresado = _passController.text;
 
+    // 🔥 1. INTERCEPTAMOS EL MODO PÁNICO
     String? localPanicPin = await _vault.read(key: 'panic_pin');
 
     if (localPanicPin != null && localPanicPin == pinIngresado) {
@@ -50,28 +106,25 @@ class _LoginScreenState extends State<LoginScreen> {
       String? decoyAddress = await _vault.read(key: 'decoy_address');
       
       if (decoyPrivKey != null && decoyAddress != null) {
-        String result = await authCore.unlockWallet(pinIngresado);
+        // Configuramos la app para usar la billetera señuelo
+        authCore.activatePanicMode(decoyAddress, decoyPrivKey);
+        
+        // 🔥 MAGIA: Pedimos un JWT al backend. Como el backend creó un "Usuario Fantasma", ¡esto funcionará!
+        String result = await authCore.requestJwtToken(pinIngresado);
+        
         if (mounted) setState(() => _isLoading = false);
-        _navegarAlDashboard();
+        
+        if (result == "SUCCESS") {
+          _navegarAlDashboard();
+        } else {
+           UIHelper.showCustomSnackbar("Error al iniciar bóveda señuelo.", isError: true);
+        }
         return; 
       }
     }
 
+    // 2. FLUJO NORMAL SI NO ES MODO PÁNICO
     print("✅ [LOGIN] PIN normal detectado. Procediendo a desencriptar bóveda principal...");
-
-    // final panicData = await widget.service.checkPanicPin(pinIngresado);
-    
-    // if (panicData['isPanic'] == "true") {
-    //   String decoyAddress = panicData['decoyAddress'];
-    //   String privateKey = panicData['privateKey']; // Extraemos la llave
-      
-    //   widget.service.activatePanicMode(decoyAddress, privateKey);
-      
-    //   if (mounted) setState(() => _isLoading = false);
-    //   _navegarAlDashboard(); 
-    //   return; 
-    // }
-
     String result = await authCore.unlockWallet(pinIngresado);
 
     if (mounted) setState(() => _isLoading = false);
@@ -81,11 +134,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } else if (result == "2FA_REQUIRED") {
       _mostrarDialogo2FA(pinIngresado);
     } else if (result == "ERROR_PIN" || result == "ERROR_CREDENTIALS") {
-   
       _passController.clear();
       UIHelper.showCustomSnackbar("Contraseña incorrecta. Inténtalo de nuevo.", isError: true);
     } else {
-      // Ej: "Tu cuenta de empresa está en revisión..."
       _passController.clear();
       UIHelper.showCustomSnackbar(result, isError: true);
     }

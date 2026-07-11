@@ -87,15 +87,35 @@ class UserService {
     } catch (e) { return []; }
   }
 
-  Future<String> revokeOtherSessions(String totpCode) async {
+  // Future<String> revokeOtherSessions(String totpCode) async {
+  //   try {
+  //     String endpoint = ApiConfig.revokeDevices.replaceAll("{address}", authCore.publicAddress.toLowerCase());
+  //     final res = await http.post(
+  //       Uri.parse(endpoint), 
+  //       headers: authCore.authHeaders,
+  //       body: jsonEncode({
+  //         "currentDeviceName": "Dispositivo Móvil (Android/iOS)", 
+  //         "totpCode": totpCode
+  //       })
+  //     );
+      
+  //     if (res.statusCode == 200) return "SUCCESS";
+  //     final data = jsonDecode(res.body);
+  //     return data['error'] ?? "Error desconocido en el servidor";
+  //   } catch (e) { 
+  //     return "Error de red"; 
+  //   }
+  // }
+
+  Future<String> revokeDevice(String loginDate, String? totpCode) async {
     try {
       String endpoint = ApiConfig.revokeDevices.replaceAll("{address}", authCore.publicAddress.toLowerCase());
       final res = await http.post(
         Uri.parse(endpoint), 
         headers: authCore.authHeaders,
         body: jsonEncode({
-          "currentDeviceName": "Dispositivo Móvil (Android/iOS)", 
-          "totpCode": totpCode
+          "loginDate": loginDate, 
+          if (totpCode != null) "totpCode": totpCode
         })
       );
       
@@ -103,7 +123,7 @@ class UserService {
       final data = jsonDecode(res.body);
       return data['error'] ?? "Error desconocido en el servidor";
     } catch (e) { 
-      return "Error de red"; 
+      return "Error de red al intentar desvincular"; 
     }
   }
 

@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
+import 'package:dapp_movil/config/api_config.dart';
 import 'package:dapp_movil/modules/business/modals/create_department_modal.dart';
 import 'package:dapp_movil/modules/debts_and_payments/modals/split_bill_modal.dart';
 import 'package:dapp_movil/modules/vaults_and_savings/modals/create_vault_modal.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import '../../../core/helpers/route_helper.dart';
@@ -34,409 +36,13 @@ import '../../wallet_and_tx/modals/send_paypal_modal.dart';
 import '../../wallet_and_tx/services/transaction_service.dart';
 import 'ai_memory_service.dart';
 
-// class AiChatHandler {
-//   String contextoFinanciero = "";
-
-//   Future<void> cargarContextoFinanciero(BuildContext context) async {
-//     try {
-//       final txService = Provider.of<TransactionService>(context, listen: false);
-//       final vaultService = Provider.of<SmartVaultService>(context, listen: false);
-//       String saldo = await txService.getBalance();
-//       String stake = await vaultService.getStakedBalance();
-//       contextoFinanciero = "CONTEXTO DEL USUARIO:\n- Saldo disponible: $saldo TTC\n- Saldo en Staking: $stake TTC\n";
-//     } catch (e) {
-//       contextoFinanciero = "CONTEXTO DEL USUARIO:\n- Saldo disponible: 0 TTC\n";
-//     }
-//   }
-
-//  Future<Map<String, dynamic>?> buscarBilleteraPorAlias(BuildContext context, String query) async {
-//     String cleanQuery = query.replaceAll("@", "").trim();
-//     if (cleanQuery.isEmpty) return null;
-//     try {
-//       final userService = Provider.of<UserService>(context, listen: false);
-//       return await userService.searchByAlias(cleanQuery);
-//     } catch (e) {
-//       return null;
-//     }
-//   }
-
-// Future<void> procesarMensaje({
-//     required BuildContext context,
-//     required String userText,
-//     required Function(Map<String, dynamic>) onAddMessage,
-//   }) async {
-//     onAddMessage({"isUser": true, "text": userText});
-//     onAddMessage({"isUser": false, "text": "Procesando de forma segura...", "isLoading": true});
-
-//     try {
-//       final authCore = Provider.of<AuthCoreService>(context, listen: false);
-//       String hoy = DateTime.now().toIso8601String().substring(0, 10);
-      
-//       bool isBusiness = authCore.role == 'ROLE_BUSINESS' || authCore.role == 'ROLE_ADMIN';
-//       String rolUsuario = isBusiness ? "EMPRESA" : "USUARIO NORMAL";
-
-//       final String promptSistema = """
-// Eres el núcleo de enrutamiento de TTC Wallet. 
-// EL USUARIO ACTUAL TIENE EL ROL: $rolUsuario.
-// HOY ES: $hoy
-// $contextoFinanciero
-
-// SI EL USUARIO ES NORMAL:
-// - Usa: SEND, PAYPAL_SEND, SPLIT_PAYMENT, CREATE_VAULT, STAKE, CREATE_DEBT, PLAN_PAYMENT, INSTALLMENT_PAYMENT, CREATE_DOCUMENT, SEND_MESSAGE, CREATE_GROUP, ADD_TO_GROUP, REPORT, CREATE_CROWDFUNDING.
-// - NO alucines tareas de empresa.
-// SI EL USUARIO ES EMPRESA:
-// - Acciones corporativas: CREATE_DEPARTMENT, ADD_TO_DEPARTMENT, INVITE_MEMBER, CREATE_TASK, CREATE_CROWDFUNDING, CREATE_BURNER, REPORT (corporativo).
-
-// EXTRACCIÓN DE DATOS:
-// - "CREATE_TASK": Extrae 'task_type' (STANDARD, GPS, MEET, FORM, OPINION), 'title', 'description', 'assignee', 'budget', 'estimated_hours', 'urgency', 'deadline', 'subtasks' (array). 
-//   *Si es GPS: 'gps_lat' y 'gps_lon' (deduce las coordenadas del lugar). 
-//   *Si es MEET: 'meet_url'. 
-//   *Si es OPINION (encuesta): 'opinion_question' y 'poll_options' (array con las opciones, ej: ["Si", "No"]). 
-//   *Si es FORM (formulario): 'form_fields' (array con nombres de campos a llenar).
-// - "CREATE_DEPARTMENT": Extrae 'dept_name', 'description', 'budget'.
-// - "SPLIT_PAYMENT": Dividir cuenta. Extrae 'amount', 'reason', 'split_with' (Array), 'destination' (Alias del comercio o persona destino).
-// - "CREATE_VAULT": Ahorro. Extrae 'amount', 'vault_type', 'vault_name', 'target_amount', 'auto_save_amount', 'auto_save_frequency', 'duration_months'.
-// - "CREATE_CROWDFUNDING": Vaca comunitaria. Extrae 'title', 'amount', 'duration_days'.
-
-// REGLAS ESTRICTAS:
-// 1. Responde EXCLUSIVAMENTE con JSON válido.
-// 2. Si falta 'amount', pon 0. NUNCA preguntes.
-
-// FORMATO:
-// {
-//   "type": "ACTION",
-//   "message": "Ejecutando...",
-//   "action_data": {
-//       "tx_type": "TIPO"
-//   }
-// }
-// """;
-
-//       final aiMemoryService = Provider.of<AiMemoryService>(context, listen: false);
-//       final jsonResponse = await aiMemoryService.sendMessageWithMemory(userText, promptSistema);
-      
-//       if (!context.mounted) return;
-
-//       if (jsonResponse != null && jsonResponse.containsKey('response')) {
-//         final String aiResponseText = jsonResponse['response']; 
-//         final String cleanJsonStr = aiResponseText.replaceAll('```json', '').replaceAll('```', '').trim();
-//         final Map<String, dynamic> aiData = jsonDecode(cleanJsonStr);
-        
-//         onAddMessage({"isUser": false, "text": aiData['message'] ?? "Entendido.", "replaceLoading": true});
-
-//         if (aiData['action_data'] != null) {
-//           Map<String, dynamic> action = Map<String, dynamic>.from(aiData['action_data']);
-//           if (action.containsKey('params')) action.addAll(Map<String, dynamic>.from(action['params']));
-          
-//           String tipoTx = (action['tx_type'] ?? action['action'] ?? "").toString().toUpperCase();
-
-//           // =========================================================
-//        
-//           // =========================================================
-//           if (['CREATE_TASK', 'CREATE_DEPARTMENT', 'ADD_TO_DEPARTMENT', 'INVITE_MEMBER'].contains(tipoTx) && !isBusiness) {
-//             onAddMessage({"isUser": false, "text": "Acción denegada: Solo cuentas de Empresa pueden usar esta función.", "replaceLoading": true});
-//             return;
-//           }
-
-//           if (tipoTx == 'CREATE_TASK') {
-//             String title = action['title'] ?? "";
-//             String taskType = (action['task_type'] ?? "STANDARD").toString().toUpperCase();
-//             double budget = double.tryParse(action['budget']?.toString() ?? "0") ?? 0.0;
-//             String assigneeRaw = (action['assignee'] ?? action['recipient'] ?? "").toString().replaceAll("@", "").trim();
-//             List<String> subtasks = (action['subtasks'] as List?)?.map((e) => e.toString()).toList() ?? [];
-            
-//             String hours = action['estimated_hours']?.toString() ?? "";
-//             String urgency = (action['urgency'] ?? "MEDIUM").toString().toUpperCase();
-//             String desc = action['description'] ?? "";
-//             String deadline = action['deadline']?.toString() ?? "";
-            
-//             double? lat = double.tryParse(action['gps_lat']?.toString() ?? "");
-//             double? lon = double.tryParse(action['gps_lon']?.toString() ?? "");
-//             String meetUrl = action['meet_url']?.toString() ?? "";
-//             String question = action['opinion_question']?.toString() ?? "";
-//             List<String> polls = (action['poll_options'] as List?)?.map((e) => e.toString()).toList() ?? [];
-//             List<String> forms = (action['form_fields'] as List?)?.map((e) => e.toString()).toList() ?? [];
-
-//             final bService = Provider.of<BusinessService>(context, listen: false);
-//             final userService = Provider.of<UserService>(context, listen: false);
-//             List<dynamic> activeTeam = []; 
-//             List<dynamic> departments = [];
-            
-//             try { 
-//               activeTeam = (await bService.getTeamMembers()).map((e) => Map<String, dynamic>.from(e)).toList();
-//               departments = (await bService.getDepartments()).map((e) => Map<String, dynamic>.from(e)).toList();
-
-//               for (int i = 0; i < activeTeam.length; i++) {
-//                 String? w = activeTeam[i]['identifier']?.toString() ?? activeTeam[i]['wallet']?.toString();
-//                 if (w != null) {
-//                   var userData = await userService.getUserByWallet(w);
-//                   if (userData != null && userData['alias'] != null) {
-//                     activeTeam[i]['alias'] = userData['alias']; // Ya no explota
-//                   }
-//                 }
-//               }
-//             } catch(e) { print("⚠️ Error IA cargando equipo: $e"); }
-            
-//             CreateTaskModal.show(
-//               context, activeTeam, departments, () {}, 
-//               initialTitle: title, initialDescription: desc, initialAssigneeAlias: assigneeRaw, 
-//               initialTaskType: taskType, initialBudget: budget, initialSubtasks: subtasks,
-//               initialHours: hours, initialUrgency: urgency, initialDeadline: deadline,
-//               initialGpsLat: lat, initialGpsLon: lon, initialMeetUrl: meetUrl, 
-//               initialOpinionQuestion: question, initialPollOptions: polls, initialFormFields: forms
-//             );
-//             return;
-//           }
-//           else if (tipoTx == 'CREATE_DEPARTMENT') {
-//             String deptName = (action['dept_name'] ?? action['name'] ?? "Nueva Área").toString();
-//             String desc = action['description']?.toString() ?? "";
-//             String budget = action['budget']?.toString() ?? "";
-//             CreateDepartmentModal.show(context, () {}, initialName: deptName, initialDescription: desc, initialBudget: budget);
-//             return;
-//           }
-//           else if (tipoTx == 'INVITE_MEMBER') {
-//             String alias = (action['recipient'] ?? action['member_alias'] ?? "").toString().replaceAll("@", "").trim();
-//             final destino = await buscarBilleteraPorAlias(context, alias);
-//             if (destino != null) {
-//                 final bService = Provider.of<BusinessService>(context, listen: false);
-//                 String res = await bService.inviteTeamMember(destino['alias'], "ALIAS", action['role'] ?? "CASHIER");
-//                 onAddMessage({"isUser": false, "text": res == "SUCCESS" ? "Invitación corporativa enviada a @$alias." : "Error: $res", "replaceLoading": true});
-//             } else {
-//                 onAddMessage({"isUser": false, "text": "No encontré al usuario @$alias.", "replaceLoading": true});
-//             }
-//             return;
-//           }
-//           else if (tipoTx == 'ADD_TO_DEPARTMENT') {
-//             String alias = (action['recipient'] ?? action['member_alias'] ?? "").toString().replaceAll("@", "").trim();
-//             String deptName = (action['dept_name'] ?? "").toString();
-//             final destino = await buscarBilleteraPorAlias(context, alias);
-            
-//             if (destino != null) {
-//                 final bService = Provider.of<BusinessService>(context, listen: false);
-//                 List<dynamic> depts = await bService.getDepartments();
-//                 var dept = depts.firstWhere((d) => d['name'].toString().toLowerCase() == deptName.toLowerCase(), orElse: () => null);
-//                 if (dept != null) {
-//                    String walletDestino = destino['contactAddress'] ?? destino['walletAddress'] ?? destino['wallet'] ?? "";
-//                    String res = await bService.addMemberToDepartment(dept['id'], walletDestino);
-//                    onAddMessage({"isUser": false, "text": res == "SUCCESS" ? "@$alias añadido al área $deptName." : "Error: $res", "replaceLoading": true});
-//                 } else {
-//                    onAddMessage({"isUser": false, "text": "No tienes un departamento llamado '$deptName'.", "replaceLoading": true});
-//                 }
-//             } else {
-//                 onAddMessage({"isUser": false, "text": "Usuario @$alias no encontrado.", "replaceLoading": true});
-//             }
-//             return;
-//           }
-
-//           // =========================================================
-//           // GRUPOS SOCIALES Y REPORTES
-//           // =========================================================
-//           if (tipoTx == 'ADD_TO_GROUP') {
-//             String groupName = (action['group_name'] ?? "").toString();
-//             String alias = (action['member_alias'] ?? action['recipient'] ?? "").toString().replaceAll("@", "").trim();
-//             final destino = await buscarBilleteraPorAlias(context, alias);
-            
-//             if (destino != null) {
-//               final groupService = Provider.of<GroupSocialService>(context, listen: false);
-//               List<dynamic> myGroups = await groupService.getUserGroups();
-//               var group = myGroups.firstWhere((g) => g['name'].toString().toLowerCase() == groupName.toLowerCase(), orElse: () => null);
-              
-//               if (group != null) {
-//                 String walletDestino = destino['contactAddress'] ?? destino['walletAddress'] ?? destino['wallet'] ?? "";
-//                 String res = await groupService.addGroupMember(group['id'], walletDestino, destino['alias']);
-//                 onAddMessage({"isUser": false, "text": res == "SUCCESS" ? "Añadí a @$alias al grupo $groupName." : "Error: $res", "replaceLoading": true});
-//               } else {
-//                 onAddMessage({"isUser": false, "text": "No tienes un grupo llamado '$groupName'.", "replaceLoading": true});
-//               }
-//             } else {
-//               onAddMessage({"isUser": false, "text": "Usuario @$alias no encontrado.", "replaceLoading": true});
-//             }
-//             return;
-//           }
-//           else if (tipoTx == 'REPORT') {
-//             final txService = Provider.of<TransactionService>(context, listen: false);
-//             List<dynamic> historial = await txService.getTransactionHistory();
-
-//             String? startStr = action['start_date'] ?? action['date'];
-//             String? endStr = action['end_date'] ?? action['date'];
-
-//             if (startStr != null) {
-//               historial = historial.where((tx) {
-//                 String txD = tx['timestamp'].toString().substring(0, 10);
-//                 return txD.compareTo(startStr) >= 0 && txD.compareTo(endStr ?? startStr) <= 0;
-//               }).toList();
-//             }
-
-//             if (historial.isEmpty) {
-//               onAddMessage({"isUser": false, "text": "No hay transacciones en esas fechas.", "replaceLoading": true});
-//               return;
-//             }
-//             await ShareHelper.generarYCompartirPDFHistory(context, historial, authCore.publicAddress);
-//             return;
-//           }
-
-//           // =========================================================
-//           // FLUJOS SIN DESTINATARIO OBLIGATORIO
-//           // =========================================================
-//           if (tipoTx == 'CREATE_VAULT') {
-//             double monto = double.tryParse(action['amount']?.toString() ?? "0") ?? 0.0;
-//             String vType = (action['vault_type'] ?? action['type'] ?? "flexible").toString().toUpperCase();
-//             String vName = (action['vault_name'] ?? action['name'] ?? "").toString();
-//             String vTarget = (action['target_amount'] ?? "").toString();
-//             String vAuto = (action['auto_save_amount'] ?? "").toString();
-//             String vFreq = (action['auto_save_frequency'] ?? "NONE").toString().toUpperCase();
-//             int vDuration = int.tryParse(action['duration_months']?.toString() ?? "6") ?? 6;
-
-//             CreateVaultModal.show(context: context, onCreated: () {}, initialAmount: monto > 0 ? monto.toString() : null, initialType: vType, initialName: vName, initialTargetAmount: vTarget, initialAutoSave: vAuto, initialFrequency: vFreq, initialDurationMonths: vDuration);
-//             return;
-//           } else if (tipoTx == 'CREATE_CROWDFUNDING') {
-//             String uchaName = (action['title'] ?? action['group_name'] ?? "Nueva Campaña").toString();
-//             double meta = double.tryParse(action['amount']?.toString() ?? "0") ?? 0.0;
-//             String duration = (action['duration_days'] ?? "30").toString();
-//             CreateCrowdfundingModal.show(context: context, initialTitle: uchaName, initialTargetAmount: meta > 0 ? meta.toString() : null, initialDurationDays: duration, onSuccess: () {}, initialRegion: '', initialLat: 0, initialLon: 0);
-//             return;
-//           } else if (tipoTx == 'CREATE_BURNER') {
-//             double fondeo = double.tryParse(action['amount']?.toString() ?? "0") ?? 0.0;
-//             String name = (action['name'] ?? action['label'] ?? "").toString();
-//             CreateBurnerModal.show(context: context, initialFundingAmount: fondeo > 0 ? fondeo.toString() : null, initialLabel: name, onSuccess: () {});
-//             return;
-//           } else if (tipoTx == 'CREATE_DOCUMENT') {
-//             FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'png']);
-//             if (result != null && result.files.single.path != null) {
-//               File file = File(result.files.single.path!);
-//               List<int> fileBytes = await file.readAsBytes();
-//               Digest docHash = sha256.convert(fileBytes);
-//               String hashCompleto = "0x${docHash.toString()}";
-//               if (context.mounted) {
-//                 CreateDocumentModal.show(context: context, fileHash: hashCompleto, onConfirm: (titulo, firmantes) async {
-//                   showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Registrando", message: "Inscribiendo en blockchain..."));
-//                   final notaryService = Provider.of<NotaryService>(context, listen: false);
-//                   String res = await notaryService.createDocumentDelegated(hashCompleto, titulo, "ipfs://Mock", firmantes);
-//                   Navigator.pop(context); 
-//                   onAddMessage({"isUser": false, "text": res.startsWith("Exito") ? "Contrato registrado." : "Error: $res", "replaceLoading": true});
-//                 });
-//               }
-//             } else {
-//               onAddMessage({"isUser": false, "text": "Selección de archivo cancelada.", "replaceLoading": true});
-//             }
-//             return;
-//           } else if (tipoTx == 'BUY') {
-//             BuyModal.show(context: context, initialAmount: action['amount']?.toString(), onUpdateBalance: () {}, mostrarMensaje: (m, {bool esError=false}) {}); return;
-//           } else if (tipoTx == 'STAKE') {
-//             final txService = Provider.of<TransactionService>(context, listen: false);
-//             final vaultService = Provider.of<SmartVaultService>(context, listen: false);
-//             String saldoReal = await txService.getBalance();
-//             String stakedReal = await vaultService.getStakedBalance();
-//             if (!context.mounted) return;
-//             StakeModal.show(context: context, balanceTTC: saldoReal, stakedTTC: stakedReal, initialAmount: action['amount']?.toString(), onUpdateBalance: () {}, mostrarMensaje: (m, {bool esError=false}) {});
-//             return;
-//           } else if (tipoTx == 'CREATE_GROUP') { 
-//             await _ejecutarCreacionDeGrupoPorIA(context, (action['group_name'] ?? "Nuevo Fondo").toString(), action['members'] ?? [], onAddMessage);
-//             return;
-//           }
-
-//           // =========================================================
-//           // FLUJOS QUE REQUIEREN DESTINATARIO
-//           // =========================================================
-//           if (['PLAN_PAYMENT', 'INSTALLMENT_PAYMENT', 'CREATE_DEBT', 'SEND', 'SEND_MESSAGE', 'SPLIT_PAYMENT'].contains(tipoTx)) {
-//             String rawRecipient = (action['assignee'] ?? action['recipient'] ?? action['to'] ?? action['creditor'] ?? action['debtor'] ?? "").toString().trim();
-//             double montoReq = double.tryParse(action['amount']?.toString() ?? "0") ?? 0.0;
-//             String reason = (action['reason'] ?? action['note'] ?? "").toString();
-            
-//             if (rawRecipient.isNotEmpty && !rawRecipient.startsWith('0x') && !rawRecipient.startsWith('@')) rawRecipient = "@$rawRecipient";
-
-//             if (rawRecipient.isEmpty && tipoTx != 'SPLIT_PAYMENT') {
-//               onAddMessage({"isUser": false, "text": "¿A quién debo dirigir esto? Especifica el alias.", "replaceLoading": true}); return;
-//             }
-
-//             final destino = rawRecipient.isNotEmpty ? await buscarBilleteraPorAlias(context, rawRecipient) : null;
-//             if (destino == null && tipoTx != 'SPLIT_PAYMENT') {
-//               onAddMessage({"isUser": false, "text": "No encontré al usuario '$rawRecipient'.", "replaceLoading": true}); return;
-//             }
-
-//             if (!context.mounted) return;
-
-//             String walletReal = destino?['walletAddress'] ?? destino?['contactAddress'] ?? destino?['wallet'] ?? "";
-
-//             if (tipoTx == 'SEND_MESSAGE') {
-//               String textoMsj = (action['message'] ?? action['content'] ?? "").toString();
-//               Navigator.push(context, MaterialPageRoute(builder: (_) => ChatRoomScreen(address: walletReal, alias: destino!['alias']!, initialMessage: textoMsj)));
-//             } else if (tipoTx == 'SPLIT_PAYMENT') {
-//               List<String> splitters = [];
-//               if (action['split_with'] is List) {
-//                 splitters.addAll((action['split_with'] as List).map((e) => e.toString()));
-//               } else if (action['split_with'] is String) {
-//                 splitters.addAll(action['split_with'].toString().split(','));
-//               }
-//               if (rawRecipient.isNotEmpty) splitters.add(rawRecipient);
-
-//               List<Map<String, String>> resolvedSplitters = [];
-//               for (String s in splitters) {
-//                 String cleanAlias = s.replaceAll('@', '').trim();
-//                 if (cleanAlias.isEmpty) continue;
-//                 final d = await buscarBilleteraPorAlias(context, cleanAlias);
-//                 if (d != null) {
-//                   String w = (d['walletAddress'] ?? d['contactAddress'] ?? d['wallet'] ?? d['identifier'] ?? '').toString();
-//                   if (w.isNotEmpty && w.toLowerCase() != authCore.publicAddress.toLowerCase() && !resolvedSplitters.any((e) => e['wallet'] == w)) {
-//                     resolvedSplitters.add({"alias": d['alias']?.toString() ?? cleanAlias, "wallet": w});
-//                   }
-//                 }
-//               }
-              
-//               Navigator.push(context, RouteHelper.slideUpRoute(SplitBillScreen(
-//                 onBillSplitSuccess: () {},
-//                 initialAmount: montoReq > 0 ? montoReq.toString() : null,
-//                 initialReason: reason,
-//                 initialDestination: action['destination']?.toString(), // 🔥 NUEVO
-//                 initialParticipants: resolvedSplitters,
-//               )));
-//             } else if (tipoTx == 'PLAN_PAYMENT') {
-//               PlanPaymentModal.show(context: context, aliasDestino: destino!['alias']!, addressDestino: walletReal, initialAmount: montoReq > 0 ? montoReq.toString() : null, initialReason: reason);
-//             } else if (tipoTx == 'INSTALLMENT_PAYMENT') {
-//               InstallmentsModal.show(context: context, aliasDestino: destino!['alias']!, addressDestino: walletReal, initialAmount: montoReq > 0 ? montoReq.toString() : null, initialReason: reason, initialFrequency: action['frequency']?.toString(), initialInstallments: action['installments']?.toString());
-//             } else if (tipoTx == 'CREATE_DEBT') {
-//               CreateDebtModal.show(context: context, onSuccess: () {}, mostrarMensaje: (m, {bool esError=false}) {}, initialAlias: "@${destino!['alias']}", initialWallet: walletReal, initialAmount: montoReq > 0 ? montoReq.toString() : null, initialReason: reason);
-//             }
-//           }
-//         }
-//       } 
-//     } catch (e) {
-//       onAddMessage({"isUser": false, "text": "Error de conexión con la IA.", "replaceLoading": true});
-//     }
-//   }
-
-//   Future<void> _ejecutarCreacionDeGrupoPorIA(BuildContext context, String groupName, List<dynamic> aliases, Function(Map<String, dynamic>) onAddMessage) async {
-//     List<Map<String, dynamic>> miembrosConfirmados = [];
-
-//     if (aliases.isNotEmpty) {
-//       for (String alias in aliases) {
-//         final data = await buscarBilleteraPorAlias(context, alias);
-//         if (data != null) {
-//           miembrosConfirmados.add(data);
-//         }
-//       }
-//       if (miembrosConfirmados.isEmpty) {
-//         onAddMessage({"isUser": false, "text": "No encontré a esos usuarios. ¿Están bien escritos?", "replaceLoading": true});
-//         return; 
-//       }
-//     }
-
-//     final groupService = Provider.of<GroupSocialService>(context, listen: false);
-//     String resultado = await groupService.createGroup(groupName, "Admin", miembrosConfirmados);
-    
-//     if (resultado == "SUCCESS") {
-//       onAddMessage({"isUser": false, "text": miembrosConfirmados.isEmpty ? "Fondo común '$groupName' creado vacío." : "Fondo común '$groupName' creado. Invitaciones enviadas.", "replaceLoading": true});
-//     } else {
-//       onAddMessage({"isUser": false, "text": "Error al guardar el grupo: $resultado", "replaceLoading": true});
-//     }
-//   }
-// }
-
 class AiChatHandler extends ChangeNotifier {
   String contextoFinanciero = "";
   
+  // 🔥 MEMORIA DE CORTO PLAZO PARA COMANDOS RELATIVOS
   Map<String, dynamic>? _lastActionData;
 
+  // 🔥 LA LISTA DE MENSAJES AHORA VIVE AQUÍ Y ES PERSISTENTE
   List<Map<String, dynamic>> messages = [
     {"isUser": false, "text": "Hola, soy el núcleo financiero de TTC. Puedo realizar transferencias, reportes de gastos, configurar pagos recurrentes, gestionar tu empresa y analizar tus datos financieros en un solo lugar. ¿Qué necesitas?"}
   ];
@@ -486,6 +92,7 @@ class AiChatHandler extends ChangeNotifier {
       bool isBusiness = authCore.role == 'ROLE_BUSINESS' || authCore.role == 'ROLE_ADMIN';
       String rolUsuario = isBusiness ? "EMPRESA" : "USUARIO NORMAL";
 
+      // 🔥 INYECCIÓN DE MEMORIA DE LA ACCIÓN ANTERIOR DIRECTO AL PROMPT SISTEMA
      String contextoAccionAnterior = _lastActionData != null
           ? "MEMORIA DE LA ACCIÓN ANTERIOR (SI EL USUARIO DICE 'haz lo mismo', 'repite', 'ahora con X monto', 'a él/ella', usa estos datos de base):\n${jsonEncode(_lastActionData)}\n"
           : "";
@@ -546,6 +153,7 @@ FORMATO DE SALIDA COMPULSORIO (NO AGREGUES TEXTO FUERA DEL JSON):
           
           String tipoTx = (action['tx_type'] ?? action['action'] ?? "").toString().toUpperCase();
 
+          // 🔥 GUARDAMOS LA ACCIÓN EXITOSA EN LA MEMORIA DE LARGO PLAZO DE ESTA SESIÓN
           _lastActionData = action;
 
           if (['CREATE_TASK', 'CREATE_DEPARTMENT', 'ADD_TO_DEPARTMENT', 'INVITE_MEMBER'].contains(tipoTx) && !isBusiness) {
@@ -570,6 +178,7 @@ FORMATO DE SALIDA COMPULSORIO (NO AGREGUES TEXTO FUERA DEL JSON):
             
             String hours = action['estimated_hours']?.toString() ?? "";
             
+            // 🔥 FIX: ESCUDO ANTI-ALUCINACIONES PARA EL DROPDOWN DE URGENCIA
         String urgencyRaw = (action['urgency'] ?? "MEDIUM").toString().trim().toUpperCase();
             String urgency = "MEDIUM"; // Fallback maestro predeterminado (Equivale a Normal en tu UI)
             

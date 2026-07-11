@@ -1,5 +1,6 @@
 import 'package:dapp_movil/core/services/local_cache_service.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
+import 'package:dapp_movil/modules/wallet_and_tx/screens/main_screen.dart';
 import 'package:dapp_movil/modules/wallet_and_tx/services/transaction_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +20,6 @@ class TransactionPendingScreen extends StatefulWidget {
 
   final String? expectedTxType;
   final bool isGroupPayment; // 🔥 SE AGREGÓ PARA CONTROLES GRUPALES
-  
 
   const TransactionPendingScreen({
     super.key,
@@ -40,8 +40,6 @@ class _TransactionPendingScreenState extends State<TransactionPendingScreen> {
 
   TransactionService get txService => Provider.of<TransactionService>(context, listen: false);
   AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: false);
-
-  final DateTime _screenOpenTime = DateTime.now();
   
   Timer? _fallbackTimer;
   IOWebSocketChannel? _wsChannel;
@@ -96,6 +94,8 @@ class _TransactionPendingScreenState extends State<TransactionPendingScreen> {
     
     await Future.delayed(const Duration(milliseconds: 2000));
     widget.onUpdateBalance?.call(); 
+
+    mainScreenKey.currentState?.forceDashboardRefresh();
     
     // 🔥 Si es un pago de splitwise/grupos, SOLO RETROCEDEMOS, ¡NO popHastaFirst!
     if (widget.isGroupPayment) {
@@ -122,43 +122,6 @@ class _TransactionPendingScreenState extends State<TransactionPendingScreen> {
       Navigator.pop(context, true); 
     }
   }
-
-  // void _forzarExitoLocal() async {
-  //   _fallbackTimer?.cancel();
-  //   _wsChannel?.sink.close();
-  //   setState(() => _isSuccess = true);
-    
-  //   await Future.delayed(const Duration(milliseconds: 2000));
-
-  //   final cacheService = LocalCacheService();
-    
-  //   await cacheService.clearDashboardCache(); 
-    
-  //   if (widget.expectedTxType == 'SEND' || 
-  //       widget.expectedTxType == 'BINANCE_PAY' || 
-  //       widget.expectedTxType == 'SEND_FIAT' || 
-  //       widget.expectedTxType == 'BUY' || 
-  //       widget.expectedTxType == 'BUY_FIAT') {
-  //     await cacheService.clearTransactionsCache();
-  //   }
-  //   if (widget.expectedTxType == 'STAKE' || widget.expectedTxType == 'UNSTAKE' || widget.expectedTxType == 'WITHDRAW') {
-  //     await cacheService.clearVaultsCache();
-  //   }
-  //   if (widget.expectedTxType == 'SHARE_DEBT') {
-  //     await cacheService.clearDebtsCache();
-  //   }
-
-  //   widget.onUpdateBalance?.call(); 
-    
-  //   if (widget.isGroupPayment) {
-  //     if (mounted) Navigator.pop(context, true);
-  //     return;
-  //   }
-
-  //   if (mounted) {
-  //     Navigator.pop(context, true); 
-  //   }
-  // }
 
   void _conectarWSTransactions() async {
     try {
@@ -212,53 +175,13 @@ void _forzarFalloLocal({String? motivo}) {
     // }
   }
 
-  // void _startFallbackTimer() async {
-  //   await Future.delayed(const Duration(seconds: 4));
-  //   if (!mounted) return;
-
-  //   _fallbackTimer = Timer.periodic(const Duration(seconds: 6), (timer) async {
-  //     _intentos++;
-  //     if (_intentos >= 4) {
-  //        _forzarExitoLocal();
-  //        return;
-  //     }
-      
-  //     if (_isFetchingRPC) return;
-  //     _isFetchingRPC = true;
-
-  //     try {
-  //       final txs = await txService.getTransactionHistory();
-  //       if (txs.isNotEmpty) {
-  //         final latestTx = txs.first;
-  //         final status = latestTx['status'] ?? 'UNKNOWN';
-  //         final txType = latestTx['txType'] ?? '';
-
-  //         if (widget.expectedTxType != null && txType != widget.expectedTxType) {
-  //           _isFetchingRPC = false;
-  //           return; 
-  //         }
-          
-  //         if (status == 'COMPLETED') {
-  //           _forzarExitoLocal();
-  //         } else if (status == 'FAILED') {
-  //           _forzarFalloLocal();
-  //         }
-  //       }
-  //     } catch (e) {
-  //       print("Error en fallback RPC: $e");
-  //     } finally {
-  //       _isFetchingRPC = false; 
-  //     }
-  //   });
-  // }
-
   void _startFallbackTimer() async {
     await Future.delayed(const Duration(seconds: 4));
     if (!mounted) return;
 
     _fallbackTimer = Timer.periodic(const Duration(seconds: 6), (timer) async {
       _intentos++;
-      if (_intentos >= 6) {
+      if (_intentos >= 4) {
          _forzarExitoLocal();
          return;
       }
@@ -267,46 +190,25 @@ void _forzarFalloLocal({String? motivo}) {
       _isFetchingRPC = true;
 
       try {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final url = "${ApiConfig.getHistory.replaceAll("{address}", authCore.publicAddress.toLowerCase())}?t=$timestamp";
-        
-        final response = await http.get(
-          Uri.parse(url),
-          headers: {
-            ...authCore.authHeaders,
-            "Cache-Control": "no-cache" 
+        final txs = await txService.getTransactionHistory();
+        if (txs.isNotEmpty) {
+          final latestTx = txs.first;
+          final status = latestTx['status'] ?? 'UNKNOWN';
+          final txType = latestTx['txType'] ?? '';
+
+          if (widget.expectedTxType != null && txType != widget.expectedTxType) {
+            _isFetchingRPC = false;
+            return; 
           }
-        );
-
-        if (response.statusCode == 200) {
-          List<dynamic> txs = jsonDecode(response.body);
-          if (txs.isNotEmpty) {
-            final latestTx = txs.first;
-            
-            DateTime txTime = DateTime.parse(latestTx['timestamp'].toString()).toLocal();
-            
-            if (txTime.isBefore(_screenOpenTime.subtract(const Duration(minutes: 2)))) {
-              _isFetchingRPC = false;
-              return; 
-            }
-
-            final status = latestTx['status'] ?? 'UNKNOWN';
-            final txType = latestTx['txType'] ?? '';
-
-            if (widget.expectedTxType != null && txType != widget.expectedTxType) {
-              _isFetchingRPC = false;
-              return; 
-            }
-            
-            if (status == 'COMPLETED') {
-              _forzarExitoLocal();
-            } else if (status == 'FAILED') {
-              _forzarFalloLocal();
-            }
+          
+          if (status == 'COMPLETED') {
+            _forzarExitoLocal();
+          } else if (status == 'FAILED') {
+            _forzarFalloLocal();
           }
         }
       } catch (e) {
-        print("Error en fallback RPC directo: $e");
+        print("Error en fallback RPC: $e");
       } finally {
         _isFetchingRPC = false; 
       }
@@ -330,7 +232,7 @@ void _forzarFalloLocal({String? motivo}) {
       onPopInvoked: (didPop) {
         if (!didPop) {
        if (_isFailed) {
-            _cerrarPantallaError(); 
+            _cerrarPantallaError(); // Si ya falló, permitimos que el botón de retroceso lo cierre
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -347,7 +249,7 @@ void _forzarFalloLocal({String? motivo}) {
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: _isFailed 
-                ? _buildErrorView(colorScheme.onSurface, theme) 
+                ? _buildErrorView(colorScheme.onSurface, theme) // 🔥 NUEVA VISTA DE ERROR
                 : _isSuccess
                     ? _buildSuccessView(colorScheme.onSurface)
                     : _buildProcessingView(colorScheme.onSurface),

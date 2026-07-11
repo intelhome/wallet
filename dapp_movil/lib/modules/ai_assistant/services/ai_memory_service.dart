@@ -14,6 +14,7 @@ class AiMemoryService {
     if (authCore.jwtToken != null) "Authorization": "Bearer ${authCore.jwtToken}"
   };
 
+  // 🔥 Obtiene la lista de gustos descubiertos
   // Future<List<dynamic>> getPreferences() async {
   //   if (authCore.publicAddress.isEmpty) return [];
   //   try {
@@ -47,9 +48,10 @@ class AiMemoryService {
       }
     } catch (e) { print("❌ Error getPreferences: $e"); }
     
-    return cacheService.getCachedAiPreferences(wallet); 
+    return cacheService.getCachedAiPreferences(wallet); // 🔥 FALLBACK
   }
 
+  // 🔥 Enciende o apaga un gusto específico en el Cerebro de la IA
   Future<bool> togglePreference(String id, bool isActive) async {
     if (authCore.publicAddress.isEmpty) return false;
     try {
@@ -70,6 +72,8 @@ class AiMemoryService {
     }
   }
 
+  // 🔥 Enviar mensaje al chat inyectado con RAG
+  // 🔥 Enviar mensaje al chat inyectado con RAG y el System Prompt de Acciones
   Future<Map<String, dynamic>?> sendMessageWithMemory(String message, String systemPrompt) async {
     try {
       final res = await http.post(
@@ -78,7 +82,7 @@ class AiMemoryService {
         body: jsonEncode({
           "walletAddress": authCore.publicAddress.toLowerCase(),
           "message": message,
-          "systemPrompt": systemPrompt 
+          "systemPrompt": systemPrompt // 🔥 Le pasamos tus reglas gigantes al backend
         }),
       ).timeout(const Duration(seconds: 30));
 
@@ -94,16 +98,17 @@ class AiMemoryService {
     return null;
   }
 
-  Future<bool> extractPreferencesFromChat(List<String> plainMessages) async {
+ // 🔥 NUEVO: Envía un bloque temporal de mensajes para extraer gustos
+ Future<bool> extractPreferencesFromChat(List<String> plainMessages) async {
     try {
-      final url = Uri.parse("${ApiConfig.baseUrl}/ai/extract"); 
+      // 🔥 FIX 1: Apuntar a la nueva ruta REST del Backend
+      final url = Uri.parse("${ApiConfig.baseUrl}/ai/memory/${authCore.publicAddress.toLowerCase()}/extract"); 
       
       final res = await http.post(
         url,
-        headers: _headers, // Usa el _headers que ya tienes configurado
+        headers: _headers, 
         body: jsonEncode({
-          "walletAddress": authCore.publicAddress.toLowerCase(),
-          "messages": plainMessages
+          "messages": plainMessages // 🔥 FIX 2: Mandamos solo el array, tal como espera el Backend
         })
       );
       

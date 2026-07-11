@@ -285,13 +285,9 @@ final groupService = Provider.of<GroupSocialService>(context, listen: false);
                                     setModalState(() => isProcessingStake = true);
                                     Navigator.pop(ctx);
 
-                                  if (isGroupMode && groupId != null) {
+                                   if (isGroupMode && groupId != null) {
                                       String res = await groupService.proposeGroupDeFiAction(groupId, "stake", amount: montoIngresado);
                                       if (res == "SUCCESS") {
-                                        // // 🔥 CÓDIGO PARA ELIMINAR EL CACHÉ
-                                        // await LocalCacheService().clearDashboardCache();
-                                        // await LocalCacheService().clearVaultsCache();
-
                                         mostrarMensaje("Propuesta de Staking enviada al grupo");
                                         onUpdateBalance();
                                       } else {

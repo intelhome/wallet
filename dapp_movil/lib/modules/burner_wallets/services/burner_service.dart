@@ -9,7 +9,6 @@ class BurnerService {
 
   BurnerService(this.authCore);
 
-  // 🔥 HELPER LOCAL DE ERRORES 🔥
   String _extractErrorMessage(String body, int statusCode) {
     try {
       final parsed = jsonDecode(body);
@@ -19,52 +18,34 @@ class BurnerService {
     }
   }
 
-/// Obtiene todas las billeteras desechables activas (Por defecto del usuario actual, o de un target)
-  // Future<List<dynamic>> getActiveBurners([String? targetAddress]) async {
-  //   String addressToQuery = targetAddress ?? authCore.publicAddress;
-  //   if (addressToQuery.isEmpty) return [];
-    
-  //   try {
-  //     final url = ApiConfig.getBurners.replaceAll("{address}", addressToQuery.toLowerCase());
-  //     print("📱 [FRONT-BURNER] Solicitando lista de tarjetas a: $url");
-      
-  //     final res = await http.get(Uri.parse(url), headers: authCore.authHeaders);
-      
-  //     if (res.statusCode == 200) {
-  //       return jsonDecode(res.body);
-  //     }
-  //     return [];
-  //   } catch (e) {
-  //     print("❌ [FRONT-BURNER] Error obteniendo Burner Wallets: $e");
-  //     return [];
-  //   }
-  // }
-
-   Future<List<dynamic>> getActiveBurners([String? targetAddress]) async {
+  Future<List<dynamic>> getActiveBurners([String? targetAddress]) async {
     String addressToQuery = targetAddress ?? authCore.publicAddress;
     if (addressToQuery.isEmpty) return [];
     
     try {
       final url = ApiConfig.getBurners.replaceAll("{address}", addressToQuery.toLowerCase());
-      print("📱 [FRONT-BURNER] Solicitando lista de tarjetas a: $url");
+      print("🔍 [FRONT-BURNER] Consultando tarjetas activas: $url");
       
       final res = await http.get(Uri.parse(url), headers: authCore.authHeaders);
       
       if (res.statusCode == 200) {
-        return jsonDecode(res.body);
+        final data = jsonDecode(res.body);
+        print("✅ [FRONT-BURNER] Tarjetas encontradas: ${data.length}");
+        return data;
       }
+      print("❌ [FRONT-BURNER] Error listando tarjetas HTTP ${res.statusCode}");
       return [];
     } catch (e) {
-      print("❌ [FRONT-BURNER] Error obteniendo Burner Wallets: $e");
+      print("❌ [FRONT-BURNER] Excepción listando tarjetas: $e");
       return [];
     }
   }
   
-  /// Crea una nueva billetera efímera y le transfiere fondos iniciales
-  Future<String> createBurnerWallet(String label, double amount) async {
-    if (authCore.publicAddress.isEmpty) return "Error: Billetera principal no conectada";
+ Future<Map<String, dynamic>> createBurnerWallet(String label, double amount) async {
+    if (authCore.publicAddress.isEmpty) return {"success": false, "error": "Billetera principal no conectada"};
 
     try {
+      print("🚀 [FRONT-BURNER] Creando tarjeta '$label' con $amount TTC...");
       final res = await http.post(
         Uri.parse(ApiConfig.createBurner),
         headers: authCore.authHeaders,
@@ -75,64 +56,24 @@ class BurnerService {
         })
       ).timeout(const Duration(seconds: 20));
 
-      if (res.statusCode == 200 || res.statusCode == 201) return "Exito";
-      return "Error: ${_extractErrorMessage(res.body, res.statusCode)}";
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        print("✅ [FRONT-BURNER] Tarjeta creada en BD exitosamente.");
+        return {"success": true, "data": jsonDecode(res.body)};
+      }
+      
+      String error = _extractErrorMessage(res.body, res.statusCode);
+      print("❌ [FRONT-BURNER] Error en creación: $error");
+      return {"success": false, "error": error};
     } catch (e) {
-      return "Error de red al crear burner: $e";
+      print("❌ [FRONT-BURNER] Excepción creando tarjeta: $e");
+      return {"success": false, "error": "Error de red al crear burner: $e"};
     }
   }
 
-  /// Quema la billetera, rescata los fondos sobrantes y destruye la llave privada
-//   Future<String> burnWallet(String burnerAddress) async {
-//     if (authCore.publicAddress.isEmpty) return "Error: Billetera principal no conectada";
-
-//     try {
-//       final res = await http.post(
-//         Uri.parse(ApiConfig.burnWallet),
-//         headers: authCore.authHeaders,
-//         body: jsonEncode({
-//           "mainWalletAddress": authCore.publicAddress.toLowerCase(),
-//           "burnerAddress": burnerAddress.toLowerCase()
-//         })
-//       ).timeout(const Duration(seconds: 20));
-
-//       if (res.statusCode == 200) return "Exito";
-//       return "Error: ${_extractErrorMessage(res.body, res.statusCode)}";
-//     } catch (e) {
-//       return "Error de red al quemar billetera";
-//     }
-//   }
-
-//   /// Envía fondos de forma anónima desde la billetera desechable
-//   Future<String> sendFromBurnerWallet(String burnerAddress, String toAddress, double amount) async {
-//     if (authCore.publicAddress.isEmpty) return "Error: Billetera principal no conectada";
-
-//     try {
-//       final res = await http.post(
-//         Uri.parse(ApiConfig.sendFromBurner),
-//         headers: authCore.authHeaders,
-//         body: jsonEncode({
-//           "mainWalletAddress": authCore.publicAddress.toLowerCase(),
-//           "burnerAddress": burnerAddress.toLowerCase(),
-//           "toAddress": toAddress.toLowerCase(),
-//           "amount": amount
-//         })
-//       ).timeout(const Duration(seconds: 20));
-
-//      if (res.statusCode == 200) {
-//         final data = jsonDecode(res.body);
-//         return data['message'] ?? "Exito"; // 🔥 NUEVO: Retorna "Exito: 0xHash..."
-//       }
-//       return "Error: ${_extractErrorMessage(res.body, res.statusCode)}";
-//     } catch (e) {
-//       return "Error de red al enviar desde la burner";
-//     }
-//   }
-// }
-
-Future<double> burnWallet(String burnerAddress) async {
+  Future<double> burnWallet(String burnerAddress) async {
     if (authCore.publicAddress.isEmpty) throw Exception("Billetera no conectada");
     try {
+      print("🔥 [FRONT-BURNER] Quemando tarjeta $burnerAddress...");
       final res = await http.post(
         Uri.parse(ApiConfig.burnWallet),
         headers: authCore.authHeaders,
@@ -144,18 +85,23 @@ Future<double> burnWallet(String burnerAddress) async {
 
       if (res.statusCode == 200) {
          final data = jsonDecode(res.body);
-         return double.tryParse(data['refunded']?.toString() ?? '0.0') ?? 0.0;
+         double refunded = double.tryParse(data['refunded']?.toString() ?? '0.0') ?? 0.0;
+         print("✅ [FRONT-BURNER] Tarjeta quemada con éxito. Rescatados $refunded TTC.");
+         return refunded;
       }
-      throw Exception(_extractErrorMessage(res.body, res.statusCode));
+      String error = _extractErrorMessage(res.body, res.statusCode);
+      print("❌ [FRONT-BURNER] Error quemando tarjeta: $error");
+      throw Exception(error);
     } catch (e) {
+      print("❌ [FRONT-BURNER] Excepción al quemar: $e");
       throw Exception("Error al quemar: $e");
     }
   }
 
-  // 🔥 ACTUALIZADO: Recibe el parámetro "reason" y devuelve el Hash ("Exito: 0x...")
   Future<String> sendFromBurnerWallet(String burnerAddress, String toAddress, double amount, String reason) async {
     if (authCore.publicAddress.isEmpty) return "Error: Billetera principal no conectada";
     try {
+      print("💸 [FRONT-BURNER] Pagando $amount TTC desde $burnerAddress hacia $toAddress...");
       final res = await http.post(
         Uri.parse(ApiConfig.sendFromBurner),
         headers: authCore.authHeaders,
@@ -164,33 +110,23 @@ Future<double> burnWallet(String burnerAddress) async {
           "burnerAddress": burnerAddress.toLowerCase(),
           "toAddress": toAddress.toLowerCase(),
           "amount": amount,
-          "reason": reason // 🔥 Enviamos el motivo al backend
+          "reason": reason
         })
       ).timeout(const Duration(seconds: 20));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
+        print("✅ [FRONT-BURNER] Pago enviado. Hash: ${data['message']}");
         return data['message'] ?? "Exito"; 
       }
-      return "Error: ${_extractErrorMessage(res.body, res.statusCode)}";
+      String error = _extractErrorMessage(res.body, res.statusCode);
+      print("❌ [FRONT-BURNER] Error en pago delegado: $error");
+      return "Error: $error";
     } catch (e) {
+      print("❌ [FRONT-BURNER] Excepción enviando pago: $e");
       return "Error de red al enviar desde la burner";
     }
   }
-
-  // 🔥 NUEVO: Obtiene el historial corporativo
-  // Future<List<dynamic>> getBurnerTransactionsHistory([String? targetAddress]) async {
-  //   String addressToQuery = targetAddress ?? authCore.publicAddress;
-  //   if (addressToQuery.isEmpty) return [];
-  //   try {
-  //     final url = ApiConfig.getBurnerTransactionsHistory.replaceAll("{address}", addressToQuery.toLowerCase());
-  //     final res = await http.get(Uri.parse(url), headers: authCore.authHeaders);
-  //     if (res.statusCode == 200) return jsonDecode(res.body);
-  //     return [];
-  //   } catch (e) {
-  //     return [];
-  //   }
-  // }
 
   Future<List<dynamic>> getBurnerTransactionsHistory([String? targetAddress]) async {
     String addressToQuery = targetAddress ?? authCore.publicAddress;
@@ -200,17 +136,20 @@ Future<double> burnWallet(String burnerAddress) async {
     final walletStr = addressToQuery.toLowerCase();
 
     try {
+      print("🧾 [FRONT-BURNER] Obteniendo historial corporativo...");
       final url = ApiConfig.getBurnerTransactionsHistory.replaceAll("{address}", walletStr);
       final res = await http.get(Uri.parse(url), headers: authCore.authHeaders).timeout(const Duration(seconds: 10));
       
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         await cacheService.saveBurnerHistory(walletStr, data);
+        print("✅ [FRONT-BURNER] Historial cargado (${data.length} txs).");
         return data;
       }
-    } catch (e) { print("❌ Error obteniendo Historial Burner: $e"); }
+    } catch (e) { 
+      print("❌ [FRONT-BURNER] Error obteniendo Historial Burner: $e"); 
+    }
     
-    return cacheService.getCachedBurnerHistory(walletStr); // 🔥 FALLBACK
+    return cacheService.getCachedBurnerHistory(walletStr);
   }
-  
 }

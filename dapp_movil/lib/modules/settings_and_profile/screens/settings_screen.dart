@@ -4,6 +4,7 @@ import 'package:dapp_movil/modules/auth_and_security/screens/devices_screen.dart
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/settings_and_profile/services/user_config_service.dart';
 import 'package:dapp_movil/modules/settings_and_profile/services/user_service.dart';
+import 'package:dapp_movil/modules/wallet_and_tx/screens/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -33,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isFrozen = false;
   bool _isLoadingSecurity = true;
   bool _cargandoConfiguraciones = true;
+  double _presupuestoMensual = 500.0;
   
   // Variables M3 Mapeadas con BD
   bool _notifyEmail = true;
@@ -50,6 +52,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _recuperarConfiguracionesRemotas();
     _cargarEstadoSeguridad();
+
+    _cargarPresupuesto();
     
     // Leemos en qué estado está el interruptor global del tema
     if (themeNotifier.value == ThemeMode.light) {
@@ -58,6 +62,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _selectedTheme = 'Oscuro';
     } else {
       _selectedTheme = 'Sistema';
+    }
+  }
+
+
+Future<void> _cargarPresupuesto() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _presupuestoMensual = prefs.getDouble('presupuesto_mensual') ?? 500.0;
+      });
+    }
+  }
+
+  Future<void> _cambiarPresupuesto() async {
+    TextEditingController controller = TextEditingController(text: _presupuestoMensual.toStringAsFixed(0));
+    final theme = Theme.of(context);
+    
+    bool? guardado = await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: theme.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text("Presupuesto Mensual", style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Define tu límite visual de gastos en TTC para este mes.", style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 20),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 20, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                prefixText: "TTC ",
+                filled: true,
+                fillColor: theme.colorScheme.onSurface.withOpacity(0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text("Cancelar", style: TextStyle(color: theme.colorScheme.onSurface))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: theme.colorScheme.primary, foregroundColor: theme.colorScheme.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            onPressed: () async {
+              double nuevoValor = double.tryParse(controller.text) ?? 500.0;
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setDouble('presupuesto_mensual', nuevoValor);
+              Navigator.pop(ctx, true);
+            },
+            child: const Text("Guardar"),
+          )
+        ],
+      ),
+    );
+
+    if (guardado == true) {
+      _cargarPresupuesto();
+      UIHelper.showCustomSnackbar("Presupuesto actualizado a TTC ${_presupuestoMensual.toStringAsFixed(0)}", isError: false);
+      mainScreenKey.currentState?.forceDashboardRefresh();
     }
   }
 
@@ -513,12 +578,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 24),
 
-              ListTile(
+             ListTile(
                 leading: Icon(Icons.security, color: colorScheme.primary),
                 title: Text("Límite Transaccional Diario", style: TextStyle(color: onSurfaceColor)),
                 subtitle: Text("Controla cuánto dinero fiduciario puedes mover al día.", style: TextStyle(color: onSurfaceColor.withOpacity(0.6))),
                 trailing: Icon(Icons.edit, color: onSurfaceColor.withOpacity(0.4), size: 18),
                 onTap: () => _mostrarDialogoLimite(context),
+              ),
+              
+              // 🔥 NUEVO BOTÓN: PRESUPUESTO
+              ListTile(
+                leading: Icon(Icons.pie_chart_outline_rounded, color: colorScheme.primary),
+                title: Text("Límite de Presupuesto Mensual", style: TextStyle(color: onSurfaceColor)),
+                subtitle: Text("Actual: ${_presupuestoMensual.toStringAsFixed(0)} TTC / mes", style: TextStyle(color: onSurfaceColor.withOpacity(0.6))),
+                trailing: Icon(Icons.edit, color: onSurfaceColor.withOpacity(0.4), size: 18),
+                onTap: _cambiarPresupuesto,
               ),
               const SizedBox(height: 24),
 

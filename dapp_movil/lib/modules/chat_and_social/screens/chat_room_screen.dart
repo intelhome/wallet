@@ -43,6 +43,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isLoading = true;
   late SecureChatService _chatService;
   final FlutterSoundRecorder _audioRecorder = FlutterSoundRecorder();
+
+  final ScrollController _scrollController = ScrollController();
  
   String? _audioPath;
   bool _isEphemeral = false;
@@ -83,6 +85,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
    _chatService.currentActiveChat = null;
    _chatService.removeListener(_actualizarMensajes);
     _msgController.dispose();
+    _scrollController.dispose();
     _audioRecorder.closeRecorder();
     super.dispose();
   }
@@ -113,12 +116,31 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
+  // void _actualizarMensajes() {
+  //   // 2. Para el tiempo real, SOLO leemos la memoria local
+  //   final msgs = _chatService.getLocalMessages(widget.address);
+  //   if (mounted) {
+  //     setState(() {
+  //       _messages = List.from(msgs);
+  //     });
+  //   }
+  // }
+
   void _actualizarMensajes() {
-    // 2. Para el tiempo real, SOLO leemos la memoria local
     final msgs = _chatService.getLocalMessages(widget.address);
     if (mounted) {
       setState(() {
         _messages = List.from(msgs);
+      });
+      // 🔥 FIX: Animación de Scroll Auto al recibir / enviar
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0.0, // Al usar `reverse: true` en ListView, el 0 es el fondo
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       });
     }
   }
@@ -252,9 +274,9 @@ Future<void> _iniciarGrabacion() async {
     setState(() => _isRecording = true);
   }
 
-  // 🔥 NUEVO: Método de extracción segura
-  void _extraerConocimiento(BuildContext context) async {
+ void _extraerConocimiento(BuildContext context) async {
     final aiService = Provider.of<AiMemoryService>(context, listen: false);
+    final authCore = Provider.of<AuthCoreService>(context, listen: false);
 
     if (_messages.isEmpty) return;
 
@@ -265,15 +287,14 @@ Future<void> _iniciarGrabacion() async {
     for (int i = 0; i < limit; i++) {
       var msg = _messages[i]; 
       
-      // 🔥 Accedemos a las claves del Map en lugar de propiedades directas
-      bool isMe = msg['isMe'] == true;
+      // 🔥 FIX 1: Validamos correctamente usando el sender y la billetera actual
+      String senderWallet = msg['sender']?.toString().toLowerCase() ?? '';
+      bool isMe = senderWallet == authCore.publicAddress.toLowerCase();
       String remitente = isMe ? "Yo" : widget.alias; 
       
-      // El contenido cifrado desencriptado puede estar en 'content' o 'text' dependiendo de tu parser
-      String rawTexto = msg['content']?.toString() ?? msg['text']?.toString() ?? '';
+      String rawTexto = msg['content']?.toString() ?? '';
       String textoLimpio = rawTexto;
 
-      // Si tu payload está empaquetado en JSON (ej. {"type": "TEXT", "content": "Hola"})
       if (rawTexto.startsWith('{')) {
         try {
           var decoded = jsonDecode(rawTexto);
@@ -290,17 +311,17 @@ Future<void> _iniciarGrabacion() async {
       }
     }
 
-    // Invertimos para que el LLM lo lea en orden cronológico real
     mensajesPlanos = mensajesPlanos.reversed.toList();
 
-    UIHelper.showCustomSnackbar("✨ Analizando contexto cifrado...", isError: false);
+    // 🔥 FIX 2: UI adaptada al procesamiento asíncrono del backend
+    UIHelper.showCustomSnackbar("✨ Iniciando análisis cognitivo en segundo plano...", isError: false);
 
     bool exito = await aiService.extractPreferencesFromChat(mensajesPlanos);
 
-    if (exito) {
-      UIHelper.showCustomSnackbar("🧠 ¡Nuevos gustos financieros aprendidos!", isError: false);
+    if (!exito) {
+      UIHelper.showCustomSnackbar("❌ Hubo un error de conexión con la IA.", isError: true);
     } else {
-      UIHelper.showCustomSnackbar("❌ Hubo un error de conexión neuronal.", isError: true);
+      print("✅ [UI] Petición de compresión enviada. El backend notificará cuando termine.");
     }
   }
 
@@ -491,6 +512,8 @@ Future<void> _iniciarGrabacion() async {
                 children: [
                   Expanded(
                     child: ListView.builder(
+                      controller: _scrollController, // 🔥 AQUÍ LO AGREGAS
+                      physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       reverse: true, // Empieza desde abajo
                       itemCount: _messages.length,

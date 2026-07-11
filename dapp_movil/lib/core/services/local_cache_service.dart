@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class LocalCacheService {
+  final Box _txBox = Hive.box('transactions_cache');
   final Box _contactBox = Hive.box('contacts_cache');
   final Box _chatBox = Hive.box('chat_cache');
+  final Box _userBox = Hive.box('user_cache');
   final Box _crowdBox = Hive.box('crowd_cache');
   final Box _businessBox = Hive.box('business_cache');
   final Box _adminBox = Hive.box('admin_cache');
@@ -14,8 +16,19 @@ class LocalCacheService {
   final Box _notifBox = Hive.box('notifications_cache');
   final Box _vaultsBox = Hive.box('vaults_cache');
 
+  Future<void> clearTransactionsCache() async => await _txBox.clear();
   Future<void> clearVaultsCache() async => await _vaultsBox.clear();
   Future<void> clearDebtsCache() async => await _debtsBox.clear();
+  Future<void> clearDashboardCache() async => await _userBox.delete('dashboard');
+
+  // ==========================================
+  // 1. TRANSACCIONES
+  // ==========================================
+  Future<void> saveTransactions(List<dynamic> transactions) async => await _txBox.put('my_history', jsonEncode(transactions));
+  List<dynamic> getCachedTransactions() {
+    String? data = _txBox.get('my_history');
+    return data != null ? jsonDecode(data) : [];
+  }
 
   // ==========================================
   // 2. CONTACTOS
@@ -27,9 +40,19 @@ class LocalCacheService {
   }
 
   // ==========================================
+  // 3. DATOS DEL USUARIO (DASHBOARD)
+  // ==========================================
+  Future<void> saveDashboardData(Map<String, dynamic> data) async => await _userBox.put('dashboard', jsonEncode(data));
+  Map<String, dynamic> getCachedDashboardData() {
+    String? data = _userBox.get('dashboard');
+    return data != null ? jsonDecode(data) : {};
+  }
+
+  // ==========================================
   // 4. CHATS SEGUROS (Por Billetera)
   // ==========================================
   Future<void> saveChatHistory(String peerWallet, List<Map<String, dynamic>> messages) async {
+    // Convertimos las fechas a String antes de guardar en JSON
     final encodableList = messages.map((m) => {
       ...m,
       "timestamp": m["timestamp"] is DateTime ? (m["timestamp"] as DateTime).toIso8601String() : m["timestamp"]
@@ -44,6 +67,7 @@ class LocalCacheService {
     List<dynamic> decoded = jsonDecode(data);
     return decoded.map((e) {
       final map = Map<String, dynamic>.from(e);
+      // Restauramos la fecha a DateTime
       if (map['timestamp'] != null) map['timestamp'] = DateTime.parse(map['timestamp'].toString());
       return map;
     }).toList();
@@ -52,12 +76,11 @@ class LocalCacheService {
   // ==========================================
   // 5. ANALÍTICAS (PANTALLA DE HISTORIAS)
   // ==========================================
-  // Nota: Si quieres que analytics también sea en tiempo real, puedes borrar esto también
-  // Future<void> saveAnalytics(Map<String, dynamic> data) async => await _userBox.put('analytics_data', jsonEncode(data));
-  // Map<String, dynamic> getCachedAnalytics() {
-  //   String? data = _userBox.get('analytics_data');
-  //   return data != null ? jsonDecode(data) : {};
-  // }
+  Future<void> saveAnalytics(Map<String, dynamic> data) async => await _userBox.put('analytics_data', jsonEncode(data));
+  Map<String, dynamic> getCachedAnalytics() {
+    String? data = _userBox.get('analytics_data');
+    return data != null ? jsonDecode(data) : {};
+  }
 
   // ==========================================
   // 6. CHATS SEGUROS Y BANDEJA DE ENTRADA (INBOX)
@@ -75,6 +98,7 @@ class LocalCacheService {
   // 7. CROWDFUNDING (CAMPAÑAS)
   // ==========================================
   Future<void> saveCampaigns(String filter, String region, List<dynamic> campaigns) async {
+    // Guardamos con una clave dinámica para separar Global vs Región
     await _crowdBox.put('camp_${filter}_$region', jsonEncode(campaigns));
   }
   
@@ -86,25 +110,33 @@ class LocalCacheService {
   // ==========================================
   // 8. MÓDULO EMPRESARIAL (BUSINESS & TASKS)
   // ==========================================
+  
+  // A. Empleados y Equipo
   Future<void> saveTeamWithDetails(List<dynamic> team) async => await _businessBox.put('team_details', jsonEncode(team));
   List<dynamic> getCachedTeamWithDetails() => _businessBox.get('team_details') != null ? jsonDecode(_businessBox.get('team_details')) : [];
 
+  // B. Departamentos
   Future<void> saveDepartments(List<dynamic> depts) async => await _businessBox.put('departments', jsonEncode(depts));
   List<dynamic> getCachedDepartments() => _businessBox.get('departments') != null ? jsonDecode(_businessBox.get('departments')) : [];
 
+  // C. Tareas de la Empresa (Jefe)
   Future<void> saveEmployerTasks(List<dynamic> tasks) async => await _businessBox.put('employer_tasks', jsonEncode(tasks));
   List<dynamic> getCachedEmployerTasks() => _businessBox.get('employer_tasks') != null ? jsonDecode(_businessBox.get('employer_tasks')) : [];
 
+  // D. Tareas Asignadas (Empleado)
   Future<void> saveEmployeeTasks(List<dynamic> tasks) async => await _businessBox.put('employee_tasks', jsonEncode(tasks));
   List<dynamic> getCachedEmployeeTasks() => _businessBox.get('employee_tasks') != null ? jsonDecode(_businessBox.get('employee_tasks')) : [];
 
+  // E. Invitaciones Laborales
   Future<void> savePendingInvites(List<dynamic> invites) async => await _businessBox.put('pending_invites', jsonEncode(invites));
   List<dynamic> getCachedPendingInvites() => _businessBox.get('pending_invites') != null ? jsonDecode(_businessBox.get('pending_invites')) : [];
 
+  // F. Mis Empleadores
   Future<void> saveMyEmployers(List<dynamic> employers) async => await _businessBox.put('my_employers', jsonEncode(employers));
   List<dynamic> getCachedMyEmployers() => _businessBox.get('my_employers') != null ? jsonDecode(_businessBox.get('my_employers')) : [];
 
-  // ==========================================
+
+// ==========================================
   // 9. MÓDULO DE ADMINISTRACIÓN (SUPER ADMIN)
   // ==========================================
   Future<void> saveAdminPlans(List<dynamic> plans) async => await _adminBox.put('plans', jsonEncode(plans));
@@ -171,8 +203,10 @@ class LocalCacheService {
   // LIMPIEZA GLOBAL (AL CERRAR SESIÓN)
   // ==========================================
   Future<void> clearAllCache() async {
+    await _txBox.clear();
     await _contactBox.clear();
     await _chatBox.clear();
+    await _userBox.clear();
     await _crowdBox.clear();
     await _businessBox.clear();
     await _adminBox.clear();  

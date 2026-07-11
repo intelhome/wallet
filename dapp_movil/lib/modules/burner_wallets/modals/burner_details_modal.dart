@@ -117,28 +117,23 @@ class BurnerDetailsModal {
 
               if (!isAuth) return;
 
-              // showDialog(context: rootContext, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Protocolo de Barrido", message: "Recuperando fondos sobrantes..."));
-              // String res = await burnerService.burnWallet(wallet['burnerAddress']);
-              // Navigator.pop(rootContext);
-             showDialog(context: rootContext, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Protocolo de Barrido", message: "Recuperando fondos sobrantes..."));
+              showDialog(context: rootContext, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Protocolo de Barrido", message: "Recuperando fondos sobrantes..."));
               
-              // 🔥 NUEVO: Atrapamos el double en lugar del String y eliminamos el if (res) de abajo
-              try {
+            try {
+                print("🔥 [UI-BURN-WALLET] Ejecutando orden de incineración para ${wallet['burnerAddress']}...");
                 double refunded = await burnerService.burnWallet(wallet['burnerAddress']);
                 Navigator.pop(rootContext);
+                
+                print("✅ [UI-BURN-WALLET] Tarjeta quemada. TTC devueltos: $refunded");
                 UIHelper.showCustomSnackbar("Protocolo completado. Se rescataron ${refunded.toStringAsFixed(2)} TTC.");
-                onRefresh(); // Llama a la actualización por WebSocket
+                
+                await Future.delayed(const Duration(seconds: 1)); // Retraso visual
+                onRefresh(); 
               } catch (e) {
+                print("❌ [UI-BURN-WALLET] Fallo al quemar: $e");
                 Navigator.pop(rootContext);
                 UIHelper.showCustomSnackbar(e.toString().replaceAll("Exception: ", ""), isError: true);
               }
-              
-              // if (!res.startsWith("Error")) {
-              //   UIHelper.showCustomSnackbar("Protocolo de incineración iniciado.");
-              //   onRefresh(); // Llama a la actualización por WebSocket
-              // } else {
-              //   UIHelper.showCustomSnackbar(res, isError: true);
-              // }
             },
             child: const Text("Quemar Ahora", style: TextStyle(fontWeight: FontWeight.bold)),
           ),

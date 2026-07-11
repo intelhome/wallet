@@ -7,6 +7,7 @@ import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:dapp_movil/modules/ai_assistant/screens/ai_memory_screen.dart';
 import 'package:dapp_movil/modules/ai_assistant/services/ai_chat_handler.dart';
 import 'package:dapp_movil/modules/ai_assistant/services/ai_memory_service.dart';
+import 'package:dapp_movil/modules/ai_assistant/services/ai_voice_handler.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/burner_wallets/modals/create_burner_modal.dart';
 import 'package:dapp_movil/modules/business/modals/create_task_modal.dart';
@@ -629,15 +630,17 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _audioRecorder = FlutterSoundRecorder();
   
-  bool _isListening = false;
+ late AiVoiceHandler _voiceHandler;
   bool _hasText = false;
   String _transcripcionTemporal = "";
 
   @override
   void initState() {
     super.initState();
-    _initAudio();
-    
+    // Inicializamos el Handler de voz
+    _voiceHandler = AiVoiceHandler();
+    _voiceHandler.initSpeech();
+
     // Cargamos balances en el Handler persistente al entrar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AiChatHandler>(context, listen: false).cargarContextoFinanciero(context);
@@ -648,6 +651,11 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
         _hasText = _msgController.text.trim().isNotEmpty;
       });
     });
+
+    // Escuchamos el estado de la voz para redibujar la UI
+    _voiceHandler.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _initAudio() async {
@@ -656,24 +664,21 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
   }
 
   Future<void> _iniciarEscucha() async {
-    if (await Permission.microphone.isGranted) {
-      final tempDir = await getTemporaryDirectory();
-      final path = '${tempDir.path}/ai_audio.aac';
-      await _audioRecorder.startRecorder(toFile: path);
-      setState(() {
-        _isListening = true;
-        _transcripcionTemporal = "Escuchando voz...";
-      });
-    } else {
-      UIHelper.showCustomSnackbar("Permiso de micrófono denegado", isError: true);
-    }
+    HapticFeedback.lightImpact();
+    await _voiceHandler.startListening();
   }
 
   Future<void> _detenerYEnviarAudio() async {
-    if (!_isListening) return;
-    await _audioRecorder.stopRecorder();
-    setState(() => _isListening = false);
-    UIHelper.showCustomSnackbar("El dictado por voz de la IA está en optimización.", isError: false);
+    HapticFeedback.mediumImpact();
+    String textoTranscrito = await _voiceHandler.stopListeningAndGetText();
+    
+    // Si la IA detectó palabras, las pone en la caja y auto-envía
+    if (textoTranscrito.trim().isNotEmpty) {
+      _msgController.text = textoTranscrito;
+      _sendMessage(); // 🔥 Auto envío
+    } else {
+      UIHelper.showCustomSnackbar("No se detectó voz clara. Intenta de nuevo.");
+    }
   }
 
   Future<void> _sendMessage() async {
@@ -686,7 +691,7 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
     final handler = Provider.of<AiChatHandler>(context, listen: false);
     await handler.procesarMensaje(
       context: context,
-      userText: userText,
+      userText: userText, // 🔥 Ahora este text puede venir del teclado O de la transcripción de voz
     );
     _scrollToBottom();
   }
@@ -703,15 +708,16 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
     });
   }
 
-  @override
+ @override
   void dispose() {
-    _audioRecorder.closeRecorder();
     _msgController.dispose();
     _scrollController.dispose();
+    _voiceHandler.dispose(); // 🔥 Limpiamos memoria
     super.dispose();
   }
 
-  Widget _buildInputArea(Color cardColor, Color textColor, Color primaryColor, Color onPrimaryColor) {
+ Widget _buildInputArea(Color cardColor, Color textColor, Color primaryColor, Color onPrimaryColor) {
+   final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(color: cardColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
@@ -719,7 +725,7 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
         child: Row(
           children: [
             Expanded(
-              child: _isListening
+              child: _voiceHandler.isListening
                   ? Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(24)),
@@ -729,7 +735,7 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              _transcripcionTemporal,
+                              _voiceHandler.transcripcionTemporal,
                               style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
                               maxLines: 1, overflow: TextOverflow.ellipsis,
                             )
@@ -739,33 +745,32 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
                     )
                   : TextField(
                       controller: _msgController,
-                      style: TextStyle(color: textColor),
                       decoration: InputDecoration(
-                        hintText: "Págale 20 a pp4 o divide la cuenta...",
-                        hintStyle: TextStyle(color: textColor.withOpacity(0.4)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        filled: true, fillColor: textColor.withOpacity(0.05), 
+                        hintText: "Escribe o mantén presionado el micro...",
+                        filled: true,
+                        fillColor: theme.colorScheme.onSurface.withOpacity(0.05),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                       ),
                       onSubmitted: (_) => _sendMessage(),
                     ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             GestureDetector(
-              key: const ValueKey('ai_boton_micro'),
+              // 🔥 Si tiene texto, un tap envía. Si no tiene, mantiene presionado para hablar
               onTap: _hasText ? _sendMessage : null, 
               onLongPress: !_hasText ? _iniciarEscucha : null,
               onLongPressEnd: !_hasText ? (details) => _detenerYEnviarAudio() : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.all(_isListening ? 16 : 12),
+                padding: EdgeInsets.all(_voiceHandler.isListening ? 16 : 12),
                 decoration: BoxDecoration(
-                  color: _hasText ? primaryColor : (_isListening ? Colors.redAccent : primaryColor), 
+                  color: _hasText ? primaryColor : (_voiceHandler.isListening ? Colors.redAccent : primaryColor), 
                   shape: BoxShape.circle
                 ),
                 child: Icon(
-                  _hasText ? Icons.send_rounded : (_isListening ? Icons.mic_rounded : Icons.mic_none_rounded), 
-                  color: Colors.white, size: _isListening ? 24 : 20
+                  _hasText ? Icons.send_rounded : (_voiceHandler.isListening ? Icons.mic_rounded : Icons.mic_none_rounded), 
+                  color: Colors.white, size: _voiceHandler.isListening ? 24 : 20
                 ),
               ),
             ),
@@ -801,7 +806,6 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
           Expanded(
             child: Consumer<AiChatHandler>(
               builder: (context, handler, child) {
-                // Auto scroll al recibir mensajes nuevos
                 WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                 
                 return ListView.builder(

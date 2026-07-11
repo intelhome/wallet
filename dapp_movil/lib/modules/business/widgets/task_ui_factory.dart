@@ -8,9 +8,33 @@ import '../../../core/helpers/ui_helper.dart';
 import '../../document_notary/modals/document_details_modal.dart';
 
 class TaskUIFactory {
+  // static Widget buildWidget(BuildContext context, Map<String, dynamic> task, bool isEmployer, VoidCallback onRefresh) {
+  //   String type = task['taskType'] ?? 'STANDARD';
+  //   Map<String, dynamic> meta = task['typeMetadata'] ?? {};
+
+  //   if (type == 'STANDARD') return const SizedBox.shrink();
+
+  //   // 1. TIPOS SIMPLES (Sin interacción de guardado complejo)
+  //   if (type == 'MEET' || type == 'GPS' || type == 'NOTARY' || type == 'AGENDA') {
+  //     return _buildSimpleTypes(context, type, meta);
+  //   }
+
+  //   // 2. TIPOS INTERACTIVOS (Requieren respuesta del empleado y guardado)
+  //   if (type == 'READ_DOC') return _ReadDocWidget(task: task, meta: meta, isEmployer: isEmployer, onRefresh: onRefresh);
+  //   if (type == 'OPINION') return _OpinionWidget(task: task, meta: meta, isEmployer: isEmployer, onRefresh: onRefresh);
+  //   if (type == 'FORM') return _FormWidget(task: task, meta: meta, isEmployer: isEmployer, onRefresh: onRefresh);
+
+  //   return const SizedBox.shrink();
+  // }
+
   static Widget buildWidget(BuildContext context, Map<String, dynamic> task, bool isEmployer, VoidCallback onRefresh) {
     String type = task['taskType'] ?? 'STANDARD';
-    Map<String, dynamic> meta = task['typeMetadata'] ?? {};
+    
+    // 🔥 FIX: Manejamos el objeto Map que Spring Boot devuelve en `typeMetadata`
+    Map<String, dynamic> meta = {};
+    if (task['typeMetadata'] != null && task['typeMetadata'] is Map) {
+      meta = Map<String, dynamic>.from(task['typeMetadata']);
+    }
 
     if (type == 'STANDARD') return const SizedBox.shrink();
 

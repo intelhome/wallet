@@ -43,17 +43,26 @@ class AiAvatarResponse {
     }
     """;
 
-    try {
+  try {
       final res = await aiMemoryService.sendMessageWithMemory("Evalúa este evento", promptAutonomo);
       if (res != null && res['response'] != null) {
-        final cleanJson = res['response'].toString().replaceAll('```json', '').replaceAll('```', '').trim();
-        final Map<String, dynamic> aiDecision = jsonDecode(cleanJson);
         
-        String decision = aiDecision['decision'] ?? 'IGNORE';
-        String justificacion = aiDecision['justification'] ?? '';
-        Map<String, dynamic> payload = aiDecision['action_payload'] ?? {};
+        // 🔥 FIX: Extracción Regex infalible del JSON Object
+        String aiRawResponse = res['response'].toString();
+        final match = RegExp(r'\{[\s\S]*\}').firstMatch(aiRawResponse);
+        
+        if (match != null) {
+          final String pureJson = match.group(0)!;
+          final Map<String, dynamic> aiDecision = jsonDecode(pureJson);
+          
+          String decision = aiDecision['decision'] ?? 'IGNORE';
+          String justificacion = aiDecision['justification'] ?? '';
+          Map<String, dynamic> payload = aiDecision['action_payload'] ?? {};
 
-        await _ejecutarDecisionAutonoma(authCore, chatService, decision, justificacion, payload, evento);
+          await _ejecutarDecisionAutonoma(authCore, chatService, decision, justificacion, payload, evento);
+        } else {
+          print("⚠️ [AVATAR] La IA no devolvió un JSON válido: $aiRawResponse");
+        }
       }
     } catch (e) {
       print("⚠️ Error en el Avatar Autónomo: $e");

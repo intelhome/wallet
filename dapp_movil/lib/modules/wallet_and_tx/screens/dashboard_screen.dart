@@ -34,6 +34,7 @@ import 'package:dapp_movil/modules/vaults_and_savings/screens/vaults_screen.dart
 import 'package:dapp_movil/modules/vaults_and_savings/services/smart_vault_service.dart';
 import 'package:dapp_movil/modules/wallet_and_tx/modals/send_paypal_modal.dart';
 import 'package:dapp_movil/modules/wallet_and_tx/screens/paypal_payment_screen.dart';
+import 'package:dapp_movil/modules/wallet_and_tx/screens/request_money_screen.dart';
 import 'package:dapp_movil/modules/wallet_and_tx/screens/send_flow_screen.dart';
 import 'package:dapp_movil/modules/wallet_and_tx/screens/withdraw_fiat_screen.dart';
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
@@ -86,6 +87,9 @@ UserService get userService => Provider.of<UserService>(context, listen: false);
   Timer? _redDotTimer;
   DateTime? _backgroundTime;
   bool _isLockScreenOpen = false;
+
+  double _presupuestoMensual = 500.0;
+  double _gastadoMes = 0.0;
 
   bool _isReadyForNotifications = false;
   late TransactionService _txServiceCached;
@@ -312,39 +316,39 @@ Future<void> _iniciarEscuchadorDeDeepLinks() async {
     }
   }
 
-  Future<void> _cargarCacheLocal() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _balanceTTC = prefs.getString('cache_balanceTTC') ?? "0.000";
-        _stakedTTC = prefs.getString('cache_stakedTTC') ?? "0.000";
-        _ethPriceUSD = prefs.getString('cache_ethPriceUSD') ?? "0.000";
-        _balanceETH = prefs.getString('cache_balanceETH') ?? "0.0000";
-        _miAlias = prefs.getString('cache_alias') ?? "Mi cartera";
+  // Future<void> _cargarCacheLocal() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   if (mounted) {
+  //     setState(() {
+  //       _balanceTTC = prefs.getString('cache_balanceTTC') ?? "0.000";
+  //       _stakedTTC = prefs.getString('cache_stakedTTC') ?? "0.000";
+  //       _ethPriceUSD = prefs.getString('cache_ethPriceUSD') ?? "0.000";
+  //       _balanceETH = prefs.getString('cache_balanceETH') ?? "0.0000";
+  //       _miAlias = prefs.getString('cache_alias') ?? "Mi cartera";
 
-        // Si encontramos caché, quitamos la pantalla de carga INMEDIATAMENTE
-        if (_balanceTTC != "0.000" || _miAlias != "Mi cartera") {
-          _isSyncing = false;
-        }
+  //       // Si encontramos caché, quitamos la pantalla de carga INMEDIATAMENTE
+  //       if (_balanceTTC != "0.000" || _miAlias != "Mi cartera") {
+  //         _isSyncing = false;
+  //       }
+  //     });
+  //   }
+  // }
+
+Future<void> _cargarCacheLocal() async {
+    final cacheService = LocalCacheService();
+    final data = cacheService.getCachedDashboardData();
+
+    if (mounted && data.isNotEmpty) {
+      setState(() {
+        _balanceTTC = data['balanceTTC'] ?? "0.000";
+        _stakedTTC = data['stakedTTC'] ?? "0.000";
+        _ethPriceUSD = data['ethPriceUSD'] ?? "0.000";
+        _balanceETH = data['balanceETH'] ?? "0.0000";
+        _miAlias = data['alias'] ?? "Mi cartera";
+        _isSyncing = false; // Apaga loader al instante
       });
     }
   }
-
-// Future<void> _cargarCacheLocal() async {
-//     final cacheService = LocalCacheService();
-//     final data = cacheService.getCachedDashboardData();
-
-//     if (mounted && data.isNotEmpty) {
-//       setState(() {
-//         _balanceTTC = data['balanceTTC'] ?? "0.000";
-//         _stakedTTC = data['stakedTTC'] ?? "0.000";
-//         _ethPriceUSD = data['ethPriceUSD'] ?? "0.000";
-//         _balanceETH = data['balanceETH'] ?? "0.0000";
-//         _miAlias = data['alias'] ?? "Mi cartera";
-//         _isSyncing = false; // Apaga loader al instante
-//       });
-//     }
-//   }
   
   void _evaluarPuntoRojo(double montoPend, int unlockTime) {
     _redDotTimer?.cancel(); // Cancelamos cualquier reloj anterior
@@ -368,82 +372,7 @@ Future<void> _iniciarEscuchadorDeDeepLinks() async {
 
   final cacheService = LocalCacheService();
 
-  Future<void> _cargarBalance() async {
-    final results = await Future.wait([
-      txService.getBalance(),
-      vaultService.getStakedBalance(),
-      txService.getEthPriceInUsd(),
-      txService.getEthBalance(),
-    ]);
-
-    if (!mounted) return;
-
-    final saldo = results[0];
-    final stake = results[1];
-    final currentEthPrice = results[2];
-    final saldoEth = results[3];
-
-    if (mounted) {
-      setState(() {
-        _balanceTTC = (double.tryParse(saldo) ?? 0.0).toStringAsFixed(3);
-        _stakedTTC = stake;
-        _ethPriceUSD = currentEthPrice;
-        _balanceETH = saldoEth;
-      });
-    }
-
-    try {
-      // 🔥 REFACTORIZADO: Obtenemos el alias limpiamente usando UserService 🔥
-      final userData = await userService.getUserByWallet(authCore.publicAddress);
-
-      if (!mounted) return;
-
-      if (userData != null && userData['alias'] != null) {
-        setState(() {
-          _miAlias = "@" + userData['alias'];
-        });
-      }
-
-      final pendingData = await vaultService.getPendingWithdrawal();
-
-      if (!mounted) return;
-      
-      double montoPend = (pendingData['amount'] as num).toDouble();
-      int unlockTime = pendingData['unlockTime'] as int;
-
-      if (mounted) {
-        _evaluarPuntoRojo(montoPend, unlockTime);
-      }
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('cache_balanceTTC', _balanceTTC);
-      await prefs.setString('cache_stakedTTC', _stakedTTC);
-      await prefs.setString('cache_ethPriceUSD', _ethPriceUSD);
-      await prefs.setString('cache_balanceETH', _balanceETH);
-      await prefs.setString('cache_alias', _miAlias);
-    } catch (e) {
-      print("Error sincronizando: $e");
-    } finally {
-      // Apagamos la pantalla de carga sin importar si hubo éxito o error
-      if (mounted) {
-        setState(() {
-          _isSyncing = false;
-        });
-      }
-    }
-  }
-
   // Future<void> _cargarBalance() async {
-
-  //   final cacheService = LocalCacheService();
-  //   await cacheService.clearDashboardCache();
-    
-  //   if (mounted) {
-  //     setState(() {
-  //       _isSyncing = true; // Activa el Skeleton Loader para que el usuario note la recarga
-  //     });
-  //   }
-
   //   final results = await Future.wait([
   //     txService.getBalance(),
   //     vaultService.getStakedBalance(),
@@ -490,16 +419,12 @@ Future<void> _iniciarEscuchadorDeDeepLinks() async {
   //       _evaluarPuntoRojo(montoPend, unlockTime);
   //     }
 
-  //     // 🔥 REFACTORIZADO: Guardando la información usando Hive (LocalCacheService)
-  //     final cacheService = LocalCacheService();
-  //     await cacheService.saveDashboardData({
-  //       'balanceTTC': _balanceTTC,
-  //       'stakedTTC': _stakedTTC,
-  //       'ethPriceUSD': _ethPriceUSD,
-  //       'balanceETH': _balanceETH,
-  //       'alias': _miAlias,
-  //     });
-      
+  //     final prefs = await SharedPreferences.getInstance();
+  //     await prefs.setString('cache_balanceTTC', _balanceTTC);
+  //     await prefs.setString('cache_stakedTTC', _stakedTTC);
+  //     await prefs.setString('cache_ethPriceUSD', _ethPriceUSD);
+  //     await prefs.setString('cache_balanceETH', _balanceETH);
+  //     await prefs.setString('cache_alias', _miAlias);
   //   } catch (e) {
   //     print("Error sincronizando: $e");
   //   } finally {
@@ -511,6 +436,118 @@ Future<void> _iniciarEscuchadorDeDeepLinks() async {
   //     }
   //   }
   // }
+
+  Future<void> _cargarBalance() async {
+    if (mounted) {
+      setState(() {
+        _isSyncing = true; 
+      });
+    }
+
+    final results = await Future.wait([
+      txService.getBalance(),
+      vaultService.getStakedBalance(),
+      txService.getEthPriceInUsd(),
+      txService.getEthBalance(),
+    ]);
+
+    if (!mounted) return;
+
+    final saldo = results[0];
+    final stake = results[1];
+    final currentEthPrice = results[2];
+    final saldoEth = results[3];
+
+    if (mounted) {
+      setState(() {
+        _balanceTTC = (double.tryParse(saldo) ?? 0.0).toStringAsFixed(3);
+        _stakedTTC = stake;
+        _ethPriceUSD = currentEthPrice;
+        _balanceETH = saldoEth;
+      });
+    }
+
+    try {
+      // 🔥 REFACTORIZADO: Obtenemos el alias limpiamente usando UserService 🔥
+      final userData = await userService.getUserByWallet(authCore.publicAddress);
+
+      final prefs = await SharedPreferences.getInstance();
+      double presupuesto = prefs.getDouble('presupuesto_mensual') ?? 500.0;
+
+
+
+      double gastado = 0.0;
+      try {
+        final txs = await txService.getTransactionHistory();
+        final myWallet = authCore.publicAddress.toLowerCase();
+        final now = DateTime.now();
+
+        for (var tx in txs) {
+          if (tx['status'] == 'COMPLETED' &&
+              (tx['txType'] == 'SEND' || tx['txType'] == 'BINANCE_PAY' || tx['txType'] == 'SEND_FIAT') &&
+              tx['senderAddress']?.toString().toLowerCase() == myWallet) {
+             
+             if (tx['timestamp'] != null) {
+               DateTime txDate = DateTime.parse(tx['timestamp'].toString()).toLocal();
+               // Sumar solo si es del mes y año actual
+               if (txDate.month == now.month && txDate.year == now.year) {
+                 gastado += double.tryParse(tx['amount']?.toString() ?? '0') ?? 0.0;
+               }
+             }
+          }
+        }
+      } catch (e) {
+        print("Error calculando gastos del historial: $e");
+      }
+
+
+      if (!mounted) return;
+
+      if (userData != null && userData['alias'] != null) {
+        setState(() {
+          _miAlias = "@" + userData['alias'];
+        });
+      }
+
+      setState(() {
+         _presupuestoMensual = presupuesto;
+        _gastadoMes = gastado;
+      });
+
+      final pendingData = await vaultService.getPendingWithdrawal();
+
+      
+
+      if (!mounted) return;
+      
+      double montoPend = (pendingData['amount'] as num).toDouble();
+      int unlockTime = pendingData['unlockTime'] as int;
+
+      if (mounted) {
+        _evaluarPuntoRojo(montoPend, unlockTime);
+      }
+
+      // 🔥 REFACTORIZADO: Guardando la información usando Hive (LocalCacheService)
+      final cacheService = LocalCacheService();
+      await cacheService.saveDashboardData({
+        'balanceTTC': _balanceTTC,
+        'stakedTTC': _stakedTTC,
+        'ethPriceUSD': _ethPriceUSD,
+        'balanceETH': _balanceETH,
+        'alias': _miAlias,
+      });
+      
+    } catch (e) {
+      print("Error sincronizando: $e");
+    } finally {
+      // Apagamos la pantalla de carga sin importar si hubo éxito o error
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
+  }
 
   void _mostrarMensaje(String mensaje, {bool esError = false}) {
     if (!mounted) return;
@@ -695,6 +732,62 @@ Future<void> _iniciarEscuchadorDeDeepLinks() async {
   );
 }
 
+Widget _buildBudgetTracker() {
+    if (_presupuestoMensual <= 0) return const SizedBox.shrink(); 
+    
+    double progress = (_gastadoMes / _presupuestoMensual).clamp(0.0, 1.0);
+    
+    Color progressColor = Colors.green;
+    if (progress >= 0.9) {
+      progressColor = Colors.redAccent;
+    } else if (progress >= 0.65) {
+      progressColor = Colors.orangeAccent;
+    }
+
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: onSurface.withOpacity(0.05)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Presupuesto Mensual", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: onSurface)),
+              Text("${_gastadoMes.toStringAsFixed(2)} / ${_presupuestoMensual.toStringAsFixed(0)} TTC", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: progressColor)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: onSurface.withOpacity(0.1),
+              valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            progress >= 1.0 
+              ? "¡Atención! Has superado tu límite mensual." 
+              : "Puedes gastar ${(_presupuestoMensual - _gastadoMes).toStringAsFixed(2)} TTC más este mes.",
+            style: TextStyle(fontSize: 12, color: progress >= 1.0 ? Colors.redAccent : onSurface.withOpacity(0.5), fontWeight: progress >= 1.0 ? FontWeight.bold : FontWeight.normal),
+          )
+        ],
+      ),
+    );
+  }
+
 
  void _cargarDeudas() {
     setState(() { _debtsFuture = debtService.getUserDebts(); });
@@ -734,13 +827,13 @@ return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       
       floatingActionButton: FloatingActionButton(
-        heroTag: 'fab_principal',
-        // 🔥 AHORA VALIDA SI ES PREMIUM O SI ES EMPRESA
+       // heroTag: 'fab_principal',
+       heroTag: 'fab_dashboard_ai',
         backgroundColor: (planConfig.hasFeature(currentTier, 'IA') || isBusiness) ? colorScheme.secondary : Colors.grey,
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), 
         onPressed: () {
-          // 🔥 DESBLOQUEO APLICADO AQUÍ TAMBIÉN
+       
           if (planConfig.hasFeature(currentTier, 'IA') || isBusiness) {
             Navigator.push(context, RouteHelper.fadeRoute(const AiAssistantDeepSeekScreen()));
           } else {
@@ -823,104 +916,28 @@ return Scaffold(
 
                   // 🔥 TARJETA PRINCIPAL DE BALANCE (Premium UI) 🔥
 
-                  ValueListenableBuilder<bool>(
+                ValueListenableBuilder<bool>(
                     valueListenable: discreetModeNotifier,
                     builder: (context, isDiscreet, _) {
                       // 🔥 PASO 1: Envolvemos con el segundo ValueListenableBuilder
                       return ValueListenableBuilder<bool>(
                         valueListenable: customCardNotifier,
-                        builder: (context, isCustom, _) { // <--- Aquí se define 'isCustom'
+                        builder: (context, isCustom, _) { 
                           return UserCard(
                             address: authCore.publicAddress,
                             balanceTTC: _balanceTTC,
                             stakedTTC: _stakedTTC,
                             currentTier: authCore.currentTier,
                             isDiscreet: isDiscreet,
-                            useAvatarColors: isCustom, // ✅ Ahora 'isCustom' es reconocido
+                            useAvatarColors: isCustom, 
                             onToggleDiscreet: _toggleDiscreetMode,
                           );
                         },
                       );
                     }
                   ),
-                  // Container(
-                  //   padding: const EdgeInsets.all(24),
-                  //   decoration: BoxDecoration(
-                  //     gradient: LinearGradient(
-                  //       colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
-                  //       begin: Alignment.topLeft,
-                  //       end: Alignment.bottomRight,
-                  //     ),
-                  //     borderRadius: BorderRadius.circular(32), // Bordes muy suaves M3
-                  //     boxShadow: [
-                  //       BoxShadow(color: colorScheme.primary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
-                  //     ],
-                  //   ),
-                  //   child: Column(
-                  //     children: [
-                  //       Row(
-                  //         mainAxisAlignment: MainAxisAlignment.center,
-                  //         children: [
-                  //           Text("Balance Disponible", style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, fontWeight: FontWeight.w500)),
-                  //           const SizedBox(width: 8),
-                  //           ValueListenableBuilder<bool>(
-                  //             valueListenable: discreetModeNotifier,
-                  //             builder: (context, isDiscreet, _) => InkWell(
-                  //               onTap: _toggleDiscreetMode,
-                  //               child: Icon(isDiscreet ? Icons.visibility_off : Icons.visibility, color: Colors.white.withOpacity(0.7), size: 18),
-                  //             ),
-                  //           ),
-                  //         ],
-                  //       ),
-                  //       const SizedBox(height: 8),
 
-                  //       // Saldo animado
-                  //       ValueListenableBuilder<bool>(
-                  //         valueListenable: discreetModeNotifier,
-                  //         builder: (context, isDiscreet, _) => AnimatedSwitcher(
-                  //           duration: const Duration(milliseconds: 300),
-                  //           child: Text(
-                  //             isDiscreet ? "**** TTC" : "$_balanceTTC TTC",
-                  //             key: ValueKey<bool>(isDiscreet),
-                  //             style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.w900, letterSpacing: -1), // Tipografía robusta
-                  //           ),
-                  //         ),
-                  //       ),
-                  //       const SizedBox(height: 24),
-
-                  //       // Tiras de información financiera
-                  //       Container(
-                  //         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  //         decoration: BoxDecoration(color: Colors.black.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
-                  //         child: Row(
-                  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  //           children: [
-                  //             Row(
-                  //               children: [
-                  //                 const Icon(Icons.lock, color: Colors.greenAccent, size: 16),
-                  //                 const SizedBox(width: 6),
-                  //                 ValueListenableBuilder<bool>(
-                  //                   valueListenable: discreetModeNotifier,
-                  //                   builder: (context, isDiscreet, _) => Text(isDiscreet ? "En Stake: ****" : "Stake: $_stakedTTC TTC", style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                  //                 ),
-                  //               ],
-                  //             ),
-                  //             Row(
-                  //               children: [
-                  //                 const Icon(Icons.show_chart, color: Colors.white70, size: 16),
-                  //                 const SizedBox(width: 6),
-                  //                 ValueListenableBuilder<bool>(
-                  //                   valueListenable: discreetModeNotifier,
-                  //                   builder: (context, isDiscreet, _) => Text(isDiscreet ? "1 TTC: ****" : "1 TTC: \$1", style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-                  //                 ),
-                  //               ],
-                  //             ),
-                  //           ],
-                  //         ),
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
+                  _buildBudgetTracker(),              
 
                   const SizedBox(height: 32),
                   Text("Operaciones Rápidas", style: TextStyle(color: colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.w800)),
@@ -963,6 +980,9 @@ return Scaffold(
                               SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.add_business_rounded, texto: "Invitaciones", onTap: _abrirPantallaEmpresasInvitacion, color: colorScheme.primary)),
                                if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.task_rounded, texto: "Tareas\nEmpresa", onTap: _abrirPantallaTaskUsuario, color: colorScheme.primary)),
                               //SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.task_rounded, texto: "Tareas\nEmpresa", onTap: _abrirPantallaTaskUsuario, color: colorScheme.primary)),
+
+                              SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.add_link_rounded, texto: "Enlaces de\nCobro", onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const RequestMoneyScreen())), color: colorScheme.primary)),
+
                               if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.payments_rounded, texto: "Pagos\nDivididos", onTap: _abrirPantallaPagosDivididos, color: colorScheme.primary)),
                               if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(
                                 icono: Icons.handshake_rounded, texto: "Deudas",
@@ -1236,6 +1256,7 @@ class _BotonAccionState extends State<_BotonAccion> with SingleTickerProviderSta
   }
   
   void _onTapCancel() => _controller.reverse();
+  
 
   @override
   Widget build(BuildContext context) {

@@ -59,17 +59,13 @@ class TransactionService {
   // 1. CONSULTA DE SALDOS
   // =========================================================================
 
- Future<String> getBalance() async {
+  Future<String> getBalance() async {
     if (authCore.publicAddress.isEmpty) return "0.00";
     try {
-      // 🔥 CÓDIGO PARA ELIMINAR EL CACHÉ HTTP
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      // Consultamos al Backend (Shadow Ledger) para reconciliación exacta
       final response = await http.get(
-        Uri.parse("${ApiConfig.baseUrl}/transactions/balance/${authCore.publicAddress.toLowerCase()}?t=$timestamp"),
-        headers: {
-          ...authCore.authHeaders,
-          "Cache-Control": "no-cache" // Exigimos respuesta fresca
-        },
+        Uri.parse("${ApiConfig.baseUrl}/transactions/balance/${authCore.publicAddress.toLowerCase()}"),
+        headers: authCore.authHeaders,
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
@@ -82,6 +78,7 @@ class TransactionService {
       return "0.00"; 
     }
   }
+
   Future<String> getEthBalance() async {
     if (authCore.myAddress == null) return "0.0000";
     try {
@@ -255,55 +252,8 @@ class TransactionService {
   // 5. HISTORIAL Y EXPLORADOR DE BLOQUES
   // =========================================================================
 
-  Future<List<dynamic>> getTransactionHistory() async {
-    if (authCore.publicAddress.isEmpty) return [];
-    try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final url = "${ApiConfig.getHistory.replaceAll("{address}", authCore.publicAddress.toLowerCase())}?t=$timestamp";
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          ...authCore.authHeaders,
-          "Cache-Control": "no-cache",
-          "Pragma": "no-cache"
-        }
-      ).timeout(const Duration(seconds: 10));
-      
-      if (response.statusCode == 200) return jsonDecode(response.body);
-      return [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  // Future<List<dynamic>> getTransactionHistory({Function(List<dynamic>)? onNetworkSync}) async {
+  // Future<List<dynamic>> getTransactionHistory() async {
   //   if (authCore.publicAddress.isEmpty) return [];
-
-  //   // 1. Leemos la memoria RAM (Hive) al instante
-  //   List<dynamic> cachedData = _cacheService.getCachedTransactions();
-
-  //   // 2. Disparamos la petición a AWS en segundo plano (sin detener el flujo)
-  //   _fetchHistoryFromNetwork().then((freshData) {
-  //     // Si AWS nos devolvió datos y la pantalla nos pasó un callback, le avisamos
-  //     if (freshData.isNotEmpty && onNetworkSync != null) {
-  //       onNetworkSync(freshData); 
-  //     }
-  //   }).catchError((e) {
-  //     print("Error sincronizando historial en fondo: $e");
-  //   });
-
-  //   // 3. Si la caché está totalmente vacía (primera vez que entra), 
-  //   // esperamos a AWS para no mostrarle una pantalla en blanco al usuario.
-  //   if (cachedData.isEmpty) {
-  //     return await _fetchHistoryFromNetwork();
-  //   }
-
-  //   // 4. Devolvemos la caché inmediatamente
-  //   return cachedData;
-  // }
-
-  // Future<List<dynamic>> _fetchHistoryFromNetwork() async {
   //   try {
   //     final timestamp = DateTime.now().millisecondsSinceEpoch;
   //     final url = "${ApiConfig.getHistory.replaceAll("{address}", authCore.publicAddress.toLowerCase())}?t=$timestamp";
@@ -317,17 +267,64 @@ class TransactionService {
   //       }
   //     ).timeout(const Duration(seconds: 10));
       
-  //     if (response.statusCode == 200) {
-  //       final freshData = jsonDecode(response.body);
-  //       // 🔥 Guardamos los datos nuevos en la bóveda de Hive automáticamente
-  //       // await _cacheService.saveTransactions(freshData);
-  //       return freshData;
-  //     }
+  //     if (response.statusCode == 200) return jsonDecode(response.body);
   //     return [];
   //   } catch (e) {
   //     return [];
   //   }
   // }
+
+  Future<List<dynamic>> getTransactionHistory({Function(List<dynamic>)? onNetworkSync}) async {
+    if (authCore.publicAddress.isEmpty) return [];
+
+    // 1. Leemos la memoria RAM (Hive) al instante
+    List<dynamic> cachedData = _cacheService.getCachedTransactions();
+
+    // 2. Disparamos la petición a AWS en segundo plano (sin detener el flujo)
+    _fetchHistoryFromNetwork().then((freshData) {
+      // Si AWS nos devolvió datos y la pantalla nos pasó un callback, le avisamos
+      if (freshData.isNotEmpty && onNetworkSync != null) {
+        onNetworkSync(freshData); 
+      }
+    }).catchError((e) {
+      print("Error sincronizando historial en fondo: $e");
+    });
+
+    // 3. Si la caché está totalmente vacía (primera vez que entra), 
+    // esperamos a AWS para no mostrarle una pantalla en blanco al usuario.
+    if (cachedData.isEmpty) {
+      return await _fetchHistoryFromNetwork();
+    }
+
+    // 4. Devolvemos la caché inmediatamente
+    return cachedData;
+  }
+
+  Future<List<dynamic>> _fetchHistoryFromNetwork() async {
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final url = "${ApiConfig.getHistory.replaceAll("{address}", authCore.publicAddress.toLowerCase())}?t=$timestamp";
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          ...authCore.authHeaders,
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache"
+        }
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        final freshData = jsonDecode(response.body);
+        // 🔥 Guardamos los datos nuevos en la bóveda de Hive automáticamente
+        await _cacheService.saveTransactions(freshData);
+        return freshData;
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
 
   Future<Map<String, dynamic>?> getTransactionByHash(String hash) async {
     try {

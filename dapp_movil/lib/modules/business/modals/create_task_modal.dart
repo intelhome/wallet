@@ -1,5 +1,6 @@
 import 'package:dapp_movil/core/services/transaction_skeleton.dart';
 import 'package:dapp_movil/modules/burner_wallets/services/burner_service.dart';
+import 'package:dapp_movil/modules/wallet_and_tx/services/transaction_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -555,74 +556,203 @@ final activeTeam = [];
                   width: double.infinity, height: 50,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                  onPressed: isProcessing ? null : () async {
-                      if (titleCtrl.text.isEmpty) return;
+//                   onPressed: isProcessing ? null : () async {
+//                       if (titleCtrl.text.isEmpty) return;
 
-                      // 🔥 1. HUELLA OBLIGATORIA SIEMPRE AL CREAR
+//                       //HUELLA OBLIGATORIA SIEMPRE AL CREAR
+//                       FocusScope.of(context).unfocus();
+//                       showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Autenticación", message: "Autoriza la asignación de la tarea."));
+//                       HapticFeedback.mediumImpact();
+//                       final auth = Provider.of<AuthCoreService>(context, listen: false);
+//                       bool isAuth = await auth.authenticateUser();
+//                       Navigator.pop(context); // Cerrar skeleton
+                      
+//                       if (!isAuth) return;
+
+//                       setStateModal(() => isProcessing = true);
+                      
+//                       String? assignedBurnerAddress;
+//                       double allocatedBudget = double.tryParse(budgetCtrl.text) ?? 0.0;
+// if (allocatedBudget > 0) {
+//                         final burnerService = Provider.of<BurnerService>(context, listen: false);
+//                         String label = "Tarea: ${titleCtrl.text}";
+                        
+//                         print("🚀 [CREATE-TASK] Solicitando creación de Burner Wallet con $allocatedBudget TTC...");
+                        
+//                         // 🔥 FIX: Recibe correctamente el Map<String, dynamic>
+//                         Map<String, dynamic> resBurner = await burnerService.createBurnerWallet(label, allocatedBudget);
+                        
+//                         if (resBurner["success"] == true) {
+//                           print("✅ [CREATE-TASK] Burner Wallet creada en BD.");
+//                           String newBurnerAddress = resBurner["data"]["burnerAddress"];
+                          
+//                           // 🔥 FIX: Fondeamos vía Web3 para que el contrato reciba los TTC reales
+//                           print("💸 [CREATE-TASK] Fondeando $allocatedBudget TTC a $newBurnerAddress...");
+//                           BigInt amountWei = BigInt.from(allocatedBudget * 1e18);
+//                           String? signature = await auth.generateDelegatedSignature("SEND", toAddress: newBurnerAddress.toLowerCase(), amountWei: amountWei);
+                          
+//                           if (signature != null) {
+//                             final txService = Provider.of<TransactionService>(context, listen: false);
+//                             await txService.sendTokensL2(newBurnerAddress, allocatedBudget, signature);
+//                             print("✅ [CREATE-TASK] Fondeo on-chain completado.");
+//                           }
+
+//                           // Obtenemos la última tarjeta creada para amarrarla a la tarea
+//                           List<dynamic> burners = await burnerService.getActiveBurners();
+//                           if (burners.isNotEmpty) {
+//                             assignedBurnerAddress = burners.first['burnerAddress'];
+//                             print("🔗 [CREATE-TASK] Tarjeta asignada a la tarea: $assignedBurnerAddress");
+//                           }
+//                         } else {
+//                           String errorMsg = resBurner["error"] ?? "Error desconocido";
+//                           print("❌ [CREATE-TASK] Falló la creación de la Burner: $errorMsg");
+//                           UIHelper.showCustomSnackbar("Error al fondear presupuesto: $errorMsg", isError: true);
+//                           setStateModal(() => isProcessing = false);
+//                           return;
+//                         }
+//                       }
+                      
+//                       final service = Provider.of<BusinessTaskService>(context, listen: false);
+                      
+//                       Map<String, dynamic> meta = {};
+//                       if (selectedTaskType == "MEET") meta = {"link": meetLinkCtrl.text};
+//                       if (selectedTaskType == "GPS") meta = {"lat": double.tryParse(gpsLatCtrl.text), "lng": double.tryParse(gpsLngCtrl.text)};
+//                       if (selectedTaskType == "NOTARY") meta = {"documentHash": notaryHashCtrl.text};
+//                       if (selectedTaskType == "AGENDA") meta = {"date": agendaDate.toIso8601String(), "startTime": agendaStart.format(context), "endTime": agendaEnd.format(context)};
+//                       if (selectedTaskType == "READ_DOC") meta = {"url": readDocUrlCtrl.text};
+//                       if (selectedTaskType == "OPINION") meta = {"question": opinionQuestionCtrl.text, "isPoll": isPoll, "options": pollOptionsCtrls.map((c)=>c.text).toList()};
+//                       if (selectedTaskType == "FORM") meta = {"fields": formFieldsCtrls.map((c)=>c.text).toList()};
+
+//                       String res = await service.createTask({
+//                         "businessWallet": auth.publicAddress.toLowerCase(),
+//                         "assignedWallet": assignToDept ? null : selectedWallet, 
+//                         "departmentId": assignToDept ? selectedDept : null,
+//                         "taskType": selectedTaskType, 
+//                         "typeMetadata": meta,         
+//                         "title": titleCtrl.text,
+//                         "description": descCtrl.text,
+//                         "urgency": urgency,
+//                         "allocatedResources": allocatedBudget,
+//                         "burnerAddress": assignedBurnerAddress, // 🔥 AMARRAMOS LA TARJETA
+//                         "estimatedHours": int.tryParse(hoursCtrl.text) ?? 0,
+//                         "deadline": selectedDeadline.toIso8601String(),
+//                         "subTasks": subTaskCtrls.where((c) => c['title']!.text.isNotEmpty).map((c) => {
+//                           "title": c['title']!.text, 
+//                           "estimatedHours": int.tryParse(c['hours']!.text) ?? 0
+//                         }).toList()
+//                       });
+
+//                       if (res == "SUCCESS") {
+//                         Navigator.pop(ctx);
+//                         UIHelper.showCustomSnackbar("Tarea asignada y fondeada correctamente");
+//                         onSuccess();
+//                       } else {
+//                         UIHelper.showCustomSnackbar(res, isError: true);
+//                         setStateModal(() => isProcessing = false);
+//                       }
+//                     },
+
+onPressed: isProcessing ? null : () async {
+                      if (titleCtrl.text.isEmpty) return;
+                      
+                      final txService = Provider.of<TransactionService>(context, listen: false);
+                      double allocatedBudget = double.tryParse(budgetCtrl.text) ?? 0.0;
+
+                      // 🔥 FIX 1: VERIFICACIÓN DE SALDO ANTES DE CONTINUAR
+                      if (allocatedBudget > 0) {
+                        String saldoRealStr = await txService.getBalance();
+                        double saldoReal = double.tryParse(saldoRealStr) ?? 0.0;
+                        if (allocatedBudget > saldoReal) {
+                          UIHelper.showCustomSnackbar("Saldo insuficiente. Tienes ${saldoReal.toStringAsFixed(2)} TTC.", isError: true);
+                          return;
+                        }
+                      }
+
+                      // HUELLA OBLIGATORIA SIEMPRE AL CREAR
                       FocusScope.of(context).unfocus();
                       showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Autenticación", message: "Autoriza la asignación de la tarea."));
                       HapticFeedback.mediumImpact();
                       final auth = Provider.of<AuthCoreService>(context, listen: false);
                       bool isAuth = await auth.authenticateUser();
-                      Navigator.pop(context); // Cerrar skeleton
+                      Navigator.pop(context); 
                       
                       if (!isAuth) return;
 
                       setStateModal(() => isProcessing = true);
-                      
                       String? assignedBurnerAddress;
-                      double allocatedBudget = double.tryParse(budgetCtrl.text) ?? 0.0;
-
-                      // 🔥 2. SI HAY PRESUPUESTO, CREAMOS LA BURNER WALLET Y DESCONTAMOS FONDOS
+                      
                       if (allocatedBudget > 0) {
                         final burnerService = Provider.of<BurnerService>(context, listen: false);
                         String label = "Tarea: ${titleCtrl.text}";
-                        String resBurner = await burnerService.createBurnerWallet(label, allocatedBudget);
                         
-                        if (resBurner.startsWith("Exito")) {
-                          // Obtenemos la última tarjeta creada para amarrarla a la tarea
+                        print("🚀 [CREATE-TASK] Creando Burner Wallet...");
+                        Map<String, dynamic> resBurner = await burnerService.createBurnerWallet(label, allocatedBudget);
+                        
+                        if (resBurner["success"] == true) {
+                          String newBurnerAddress = resBurner["data"]["burnerAddress"];
+                          BigInt amountWei = BigInt.from(allocatedBudget * 1e18);
+                          String? signature = await auth.generateDelegatedSignature("SEND", toAddress: newBurnerAddress.toLowerCase(), amountWei: amountWei);
+                          
+                          if (signature != null) {
+                            print("💸 [CREATE-TASK] Ejecutando fondeo on-chain...");
+                            final resFondeo = await txService.sendTokensL2(newBurnerAddress, allocatedBudget, signature);
+                            
+                            // 🔥 FIX 2: VALIDAR QUE EL FONDEO ON-CHAIN FUE EXITOSO
+                            if (resFondeo.startsWith("Error")) {
+                              UIHelper.showCustomSnackbar("Error al transferir presupuesto: $resFondeo", isError: true);
+                              setStateModal(() => isProcessing = false);
+                              return;
+                            }
+                            print("✅ [CREATE-TASK] Fondeo on-chain completado.");
+                          }
+
                           List<dynamic> burners = await burnerService.getActiveBurners();
-                          if (burners.isNotEmpty) assignedBurnerAddress = burners.first['burnerAddress'];
+                          if (burners.isNotEmpty) {
+                            assignedBurnerAddress = burners.first['burnerAddress'];
+                          }
                         } else {
-                          UIHelper.showCustomSnackbar("Error al fondear presupuesto: $resBurner", isError: true);
+                          UIHelper.showCustomSnackbar("Error al crear billetera virtual", isError: true);
                           setStateModal(() => isProcessing = false);
                           return;
                         }
                       }
-
+                      
                       final service = Provider.of<BusinessTaskService>(context, listen: false);
                       
-                      Map<String, dynamic> meta = {};
-                      if (selectedTaskType == "MEET") meta = {"link": meetLinkCtrl.text};
-                      if (selectedTaskType == "GPS") meta = {"lat": double.tryParse(gpsLatCtrl.text), "lng": double.tryParse(gpsLngCtrl.text)};
-                      if (selectedTaskType == "NOTARY") meta = {"documentHash": notaryHashCtrl.text};
-                      if (selectedTaskType == "AGENDA") meta = {"date": agendaDate.toIso8601String(), "startTime": agendaStart.format(context), "endTime": agendaEnd.format(context)};
-                      if (selectedTaskType == "READ_DOC") meta = {"url": readDocUrlCtrl.text};
-                      if (selectedTaskType == "OPINION") meta = {"question": opinionQuestionCtrl.text, "isPoll": isPoll, "options": pollOptionsCtrls.map((c)=>c.text).toList()};
-                      if (selectedTaskType == "FORM") meta = {"fields": formFieldsCtrls.map((c)=>c.text).toList()};
-
-                      String res = await service.createTask({
+                      Map<String, dynamic> payloadDTO = {
                         "businessWallet": auth.publicAddress.toLowerCase(),
                         "assignedWallet": assignToDept ? null : selectedWallet, 
                         "departmentId": assignToDept ? selectedDept : null,
                         "taskType": selectedTaskType, 
-                        "typeMetadata": meta,         
                         "title": titleCtrl.text,
                         "description": descCtrl.text,
                         "urgency": urgency,
                         "allocatedResources": allocatedBudget,
-                        "burnerAddress": assignedBurnerAddress, // 🔥 AMARRAMOS LA TARJETA
+                        "burnerAddress": assignedBurnerAddress,
                         "estimatedHours": int.tryParse(hoursCtrl.text) ?? 0,
                         "deadline": selectedDeadline.toIso8601String(),
                         "subTasks": subTaskCtrls.where((c) => c['title']!.text.isNotEmpty).map((c) => {
                           "title": c['title']!.text, 
                           "estimatedHours": int.tryParse(c['hours']!.text) ?? 0
                         }).toList()
-                      });
+                      };
+
+                      if (selectedTaskType == "MEET") payloadDTO["meetUrl"] = meetLinkCtrl.text;
+                      if (selectedTaskType == "GPS") {
+                        payloadDTO["gpsLat"] = double.tryParse(gpsLatCtrl.text);
+                        payloadDTO["gpsLon"] = double.tryParse(gpsLngCtrl.text);
+                      }
+                      if (selectedTaskType == "OPINION") {
+                        payloadDTO["opinionQuestion"] = opinionQuestionCtrl.text;
+                        if (isPoll) payloadDTO["pollOptions"] = pollOptionsCtrls.map((c)=>c.text).toList();
+                      }
+                      // if (selectedTaskType == "FORM") payloadDTO["formFields"] = formFieldsCtrls.map((c)=>c.text).toList(); // Agrega esto si aplica
+
+                      String res = await service.createTask(payloadDTO);
 
                       if (res == "SUCCESS") {
                         Navigator.pop(ctx);
-                        UIHelper.showCustomSnackbar("Tarea asignada y fondeada correctamente");
+                        UIHelper.showCustomSnackbar("Tarea asignada correctamente");
                         onSuccess();
                       } else {
                         UIHelper.showCustomSnackbar(res, isError: true);

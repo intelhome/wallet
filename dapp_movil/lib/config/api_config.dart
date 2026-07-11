@@ -220,6 +220,9 @@ static const String cancelScheduledPayment = "$baseUrl/payments/scheduled/{id}";
 
   static const String testAiPush = "$baseUrl/notifications/test-ai-push";
 
+  static String aiStream(String address) => "$baseUrl/ai/memory/$address/stream";
+  static String aiExtract(String address) => "$baseUrl/ai/memory/$address/extract";
+
 }
 
 

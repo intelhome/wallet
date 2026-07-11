@@ -1,10 +1,14 @@
 import 'dart:ui' as pw;
 
+import 'package:dapp_movil/config/api_config.dart';
 import 'package:dapp_movil/core/helpers/share_helper.dart';
+import 'package:dapp_movil/core/notifications/push_notification_service.dart';
 import 'package:dapp_movil/core/services/local_cache_service.dart';
+import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/business/screens/ai_task_report_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:web_socket_channel/io.dart';
 import '../../../core/helpers/ui_helper.dart';
 import '../services/business_service.dart';
 import '../services/business_task_service.dart';
@@ -32,10 +36,33 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
 
   bool _isFabExpanded = false;
 
+  IOWebSocketChannel? _wsChannel;
+
   @override
   void initState() {
     super.initState();
     _loadAdminData();
+    _conectarWebSocket();
+  }
+
+  void _conectarWebSocket() {
+    try {
+      final authCore = Provider.of<AuthCoreService>(context, listen: false);
+      String baseWsUrl = ApiConfig.baseUrl.replaceFirst('http', 'ws');
+      final wsUrl = "$baseWsUrl/ws/notifications/${authCore.publicAddress.toLowerCase()}";
+      
+      _wsChannel = IOWebSocketChannel.connect(Uri.parse(wsUrl), headers: authCore.authHeaders);
+      _wsChannel!.stream.listen((message) {
+        _loadAdminData();
+        PushNotificationService.showLocalNotification("Alerta Operativa 📋", "Un empleado ha interactuado con una tarea asignada.");
+      });
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _wsChannel?.sink.close();
+    super.dispose();
   }
 
   // Future<void> _loadAdminData() async {

@@ -26,7 +26,8 @@ import '../../../core/notifications/push_notification_service.dart';
 final GlobalKey<_MainScreenState> mainScreenKey = GlobalKey<_MainScreenState>();
 
 class MainScreen extends StatefulWidget {
-  MainScreen({Key? key}) : super(key: mainScreenKey ?? key); // Usar la clave global si no se provee otra
+  //const MainScreen({super.key});
+  MainScreen({Key? key}) : super(key: mainScreenKey ?? key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -38,8 +39,21 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   bool _isLockScreenVisible = false;
   
   int _currentIndex = 0;
-  // Añadimos una key específica para forzar la recarga del dashboard
+
   Key _dashboardKey = UniqueKey();
+
+  void forceDashboardRefresh() async {
+    if (mounted) {
+      final cacheService = LocalCacheService();
+      await cacheService.clearDashboardCache(); // Aseguramos limpieza de caché
+      
+      setState(() {
+        // Al cambiar la key, forzamos a Flutter a destruir y recrear el DashboardApp
+        _dashboardKey = UniqueKey();
+        _currentIndex = 0; // Aseguramos volver a la pestaña de inicio
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -80,26 +94,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
   }
 
-  // 🔥 Método público para forzar recarga (Llamado tras compras/envíos)
-  void forceDashboardRefresh() async {
-    if (mounted) {
-      // final cacheService = LocalCacheService();
-      // await cacheService.clearDashboardCache(); // Asegurar limpieza de caché
-      
-      setState(() {
-        // Al cambiar la key, forzamos a Flutter a destruir y recrear el DashboardApp desde cero, desencadenando initState y _cargarBalance con datos frescos.
-        _dashboardKey = UniqueKey();
-        _currentIndex = 0; // Aseguramos volver al inicio
-      });
-    }
-  }
-
+  // 🔥 LÓGICA DEL SIMULADOR AUTÓNOMO BLINDADA
   void _iniciarSimuladorIaSulencioso() {
     Future.delayed(const Duration(seconds: 10), () async {
       if (!mounted) return;
 
       try {
         final authCore = Provider.of<AuthCoreService>(context, listen: false);
+        
+        // 🔥 FIX: Forzamos la ruta absoluta
         final url = "${ApiConfig.baseUrl}/notifications/test-ai-push";
         debugPrint("🤖 Despertando Cerebro IA en: $url");
 
@@ -108,6 +111,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           headers: authCore.authHeaders,
         );
         
+        // 🔥 ESTE LOG NOS DIRÁ LA VERDAD
         debugPrint("🤖 Respuesta del servidor IA: ${res.statusCode} -> ${res.body}");
         
         if (res.statusCode == 200) {
@@ -134,9 +138,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Widget _getCurrentScreen() {
+    // 🔥 SOLO LAS PANTALLAS ESENCIALES 🔥
     switch (_currentIndex) {
       case 0:
-        return DashboardApp(key: _dashboardKey); // Usar la key controlada para poder refrescar
+       return DashboardApp(key: _dashboardKey);
       case 1:
         return HistoryScreen(key: UniqueKey());
       case 2:
@@ -144,9 +149,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       case 3:
         return ChatListScreen(key: UniqueKey());
       case 4:
-        return CampaignsScreen(key: UniqueKey());
+        return CampaignsScreen(key: UniqueKey()); // Solo visible si está activo el Crowdfunding
       default:
-        return DashboardApp(key: _dashboardKey);
+       return DashboardApp(key: _dashboardKey);
     }
   }
 
@@ -162,6 +167,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           valueListenable: isBusinessModeGlobal,
           builder: (context, isBusinessMode, _) {
             
+            // 🔥 DISEÑO MATERIAL 3 DE LA BARRA INFERIOR 🔥
             List<NavigationDestination> destinations = [
               NavigationDestination(
                 icon: Icon(Icons.wallet_outlined, color: colorScheme.onSurface.withOpacity(0.6)), 
@@ -185,6 +191,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               ),
             ];
 
+            // 5to Elemento Opcional
             if (showCrowdfunding) {
               destinations.add(
                 NavigationDestination(
@@ -195,6 +202,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               );
             }
 
+            // Seguridad de índices
             if (_currentIndex >= destinations.length) {
               WidgetsBinding.instance.addPostFrameCallback((_) => setState(() => _currentIndex = 0));
             }
@@ -202,6 +210,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             return Scaffold(
               backgroundColor: theme.scaffoldBackgroundColor,
               
+              // 🔥 ANIMACIÓN FLUIDA DE TRANSICIÓN ENTRE PANTALLAS 🔥
               body: isBusinessMode 
                   ? const TTCBusinessScreen() 
                   : AnimatedSwitcher(
@@ -213,7 +222,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                           opacity: animation,
                           child: SlideTransition(
                             position: Tween<Offset>(
-                              begin: const Offset(0.0, 0.05),
+                              begin: const Offset(0.0, 0.05), // Ligero deslizamiento desde abajo
                               end: Offset.zero,
                             ).animate(animation),
                             child: child,
@@ -233,18 +242,17 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 child: NavigationBar(
                   backgroundColor: Colors.transparent,
                   elevation: 0,
-                  height: 65,
-                  labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+                  height: 65, // Altura refinada
+                  labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected, 
                   selectedIndex: _currentIndex >= destinations.length ? 0 : _currentIndex,
-                  onDestinationSelected: (index) async { // Hacemos la función async
+                onDestinationSelected: (index) async { 
                     if (_currentIndex != index) {
                       HapticFeedback.lightImpact(); 
                       
-                      // Limpiar caché al volver a inicio
                       if (index == 0) {
-                        // final cacheService = LocalCacheService();
-                        // await cacheService.clearDashboardCache();
-                        _dashboardKey = UniqueKey(); // Aseguramos recreación al navegar de vuelta
+                        final cacheService = LocalCacheService();
+                        await cacheService.clearDashboardCache();
+                        _dashboardKey = UniqueKey(); // Aseguramos recreación
                       }
                       
                       setState(() => _currentIndex = index);

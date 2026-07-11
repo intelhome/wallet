@@ -1,3 +1,4 @@
+import 'package:dapp_movil/modules/wallet_and_tx/services/transaction_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +14,7 @@ class CreateBurnerModal {
     String? initialLabel,
     required VoidCallback onSuccess
   }) {
-   final labelCtrl = TextEditingController(text: initialLabel ?? ""); // 🔥 FIX
+    final labelCtrl = TextEditingController(text: initialLabel ?? "");
     final amountCtrl = TextEditingController(text: initialFundingAmount ?? "");
     bool isProcessing = false;
 
@@ -93,8 +94,12 @@ class CreateBurnerModal {
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
                       ),
-                      onPressed: isProcessing ? null : () async {
+                     onPressed: isProcessing ? null : () async {
                         if (labelCtrl.text.isEmpty || amountCtrl.text.isEmpty) return;
+                        
+                        // Necesitamos importar TransactionService al inicio del archivo si no está
+                        final txService = Provider.of<TransactionService>(context, listen: false);
+                        double monto = double.parse(amountCtrl.text);
 
                         FocusScope.of(context).unfocus();
 
@@ -107,15 +112,39 @@ class CreateBurnerModal {
 
                         setStateModal(() => isProcessing = true);
                         try {
-                          String res = await burnerService.createBurnerWallet(labelCtrl.text, double.parse(amountCtrl.text));
+                          print("🚀 [UI-CREATE-BURNER] Disparando creación al backend...");
                           
-                          // 🔥 AQUÍ ESTÁ LA SOLUCIÓN DEL BUG 🔥
-                          if (!res.startsWith("Error")) {
+                          // 🔥 FIX: Recibe el Map<String, dynamic>
+                          Map<String, dynamic> res = await burnerService.createBurnerWallet(labelCtrl.text, monto);
+                          
+                          if (res["success"] == true) {
+                            print("✅ [UI-CREATE-BURNER] Tarjeta registrada en BD.");
+                            String newBurnerAddress = res["data"]["burnerAddress"];
+
+                            // 🔥 FIX: Fondeo On-Chain desde Flutter
+                            if (monto > 0) {
+                              print("💸 [UI-CREATE-BURNER] Fondeando $monto TTC a $newBurnerAddress...");
+                              BigInt amountWei = BigInt.from(monto * 1e18);
+                              String? signature = await authCore.generateDelegatedSignature("SEND", toAddress: newBurnerAddress.toLowerCase(), amountWei: amountWei);
+                              
+                              if (signature != null) {
+                                await txService.sendTokensL2(newBurnerAddress, monto, signature);
+                                print("✅ [UI-CREATE-BURNER] Fondeo minado con éxito.");
+                              }
+                            }
+
                             Navigator.pop(ctx); // Cierra el modal inferior
-                            UIHelper.showCustomSnackbar("Transacción de creación enviada. Procesando en tiempo real...");
+                            UIHelper.showCustomSnackbar("Tarjeta creada y fondeada exitosamente.", isError: false);
+                            
+                            // 🔥 FIX: Damos 3 segundos para que la red indexe el saldo antes de listar
+                            print("⏳ [UI-CREATE-BURNER] Esperando indexación de saldo...");
+                            await Future.delayed(const Duration(seconds: 3));
+                            
+                            print("🔄 [UI-CREATE-BURNER] Actualizando lista.");
                             onSuccess(); // Dispara el WebSocket / Refresh visual
                           } else {
-                            UIHelper.showCustomSnackbar(res, isError: true);
+                            print("❌ [UI-CREATE-BURNER] Error: ${res['error']}");
+                            UIHelper.showCustomSnackbar(res['error'], isError: true);
                           }
                         } finally {
                           if (ctx.mounted) setStateModal(() => isProcessing = false);

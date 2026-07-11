@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dapp_movil/config/api_config.dart';
 import 'package:dapp_movil/core/services/local_cache_service.dart';
@@ -141,22 +142,30 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
   }
 
   // 🔥 4. MÉTODO DE CONEXIÓN
-  void _conectarWebSocket() {
-    // Convertimos http://10.0.2.2:8082/api a ws://10.0.2.2:8082/api
-   String wsUrl = ApiConfig.wsDocumentUpdates.replaceAll(
-      "{address}", 
-      authCore.publicAddress.toLowerCase()
-    );
-    
+ void _conectarWebSocket() {
     try {
-      _wsChannel = IOWebSocketChannel.connect(wsUrl);
+      // Reemplazamos http por ws y usamos la ruta correcta
+      String baseWsUrl = ApiConfig.baseUrl.replaceFirst('http', 'ws');
+      String wsUrl = "$baseWsUrl/ws/documents/${authCore.publicAddress.toLowerCase()}";
+      
+      _wsChannel = IOWebSocketChannel.connect(
+        Uri.parse(wsUrl),
+        headers: authCore.authHeaders, // 🔥 FIX: Agregamos Auth Headers para que el servidor lo acepte
+      );
+
       _wsChannel!.stream.listen((message) {
-        if (message == "DOCUMENT_UPDATED") {
-          print("🔄 [WS] Documento actualizado. Recargando listas automáticamente...");
-          // Recargamos ambas listas en silencio
-          // _cargarPendientes();
-          // _cargarHistorial();
-          _cargarDatos();
+        print("[WS-DOCS] Evento recibido: $message");
+        try {
+          final parsed = jsonDecode(message);
+          if (parsed['type'] == "DOCUMENT_UPDATED") {
+            print("[WS-DOCS] Refrescando listas de notaría silenciosamente...");
+            _cargarDatos();
+          }
+        } catch (_) {
+          // Fallback por si el backend mandara texto simple
+          if (message.toString().contains("DOCUMENT_UPDATED")) {
+             _cargarDatos();
+          }
         }
       }, onError: (err) {
         print("Error WS Notaría: $err");
@@ -166,6 +175,7 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
     }
   }
 
+  
   @override
   void dispose() {
     _wsChannel?.sink.close();

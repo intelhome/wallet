@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 
 class TaskCard extends StatelessWidget {
   final Map<String, dynamic> task;
-  final bool isEmployer; // 🔥 NUEVO: Saber si quien ve la tarjeta es el jefe
-  final VoidCallback onRefresh; // 🔥 NUEVO: Callback de refresco obligatorio
+  final bool isEmployer;
+  final VoidCallback onRefresh; 
   final VoidCallback? onTap;
 
   const TaskCard({
@@ -16,7 +16,7 @@ class TaskCard extends StatelessWidget {
   });
 
   Color _getUrgencyColor() {
-    switch (task['urgency']) {
+    switch (task['urgency']?.toString().toUpperCase()) {
       case 'LOW': return Colors.green;
       case 'MEDIUM': return Colors.orange;
       case 'HIGH': return Colors.redAccent;
@@ -26,20 +26,49 @@ class TaskCard extends StatelessWidget {
   }
 
   Color _getStatusColor(String status) {
-    if (status == 'REWORK_REQUESTED') return Colors.orange;
-    if (status == 'COMPLETED') return Colors.blue;
+    if (status == 'REWORK_REQUESTED') return Colors.deepOrange;
+    if (status == 'IN_PROGRESS') return Colors.blueAccent;
+    if (status == 'COMPLETED') return Colors.purple;
     if (status == 'APPROVED') return Colors.teal;
     return Colors.grey;
+  }
+
+  IconData _getTaskTypeIcon() {
+    switch (task['taskType']?.toString().toUpperCase()) {
+      case 'GPS': return Icons.location_on_rounded;
+      case 'MEET': return Icons.videocam_rounded;
+      case 'FORM': return Icons.checklist_rtl_rounded;
+      case 'OPINION': return Icons.poll_rounded;
+      default: return Icons.assignment_rounded;
+    }
+  }
+
+  String _getTaskTypeName() {
+    switch (task['taskType']?.toString().toUpperCase()) {
+      case 'GPS': return 'En Sitio (GPS)';
+      case 'MEET': return 'Reunión Virtual';
+      case 'FORM': return 'Formulario';
+      case 'OPINION': return 'Encuesta';
+      default: return 'Estándar';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final color = _getUrgencyColor();
+    final statusColor = _getStatusColor(task['status'] ?? 'PENDING');
+    final theme = Theme.of(context);
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: color.withOpacity(0.5), width: 1.5)),
-      child: ListTile(
-        // 🔥 MAGIA: Si no le pasas onTap, por defecto navega a la nueva pantalla
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20), 
+        side: BorderSide(color: color.withOpacity(0.3), width: 1.5)
+      ),
+      color: theme.cardColor,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
         onTap: onTap ?? () {
           Navigator.push(
             context,
@@ -52,33 +81,84 @@ class TaskCard extends StatelessWidget {
             ),
           );
         },
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(backgroundColor: color.withOpacity(0.2), child: Icon(Icons.assignment_rounded, color: color)),
-        title: Text(task['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(task['description'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text(task['urgency'] ?? '', style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold))),
-                const SizedBox(width: 8),
-               Container(
-  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), 
-  decoration: BoxDecoration(
-    color: _getStatusColor(task['status'] ?? '').withOpacity(0.1), 
-    borderRadius: BorderRadius.circular(8)
-  ), 
-  child: Text(
-    task['status'] == 'REWORK_REQUESTED' ? 'CORRECCIÓN REQUERIDA' : (task['status'] ?? ''), 
-    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _getStatusColor(task['status'] ?? ''))
-  )
-),
-              ],
-            )
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1), 
+                      borderRadius: BorderRadius.circular(16)
+                    ),
+                    child: Icon(_getTaskTypeIcon(), color: color, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          task['title'] ?? 'Sin Título', 
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          task['description'] ?? '', 
+                          maxLines: 2, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13, height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // ETIQUETAS INFERIORES HORIZONTALES
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    // 1. Urgencia
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        children: [
+                          Icon(Icons.flag_rounded, color: color, size: 14),
+                          const SizedBox(width: 4),
+                          Text(task['urgency'] ?? 'MEDIUM', style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // 2. Tipo
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                      child: Text(_getTaskTypeName(), style: const TextStyle(color: Colors.blueAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 8),
+                    // 3. Estado
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), 
+                      decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), 
+                      child: Text(
+                        task['status'] == 'REWORK_REQUESTED' ? '⚠️ POR CORREGIR' : (task['status'] ?? 'PENDING'), 
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor)
+                      )
+                    ),
+                  ],
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );

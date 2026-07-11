@@ -1,9 +1,11 @@
 import 'package:dapp_movil/core/services/local_cache_service.dart';
+import 'package:dapp_movil/modules/wallet_and_tx/screens/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:pay/pay.dart';
 import 'package:flutter_paypal/flutter_paypal.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/helpers/ui_helper.dart';
 import '../../../core/services/smart_avatar.dart';
@@ -56,6 +58,9 @@ class _SendFlowScreenState extends State<SendFlowScreen> {
   
   Pay? _payClient;
 
+  List<Map<String, dynamic>> _recentContacts = [];
+  bool _isLoadingRecent = true;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +71,10 @@ class _SendFlowScreenState extends State<SendFlowScreen> {
 
     PaymentConfiguration.fromAsset('gpay_config.json').then((config) {
       _payClient = Pay({PayProvider.google_pay: config});
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRecentContacts();
     });
   }
 
@@ -90,7 +99,7 @@ class _SendFlowScreenState extends State<SendFlowScreen> {
   // ==========================================
   // PASO 1: BÚSQUEDA
   // ==========================================
-  Future<void> _buscarUsuario() async {
+ Future<void> _buscarUsuario() async {
     String query = _searchController.text.trim();
     if (query.isEmpty) return;
 
@@ -98,7 +107,7 @@ class _SendFlowScreenState extends State<SendFlowScreen> {
     
     final userService = Provider.of<UserService>(context, listen: false);
     
-    // BÚSQUEDA POR ALIAS
+    // 1. BÚSQUEDA POR ALIAS (@usuario)
     if (query.startsWith("@")) {
       String cleanAlias = query.substring(1);
       final result = await userService.searchByAlias(cleanAlias);
@@ -113,23 +122,95 @@ class _SendFlowScreenState extends State<SendFlowScreen> {
         widget.mostrarMensaje("Usuario no encontrado. Revisa el alias.", esError: true);
       }
     } 
-    // BÚSQUEDA POR WALLET DIRECTA ON-CHAIN
+    // 2. BÚSQUEDA POR WALLET (0x...)
     else if (query.startsWith("0x") && query.length == 42) {
-      setState(() {
-        _foundUser = {
-          "alias": "Billetera Externa",
-          "walletAddress": query,
-          "isExternal": true
-        };
-        _destinationWallet = query;
-        _isOffChain = false; 
-      });
+      // 🔥 FIX: Buscamos si esta wallet le pertenece a un usuario de nuestra BD
+      final result = await userService.getUserByWallet(query);
+
+      if (result != null && result.isNotEmpty && result['alias'] != null) {
+        // ✅ ¡Es un usuario de nuestro ecosistema! Mostramos su perfil completo
+        setState(() {
+          _foundUser = result;
+          _foundUser!['walletAddress'] = query;
+          _foundUser!['isExternal'] = false; // Marcamos que SÍ es interno
+          _destinationWallet = query;
+          _isOffChain = false; // Se mantiene On-Chain porque buscó por wallet
+        });
+      } else {
+        // ❌ No está registrado, es una verdadera billetera externa
+        setState(() {
+          _foundUser = {
+            "alias": "Billetera Externa",
+            "walletAddress": query,
+            "isExternal": true
+          };
+          _destinationWallet = query;
+          _isOffChain = false; 
+        });
+      }
       _nextPage();
-    } else {
+    } 
+    // 3. FORMATO INCORRECTO
+    else {
       widget.mostrarMensaje("Formato incorrecto. Usa @alias o una wallet 0x.", esError: true);
     }
     
     setState(() => _isSearching = false);
+  }
+
+  Future<void> _loadRecentContacts() async {
+    if (!mounted) return;
+    
+    try {
+      final txService = Provider.of<TransactionService>(context, listen: false);
+      final userService = Provider.of<UserService>(context, listen: false);
+      final authCore = Provider.of<AuthCoreService>(context, listen: false);
+      final myWallet = authCore.publicAddress.toLowerCase();
+
+      // 1. Obtenemos el historial fresco
+      final history = await txService.getTransactionHistory();
+      List<String> uniqueWallets = [];
+
+      // 2. Filtramos solo los envíos exitosos hechos por el usuario
+      for (var tx in history) {
+        if (tx['status'] != 'COMPLETED') continue;
+        if (tx['senderAddress']?.toString().toLowerCase() != myWallet) continue;
+        
+        // Solo nos interesan transferencias salientes (SEND o BINANCE_PAY)
+        if (tx['txType'] != 'SEND' && tx['txType'] != 'BINANCE_PAY') continue;
+
+        String receiver = tx['receiverAddress']?.toString().toLowerCase() ?? '';
+        
+        // Extraemos billeteras únicas (las últimas 5)
+        if (receiver.isNotEmpty && receiver != myWallet && !uniqueWallets.contains(receiver)) {
+          uniqueWallets.add(receiver);
+        }
+        if (uniqueWallets.length >= 5) break; 
+      }
+
+      // 3. Buscamos los datos bonitos (Alias/Avatar) de esas billeteras
+      List<Map<String, dynamic>> recents = [];
+      for (String wallet in uniqueWallets) {
+        final user = await userService.getUserByWallet(wallet);
+        if (user != null && user['alias'] != null) {
+          recents.add({'wallet': wallet, 'alias': user['alias']});
+        } else {
+          // Si es externa y no tiene alias, mostramos un pedacito de la wallet
+          recents.add({'wallet': wallet, 'alias': '0x${wallet.substring(2, 6)}...'});
+        }
+      }
+
+      // 4. Actualizamos la interfaz
+      if (mounted) {
+        setState(() {
+          _recentContacts = recents;
+          _isLoadingRecent = false;
+        });
+      }
+    } catch (e) {
+      print("Error cargando contactos recientes: $e");
+      if (mounted) setState(() => _isLoadingRecent = false);
+    }
   }
 
   // ==========================================
@@ -178,6 +259,50 @@ class _SendFlowScreenState extends State<SendFlowScreen> {
             ),
             onSubmitted: (_) => _buscarUsuario(),
           ),
+
+          if (_isLoadingRecent)
+             const Padding(
+               padding: EdgeInsets.only(top: 40),
+               child: Center(child: CircularProgressIndicator()),
+             )
+          else if (_recentContacts.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            Text("Transferir de nuevo", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface.withOpacity(0.7))),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 90,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _recentContacts.length,
+                itemBuilder: (context, index) {
+                  final contact = _recentContacts[index];
+                  return GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _searchController.text = contact['wallet'];
+                      _buscarUsuario(); // Dispara automáticamente la búsqueda y pasa al Paso 2
+                    },
+                    child: Container(
+                      width: 72,
+                      margin: const EdgeInsets.only(right: 16),
+                      child: Column(
+                        children: [
+                          SmartAvatar(address: contact['wallet'], size: 56),
+                          const SizedBox(height: 8),
+                          Text(
+                            "@${contact['alias']}",
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          )
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+          ],
           
           const Spacer(),
           ElevatedButton(
@@ -439,6 +564,48 @@ class _SendFlowScreenState extends State<SendFlowScreen> {
     double monto = double.tryParse(_amountController.text) ?? 0;
     if (monto <= 0) return;
 
+    
+    try {
+       final prefs = await SharedPreferences.getInstance();
+       double presupuesto = prefs.getDouble('presupuesto_mensual') ?? 500.0;
+       
+       // Obtenemos los gastos del mes usando la misma lógica robusta del Dashboard
+       final txService = Provider.of<TransactionService>(context, listen: false);
+       final authCore = Provider.of<AuthCoreService>(context, listen: false);
+       
+       double gastado = 0.0;
+       final txs = await txService.getTransactionHistory();
+       final myWallet = authCore.publicAddress.toLowerCase();
+       final now = DateTime.now();
+
+       for (var tx in txs) {
+         if (tx['status'] == 'COMPLETED' &&
+             (tx['txType'] == 'SEND' || tx['txType'] == 'BINANCE_PAY' || tx['txType'] == 'SEND_FIAT') &&
+             tx['senderAddress']?.toString().toLowerCase() == myWallet) {
+             if (tx['timestamp'] != null) {
+               DateTime txDate = DateTime.parse(tx['timestamp'].toString()).toLocal();
+               if (txDate.month == now.month && txDate.year == now.year) {
+                 gastado += double.tryParse(tx['amount']?.toString() ?? '0') ?? 0.0;
+               }
+             }
+         }
+       }
+
+       // Calculamos el espacio disponible
+       double disponible = presupuesto - gastado;
+
+       if (monto > disponible) {
+           widget.mostrarMensaje(
+               "Límite excedido. Te quedan ${disponible.toStringAsFixed(2)} TTC de tu presupuesto de ${presupuesto.toStringAsFixed(0)} TTC.", 
+               esError: true
+           );
+           return; // 🛑 Bloqueamos la transacción
+       }
+    } catch (e) {
+        print("Error validando presupuesto: $e");
+        // Decidimos permitir continuar si falla la validación por error de red
+    }
+
     double saldoActual = double.tryParse(widget.balanceTTC) ?? 0;
     if (monto > saldoActual) {
       widget.mostrarMensaje("Saldo insuficiente. Adquiere más TTC.", esError: true);
@@ -446,7 +613,17 @@ class _SendFlowScreenState extends State<SendFlowScreen> {
       return;
     }
 
+    // setState(() => _isProcessingPayment = true);
+    // final authCore = Provider.of<AuthCoreService>(context, listen: false);
+    // final txService = Provider.of<TransactionService>(context, listen: false);
+    // final debtService = Provider.of<DebtService>(context, listen: false);
+
+    // bool proceedSimulation = await TransactionSimulatorModal.show(
+    //   context: context, amount: monto, destination: _destinationWallet, currentBalance: saldoActual, isOffChain: _isOffChain,
+    // ) ?? false;
+
     setState(() => _isProcessingPayment = true);
+    
     final authCore = Provider.of<AuthCoreService>(context, listen: false);
     final txService = Provider.of<TransactionService>(context, listen: false);
     final debtService = Provider.of<DebtService>(context, listen: false);
@@ -500,13 +677,7 @@ class _SendFlowScreenState extends State<SendFlowScreen> {
   }
 
   Future<void> _manejarFlujoPostPago(String tipoTx, double monto, String txHash) async {
-    // 🔥 CÓDIGO PARA ELIMINAR EL CACHÉ
-    // final cacheService = LocalCacheService();
-    // await cacheService.clearDashboardCache();
-    // await cacheService.clearTransactionsCache();
-
     final authCore = Provider.of<AuthCoreService>(context, listen: false);
-    //final authCore = Provider.of<AuthCoreService>(context, listen: false);
     final userService = Provider.of<UserService>(context, listen: false);
 
     dynamic mockTx = {
@@ -531,23 +702,163 @@ class _SendFlowScreenState extends State<SendFlowScreen> {
         TransactionDetailsModal.mostrarDialogoGuardarContacto(context, context, _destinationWallet, authCore.publicAddress);
       } else {
         UIHelper.showCustomSnackbar("Envío exitoso");
+        mainScreenKey.currentState?.forceDashboardRefresh();
         Navigator.pop(context); // Cierra el Flujo
       }
     }
   }
 
-  Future<void> _ejecutarPagoGPay() async {
+ Future<void> _ejecutarPagoGPay() async {
     double monto = double.tryParse(_amountController.text) ?? 0;
     if (monto <= 0) return;
-    
-    // ... Implementa la llamada a _payClient que tenías en SendModal ...
+
+    if (_payClient == null) {
+      widget.mostrarMensaje("Cargando servicios de Google, intenta de nuevo.", esError: true);
+      return;
+    }
+
+    setState(() => _isProcessingPayment = true);
+
+    // 1. Validar huella dactilar
+    final authCore = Provider.of<AuthCoreService>(context, listen: false);
+    showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Autenticación", message: "Coloca tu huella dactilar para autorizar la orden GPay."));
+    bool isAuth = await authCore.authenticateUser();
+    if (!mounted) return;
+    Navigator.pop(context); // Cierra el skeleton de huella
+
+    if (!isAuth) {
+      setState(() => _isProcessingPayment = false);
+      widget.mostrarMensaje("Autenticación cancelada. Envío abortado.", esError: true);
+      return;
+    }
+
+    // 2. Ejecutar pasarela GPay (o Simulador si falla en emulador)
+    try {
+      await _payClient!.showPaymentSelector(
+        PayProvider.google_pay, 
+        [ PaymentItem(label: 'Envío de TTC a $_destinationWallet', amount: monto.toStringAsFixed(2), status: PaymentItemStatus.final_price) ],
+      );
+    } catch (e) {
+      print("Error nativo de GPay atrapado: $e");
+      widget.mostrarMensaje("Billetera inactiva. Usando modo simulador de pago...");
+      await Future.delayed(const Duration(seconds: 2)); 
+    }
+
+    // 3. Registrar el pago fiat en el Backend / Blockchain
+    try {
+      final txService = Provider.of<TransactionService>(context, listen: false);
+      final debtService = Provider.of<DebtService>(context, listen: false);
+
+      Future<dynamic> pendingFuture = Navigator.push(context, MaterialPageRoute(builder: (_) => TransactionPendingScreen(
+        customTitle: "Enviando y Recompensando", 
+        customMessage: "Acreditando Cashback en tu billetera...",
+        recipientAddress: _destinationWallet, 
+        expectedTxType: "SEND_FIAT", 
+        onUpdateBalance: widget.onUpdateBalance
+      )));
+
+      String orderId = "GPAY-SEND-${DateTime.now().millisecondsSinceEpoch}"; 
+      final res = await txService.sendTokensFiat(_destinationWallet, orderId, monto);
+
+      if (res.startsWith("Error")) {
+        if (mounted) Navigator.pop(context, false); // Forzamos cierre de pending
+        widget.mostrarMensaje(res, esError: true);
+      } else {
+        String txHashResult = res.replaceAll("Exito: ", "").trim();
+        if (widget.debtId != null) await debtService.payPersonalDebt(widget.debtId!, monto, _destinationWallet);
+        if (widget.sharedDebtId != null) await debtService.notifySharedDebtContribution(widget.sharedDebtId!, monto);
+        
+        final result = await pendingFuture;
+
+        if (result == true) {
+          await _manejarFlujoPostPago('SEND_FIAT', monto, txHashResult);
+        }
+      }
+    } catch (e) {
+      widget.mostrarMensaje("Error al procesar la orden en el servidor.", esError: true);
+    } finally {
+      if (mounted) setState(() => _isProcessingPayment = false);
+    }
   }
 
-  Future<void> _ejecutarPagoPayPal() async {
+Future<void> _ejecutarPagoPayPal() async {
     double monto = double.tryParse(_amountController.text) ?? 0;
     if (monto <= 0) return;
-    
-    // ... Implementa el UsePaypal que tenías en SendModal ...
+
+    final authCore = Provider.of<AuthCoreService>(context, listen: false);
+    final txService = Provider.of<TransactionService>(context, listen: false);
+    final debtService = Provider.of<DebtService>(context, listen: false);
+
+    // 1. Validación Biométrica
+    showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Autenticación", message: "Coloca tu huella dactilar para abrir PayPal."));
+    HapticFeedback.mediumImpact();
+    bool isAuth = await authCore.authenticateUser();
+    if (!mounted) return;
+    Navigator.pop(context); // Cierra skeleton
+
+    if (!isAuth) {
+      widget.mostrarMensaje("Autenticación cancelada. Envío abortado.", esError: true);
+      return; 
+    }
+
+    // 2. Abrir Navegador Webview de PayPal
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (BuildContext ctx) => UsePaypal(
+          sandboxMode: true,
+          clientId: "AW91VEGq61jntCQhvokYTUOaxCVcizMrknQfIkXklZtzlNDZdWN74Un4PIxng_hxrTot6_TuDyv1o24W",
+          secretKey: "ELBDqAKGPSxRGp-LutS9fgTiFIswAan_9wVyK5MqnGQcGfMllkUA9C1AyrJcXxXyPuoSTLl0EXwHAtoE",
+          returnURL: "https://sandbox.paypal.com/return",
+          cancelURL: "https://sandbox.paypal.com/cancel",
+          transactions: [
+            {
+              "amount": {
+                "total": monto.toStringAsFixed(2),
+                "currency": "USD",
+                "details": { "subtotal": monto.toStringAsFixed(2), "shipping": '0', "shipping_discount": 0 }
+              },
+              "description": "Envío de TTC a $_destinationWallet",
+              "item_list": { "items": [ { "name": "Envío TTC a Billetera", "quantity": 1, "price": monto.toStringAsFixed(2), "currency": "USD" } ] }
+            }
+          ],
+          note: "Envío seguro de TTC.",
+          onSuccess: (Map params) {
+            // El Webview se cierra solo, esperamos 500ms y abrimos el PendingScreen
+            Future.delayed(const Duration(milliseconds: 500), () async {
+              
+              Future<dynamic> pendingFuture = Navigator.push(context, MaterialPageRoute(builder: (_) => TransactionPendingScreen(
+                customTitle: "Enviando y Recompensando", 
+                customMessage: "Entregando fondos y calculando tu Cashback...",
+                recipientAddress: _destinationWallet, 
+                expectedTxType: "SEND_FIAT", 
+                onUpdateBalance: widget.onUpdateBalance 
+              )));
+
+              String orderId = params['paymentId'] ?? "PAYPAL-ORDER"; 
+              final res = await txService.sendTokensFiat(_destinationWallet, orderId, monto);
+              
+              if (res.startsWith("Error")) { 
+                if (mounted) Navigator.pop(context, false); 
+                widget.mostrarMensaje(res, esError: true); 
+              } else {
+                String txHashResult = res.replaceAll("Exito: ", "").trim();
+                if (widget.debtId != null) await debtService.payPersonalDebt(widget.debtId!, monto, _destinationWallet);
+                if (widget.sharedDebtId != null) await debtService.notifySharedDebtContribution(widget.sharedDebtId!, monto);
+
+                // Esperamos la confirmación del WebSocket
+                final result = await pendingFuture;
+
+                if (result == true) {
+                  await _manejarFlujoPostPago('SEND_FIAT', monto, txHashResult);
+                }
+              }
+            });
+          },
+          onError: (error) { widget.mostrarMensaje("Error en PayPal: $error", esError: true); },
+          onCancel: (params) { widget.mostrarMensaje("Pago cancelado en PayPal", esError: true); },
+        ),
+      ),
+    );
   }
 
   @override

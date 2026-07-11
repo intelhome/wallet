@@ -53,9 +53,10 @@ void main() async {
   await Hive.initFlutter();
 
  
+  await Hive.openBox('transactions_cache');
   await Hive.openBox('contacts_cache');
   await Hive.openBox('chat_cache');
- 
+  await Hive.openBox('user_cache');
   await Hive.openBox('crowd_cache'); 
   await Hive.openBox('business_cache');
   await Hive.openBox('admin_cache');
@@ -65,6 +66,7 @@ void main() async {
   await Hive.openBox('notary_cache');
   await Hive.openBox('notifications_cache');
   await Hive.openBox('vaults_cache');
+
 
 await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);

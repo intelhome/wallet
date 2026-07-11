@@ -278,15 +278,43 @@ class SmartVaultService {
     }
   }
 
+  // Future<String> withdrawVault(String vaultId) async {
+  //   if (authCore.publicAddress.isEmpty) return "Error: Billetera no conectada";
+
+  //   try {
+  //     String endpoint = "${ApiConfig.withdrawVault.replaceAll("{vaultId}", vaultId)}?walletAddress=${authCore.publicAddress.toLowerCase()}";
+
+  //     final response = await http.post(
+  //       Uri.parse(endpoint),
+  //       headers: authCore.authHeaders,
+  //     ).timeout(const Duration(seconds: 20));
+
+  //     if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 202) {
+  //       return "Exito";
+  //     }
+  //     return "Error: ${_extractErrorMessage(response.body, response.statusCode)}";
+  //   } on TimeoutException {
+  //     return "Error: La red está congestionada. Operación en proceso.";
+  //   } on SocketException {
+  //     return "Error: Sin conexión al servidor central.";
+  //   } catch (e) {
+  //     return "Error crítico: $e";
+  //   }
+  // }
+
   Future<String> withdrawVault(String vaultId) async {
     if (authCore.publicAddress.isEmpty) return "Error: Billetera no conectada";
 
     try {
-      String endpoint = "${ApiConfig.withdrawVault.replaceAll("{vaultId}", vaultId)}?walletAddress=${authCore.publicAddress.toLowerCase()}";
+      String endpoint = ApiConfig.withdrawVault.replaceAll("{vaultId}", vaultId);
 
       final response = await http.post(
         Uri.parse(endpoint),
         headers: authCore.authHeaders,
+        // 🔥 FIX: Enviamos la dirección por el Body en formato JSON
+        body: jsonEncode({
+          "walletAddress": authCore.publicAddress.toLowerCase()
+        }),
       ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 202) {

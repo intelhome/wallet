@@ -8,12 +8,26 @@ class BusinessTaskService {
   final AuthCoreService authCore;
   BusinessTaskService(this.authCore);
 
+  // Future<String> createTask(Map<String, dynamic> taskData) async {
+  //   try {
+  //     final res = await http.post(Uri.parse(ApiConfig.createBusinessTask),
+  //         headers: authCore.authHeaders, body: jsonEncode(taskData));
+  //     return res.statusCode == 200 ? "SUCCESS" : "Error al crear tarea";
+  //   } catch (e) { return "Error de red"; }
+  // }
+
   Future<String> createTask(Map<String, dynamic> taskData) async {
     try {
-      final res = await http.post(Uri.parse(ApiConfig.createBusinessTask),
-          headers: authCore.authHeaders, body: jsonEncode(taskData));
+      // Formateamos los datos para enviarlos exactamente como el Backend (CreateTaskDTO) los espera.
+      final res = await http.post(
+          Uri.parse(ApiConfig.createBusinessTask),
+          headers: authCore.authHeaders, 
+          body: jsonEncode(taskData)
+      );
       return res.statusCode == 200 ? "SUCCESS" : "Error al crear tarea";
-    } catch (e) { return "Error de red"; }
+    } catch (e) { 
+      return "Error de red"; 
+    }
   }
 
   // Future<List<dynamic>> getEmployerTasks() async {

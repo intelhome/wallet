@@ -1,10 +1,10 @@
+import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/settings_and_profile/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class DevicesScreen extends StatefulWidget {
-
   const DevicesScreen({super.key});
 
   @override
@@ -14,6 +14,8 @@ class DevicesScreen extends StatefulWidget {
 class _DevicesScreenState extends State<DevicesScreen> {
   List<dynamic> _devices = [];
   bool _isLoading = true;
+  bool _is2faEnabled = false;
+
   AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: false);
   UserService get userService => Provider.of<UserService>(context, listen: false);
 
@@ -25,10 +27,21 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
   Future<void> _cargarDispositivos() async {
     setState(() => _isLoading = true);
-   final data = await userService.getActiveDevices();
+    
+    final data = await userService.getActiveDevices();
+    final userData = await userService.getAnalyticsData(); // Para saber si tiene 2FA
+    
+    // 🔥 ORDENAMOS DE MÁS RECIENTE A MÁS ANTIGUO (El más reciente es el dispositivo actual)
+    data.sort((a, b) {
+      final dateA = DateTime.tryParse(a['loginDate'] ?? '') ?? DateTime.now();
+      final dateB = DateTime.tryParse(b['loginDate'] ?? '') ?? DateTime.now();
+      return dateB.compareTo(dateA); 
+    });
+
     if (mounted) {
       setState(() {
         _devices = data;
+        _is2faEnabled = userData?['is2faEnabled'] ?? false;
         _isLoading = false;
       });
     }
@@ -52,7 +65,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Para revocar accesos en otros equipos, ingresa el código de tu Google Authenticator."),
+              const Text("Para desvincular este equipo, ingresa el código de tu Google Authenticator."),
               const SizedBox(height: 15),
               TextField(
                 keyboardType: TextInputType.number,
@@ -75,7 +88,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
               onPressed: () => Navigator.pop(ctx, codigo),
-              child: const Text("Revocar Sesiones"),
+              child: const Text("Confirmar"),
             )
           ],
         );
@@ -83,59 +96,33 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  void _mostrarAlertaDebeActivar2FA(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        icon: const Icon(Icons.warning_rounded, color: Colors.orange, size: 50),
-        title: const Text("Seguridad Incompleta", textAlign: TextAlign.center),
-        content: const Text(
-          "Para revocar sesiones, primero debes habilitar la Autenticación de Doble Factor (2FA) en tu Perfil por motivos de seguridad.",
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("Entendido"),
-            ),
-          )
-        ],
-      )
-    );
-  }
-
-  Future<void> _revocarSesiones() async {
-    // 1. Validar identidad con huella
+  Future<void> _desvincularDispositivo(String loginDate) async {
+    // 1. Validar identidad con huella SIEMPRE
     bool auth = await authCore.authenticateUser();
-    if (!auth) return;
+    if (!auth) {
+      UIHelper.showCustomSnackbar("Autenticación cancelada", isError: true);
+      return;
+    }
 
-    // 2. Pedir código 2FA
-    String? codigo = await _pedirCodigo2FA(context);
-    if (codigo == null || codigo.length != 6) return;
+    // 2. Pedir código 2FA SOLO si el usuario lo tiene configurado
+    String? codigo;
+    if (_is2faEnabled) {
+      codigo = await _pedirCodigo2FA(context);
+      if (codigo == null || codigo.length != 6) return;
+    }
 
     setState(() => _isLoading = true);
     
-    // 3. Ejecutar acción en el servidor
-    String resultado = await userService.revokeOtherSessions(codigo);
+    // 3. Ejecutar acción de desvinculación individual
+    String resultado = await userService.revokeDevice(loginDate, codigo);
     
     if (mounted) setState(() => _isLoading = false);
 
     if (resultado == "SUCCESS") {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Todas las demás sesiones han sido cerradas 🔒"),
-        backgroundColor: Colors.green,
-      ));
-      _cargarDispositivos(); // Refrescar lista visual
-    } else if (resultado.contains("2FA_REQUIRED")) {
-      _mostrarAlertaDebeActivar2FA(context);
+      UIHelper.showCustomSnackbar("Dispositivo desvinculado exitosamente 🔒", isError: false);
+      _cargarDispositivos(); // Refresca la lista
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(resultado),
-        backgroundColor: Colors.red,
-      ));
+      UIHelper.showCustomSnackbar(resultado, isError: true);
     }
   }
 
@@ -147,9 +134,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Dispositivos Vinculados"),
+        title: const Text("Dispositivos Vinculados", style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.cardColor,
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
@@ -161,62 +148,64 @@ class _DevicesScreenState extends State<DevicesScreen> {
                   const Text("Sesiones Activas", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Text(
-                    "Aquí se muestran los dispositivos que tienen acceso a tu billetera. Revoca el acceso si no reconoces alguno.",
+                    "Revisa qué dispositivos tienen acceso a tu cuenta en este momento. Toca el botón de desvincular para retirar el acceso inmediatamente.",
                     style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 14),
                   ),
                   const SizedBox(height: 24),
                   
-                  // LISTA DE DISPOSITIVOS
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: _devices.length,
-                      itemBuilder: (context, index) {
-                        final device = _devices[index];
-                        bool isCurrent = device['deviceName'] == "Dispositivo Móvil (Android/iOS)"; 
-                        
-                        return Card(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: isCurrent ? Colors.green.withOpacity(0.1) : colorScheme.primary.withOpacity(0.1),
-                              child: Icon(
-                                isCurrent ? Icons.phone_android_rounded : Icons.desktop_windows_rounded,
-                                color: isCurrent ? Colors.green : colorScheme.primary,
+                    child: _devices.isEmpty 
+                      ? const Center(child: Text("No hay dispositivos registrados."))
+                      : ListView.builder(
+                          itemCount: _devices.length,
+                          itemBuilder: (context, index) {
+                            final device = _devices[index];
+                            // El primer elemento (más reciente) es el dispositivo actual
+                            bool isCurrent = index == 0; 
+                            
+                            // Formateamos la fecha para que sea legible
+                            DateTime date = DateTime.tryParse(device['loginDate'] ?? '') ?? DateTime.now();
+                            String dateFormatted = "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+                            
+                            return Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: BorderSide(color: isCurrent ? Colors.green.withOpacity(0.3) : Colors.transparent)
                               ),
-                            ),
-                            title: Text(device['deviceName'] ?? "Desconocido", style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text("IP: ${device['ipAddress'] ?? 'Oculta'}\nActivo: ${device['loginDate']?.toString().substring(0, 10) ?? 'Reciente'}"),
-                            isThreeLine: true,
-                            trailing: isCurrent 
-                                ? const Text("ESTE EQUIPO", style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold))
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  // BOTÓN DE REVOCAR (Solo si hay más de 1 dispositivo)
-                  if (_devices.length > 1) 
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.redAccent.withOpacity(0.1),
-                          foregroundColor: Colors.redAccent,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: const BorderSide(color: Colors.redAccent)
-                          ),
+                              elevation: 0,
+                              color: theme.cardColor,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                leading: CircleAvatar(
+                                  backgroundColor: isCurrent ? Colors.green.withOpacity(0.1) : colorScheme.primary.withOpacity(0.1),
+                                  child: Icon(
+                                    isCurrent ? Icons.phone_android_rounded : Icons.computer_rounded,
+                                    color: isCurrent ? Colors.green : colorScheme.primary,
+                                  ),
+                                ),
+                                title: Text(device['deviceName'] ?? "Dispositivo", style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text("IP: ${device['ipAddress'] ?? 'Oculta'}\nÚltimo acceso: $dateFormatted", style: TextStyle(height: 1.3, fontSize: 12, color: colorScheme.onSurface.withOpacity(0.6))),
+                                ),
+                                isThreeLine: true,
+                                trailing: isCurrent 
+                                    ? Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                                        child: const Text("ESTE EQUIPO", style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold))
+                                      )
+                                    : IconButton(
+                                        icon: const Icon(Icons.phonelink_erase_rounded, color: Colors.redAccent),
+                                        tooltip: "Desvincular Dispositivo",
+                                        onPressed: () => _desvincularDispositivo(device['loginDate']),
+                                      ),
+                              ),
+                            );
+                          },
                         ),
-                        icon: const Icon(Icons.block_rounded),
-                        label: const Text("Cerrar todas las demás sesiones", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        onPressed: _revocarSesiones,
-                      ),
-                    ),
+                  ),
                 ],
               ),
             ),

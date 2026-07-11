@@ -92,7 +92,7 @@ final txService = Provider.of<TransactionService>(context, listen: false);
                   const SizedBox(height: 30),
 
                   // 🔵 BOTÓN PAYPAL
-                 SizedBox(
+                  SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
@@ -100,22 +100,24 @@ final txService = Provider.of<TransactionService>(context, listen: false);
                         backgroundColor: Colors.indigo,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        disabledBackgroundColor: Colors.indigo.withOpacity(0.3),
+                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // 🔥 REGLA 2
+                    disabledBackgroundColor: Colors.indigo.withOpacity(0.3),
                       ),
-                      icon: isProcessing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.paypal, color: Colors.white),
+                      icon:isProcessing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.paypal, color: Colors.white),
                       label: Text(
-                        isProcessing ? "Procesando..." : (montoIngresado > 0 ? "Pagar \$${montoIngresado.toStringAsFixed(2)} con PayPal" : "Ingresa un monto"),
+                       isProcessing ? "Procesando..." : (montoIngresado > 0 ? "Pagar \$${montoIngresado.toStringAsFixed(2)} con PayPal" : "Ingresa un monto"),
                         style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)
                       ),
-                      onPressed: (montoIngresado <= 0 || isProcessing) ? null : () async { 
+                     onPressed: (montoIngresado <= 0 || isProcessing) ? null : () async { 
                         setModalState(() => isProcessing = true); 
 
-                        showDialog(context: rootContext, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Autenticación", message: "Coloca tu huella para comprar."));
+                        showDialog(context: rootContext, barrierDismissible: false, builder: (_) => TransactionSkeleton(title: "Autenticación", message: "Coloca tu huella para comprar."));
 
                         HapticFeedback.mediumImpact();
                         
                         bool isAuth = await authCore.authenticateUser();
+
+                       // Navigator.pop(rootContext);
                         
                         if (!isAuth) {
                           setModalState(() => isProcessing = false); 
@@ -131,6 +133,7 @@ final txService = Provider.of<TransactionService>(context, listen: false);
 
                         String amountStr = montoIngresado.toStringAsFixed(2);
                         
+                        // 🔥 FIX 1: Cerramos el BottomSheet ANTES de abrir PayPal
                         Navigator.pop(rootContext);
                         
                         Navigator.of(rootContext).push(
@@ -149,21 +152,45 @@ final txService = Provider.of<TransactionService>(context, listen: false);
                                 }
                               ],
                               note: "Gracias por confiar en TTC Wallet.",
-                            onSuccess: (Map params) {
+                              // onSuccess: (Map params) {
+                              //   // 🔥 FIX 2: NO hacemos "pop" aquí. Dejamos que PayPal se cierre solo.
+                              //   // Esperamos 500ms a que termine su animación y luego ejecutamos la magia.
+                              //   Future.delayed(const Duration(milliseconds: 500), () async {
+                                  
+                              //     // Mostramos carga en el Dashboard
+                              //     showDialog(context: rootContext, barrierDismissible: false, builder: (c) => const Center(child: CircularProgressIndicator(color: Colors.blueAccent)));
+
+                              //     String orderId = params['paymentId'] ?? "PAYPAL-ORDER"; 
+                              //     final res = await service.buyTokensFiat(orderId, montoIngresado);
+                                  
+                              //     // Quitamos la carga
+                              //     Navigator.pop(rootContext);
+
+                              //     if (res.startsWith("Error")) {
+                              //       mostrarMensaje(res, esError: true);
+                              //     } else {
+                              //       Navigator.push(rootContext, MaterialPageRoute(builder: (_) => TransactionPendingScreen(
+                              //         service: service, 
+                              //         customTitle: "Compra Exitosa", 
+                              //         customMessage: "Acreditando tus fondos en la Blockchain...",
+                              //         onUpdateBalance: onUpdateBalance 
+                              //       )));
+                              //     }
+                              //   });
+                              // },
+                              onSuccess: (Map params) {
                                 Future.delayed(const Duration(milliseconds: 500), () async {
-                                  Navigator.push(rootContext, MaterialPageRoute(builder: (_) => TransactionPendingScreen(
-                                    customTitle: "Compra Exitosa", customMessage: "Acreditando...", 
-                                    isGroupPayment: isGroupPayment, expectedTxType: "BUY_FIAT", onUpdateBalance: onUpdateBalance 
+                                  
+                                  // 🔥 FIX 1: Abrimos la pantalla de espera PRIMERO para que escuche a la blockchain
+                                 Navigator.push(rootContext, MaterialPageRoute(builder: (_) => TransactionPendingScreen(customTitle: "Compra Exitosa", customMessage: "Acreditando tus fondos en la Blockchain...", isGroupPayment: isGroupPayment, onUpdateBalance: onUpdateBalance 
                                   )));
 
+                                  // 🔥 FIX 2: LUEGO llamamos a Spring Boot
                                   String orderId = params['paymentId'] ?? "PAYPAL-ORDER"; 
                                   final res = await txService.buyTokensFiat(orderId, montoIngresado);
 
-                                  // 🔥 CÓDIGO PARA ELIMINAR EL CACHÉ
-                                  // await LocalCacheService().clearDashboardCache();
-                                  // await LocalCacheService().clearTransactionsCache();
-
-                                  if (res.startsWith("Error")) {
+                                  // 🔥 FIX 3: Si Spring Boot falla, cerramos la pantalla y mostramos el error
+                                 if (res.startsWith("Error")) {
                                     Navigator.pop(rootContext); 
                                     mostrarMensaje(res, esError: true);
                                   }
@@ -184,21 +211,23 @@ final txService = Provider.of<TransactionService>(context, listen: false);
                     height: 56,
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: colorScheme.onSurface,
-                        side: BorderSide(color: montoIngresado > 0 ? colorScheme.onSurface.withOpacity(0.3) : colorScheme.onSurface.withOpacity(0.1), width: 1.5),
+                      foregroundColor: colorScheme.onSurface,
+                      side: BorderSide(color: montoIngresado > 0 ? colorScheme.onSurface.withOpacity(0.3) : colorScheme.onSurface.withOpacity(0.1), width: 1.5),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      icon: isProcessing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.blueAccent, strokeWidth: 2)) : Icon(Icons.g_mobiledata, color: montoIngresado > 0 ? Colors.blueAccent : Colors.white24, size: 36),
+                     icon: isProcessing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.blueAccent, strokeWidth: 2)) : Icon(Icons.g_mobiledata, color: montoIngresado > 0 ? Colors.blueAccent : Colors.white24, size: 36),
                       label: Text(
                         isProcessing ? "Procesando..." : "Pagar con Google Pay",
                         style: TextStyle(color: montoIngresado > 0 ? Colors.blueAccent : Colors.white24, fontSize: 16, fontWeight: FontWeight.bold)
                       ),
-                      onPressed: (montoIngresado <= 0 || isProcessing) ? null : () async { 
+                      onPressed: (montoIngresado <= 0 || isProcessing) ? null : () async { // 🔥 FIX: Bloqueo
                         setModalState(() => isProcessing = true);
 
-                        showDialog(context: rootContext, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Autenticación", message: "Coloca tu huella para comprar."));
+                      showDialog(context: rootContext, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Autenticación", message: "Coloca tu huella para comprar."));
                         bool isAuth = await authCore.authenticateUser();
+
+                        //Navigator.pop(rootContext);
 
                         HapticFeedback.mediumImpact();
 
@@ -209,7 +238,7 @@ final txService = Provider.of<TransactionService>(context, listen: false);
                           return;
                         }
 
-                        Navigator.pop(rootContext); 
+                       Navigator.pop(rootContext); 
                         Navigator.pop(ctx);
 
                         showDialog(context: rootContext, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Conectando", message: "Cargando servicios de Google..."));
@@ -220,38 +249,59 @@ final txService = Provider.of<TransactionService>(context, listen: false);
                           return;
                         }
                         
+                        // 🔥 INICIO DEL FLUJO HÍBRIDO (REAL / SIMULADOR) 🔥
                         try {
-                          await payClient!.showPaymentSelector(
+                          // 1. Intentamos abrir la pasarela real de Google Pay
+                          final result = await payClient!.showPaymentSelector(
                             PayProvider.google_pay, 
                             [ PaymentItem(label: 'TTC Tokens', amount: montoIngresado.toStringAsFixed(2), status: PaymentItemStatus.final_price) ],
                           );
                         } catch (e) {
+                          // 2. 🔥 SI FALLA (Por falta de Wallet en el Emulador), ATRAPAMOS EL ERROR Y SIMULAMOS 🔥
+                          print("Error nativo de GPay atrapado: $e");
                           mostrarMensaje("Billetera inactiva. Usando modo simulador de pago...");
                           await Future.delayed(const Duration(seconds: 2)); 
+                          // No ponemos 'return' aquí para que el código siga avanzando hacia el backend
                         }
 
-                        try {
-                          Navigator.pop(rootContext); // Cierra el "Conectando a Google"
-                          
-                          // 🔥 FIX 2: ABRIR LA PANTALLA PENDIENTE UNA SOLA VEZ Y CON BUY_FIAT
-                          Navigator.push(rootContext, MaterialPageRoute(builder: (_) => TransactionPendingScreen(
-                            customTitle: "Minando Tokens", 
-                            customMessage: "Acreditando tus fondos en la Blockchain...", 
-                            isGroupPayment: isGroupPayment, 
-                            expectedTxType: "BUY_FIAT", // <-- ¡CORREGIDO!
-                            onUpdateBalance: onUpdateBalance 
-                          )));
+                        
 
+                        try {
+                          Navigator.pop(rootContext);
+                          // ---> 3. FLUJO COMÚN (Para pagos Reales o Simulados) <---
+                          // Navigator.push(rootContext, MaterialPageRoute(builder: (_) => TransactionPendingScreen(
+                          //   service: service, 
+                          //   customTitle: "Minando Tokens", 
+                          //   customMessage: "Acreditando tus fondos en la Blockchain...",
+                          //   isGroupPayment: isGroupPayment,
+                          //   onUpdateBalance: onUpdateBalance // 🔥 FIX: Pasa la recarga al Dashboard
+                          // )));
+
+                          // showDialog(
+                          //   context: rootContext,
+                          //   barrierDismissible: false,
+                          //   builder: (c) => const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
+                          // );
+
+                          Navigator.push(rootContext, MaterialPageRoute(builder: (_) => TransactionPendingScreen(customTitle: "Minando Tokens", customMessage: "Acreditando tus fondos en la Blockchain...", isGroupPayment: isGroupPayment, onUpdateBalance: onUpdateBalance 
+                        )));
                           String orderId = "GPAY-${DateTime.now().millisecondsSinceEpoch}"; 
                           final res = await txService.buyTokensFiat(orderId, montoIngresado);
+
+                          Navigator.pop(rootContext);
                           
-                          if (res.startsWith("Error")) {
-                            Navigator.pop(rootContext); // Cierra la pantalla pendiente si el backend falla
+                        if (res.startsWith("Error")) {
                             mostrarMensaje(res, esError: true);
-                          } 
-                          // Si es exitoso, la pantalla TransactionPendingScreen escuchará al backend y se cerrará sola haciendo pop(true)
-                          
+                          } else {
+                            Navigator.push(rootContext, MaterialPageRoute(builder: (_) => TransactionPendingScreen(
+                              customTitle: "Minando Tokens", 
+                              customMessage: "Acreditando tus fondos en la Blockchain...",
+                              isGroupPayment: isGroupPayment,
+                              onUpdateBalance: onUpdateBalance 
+                            )));
+                          }
                         } catch (e) {
+                          Navigator.pop(rootContext);
                           mostrarMensaje("Error al procesar la orden en el servidor.", esError: true);
                         }
                       },
