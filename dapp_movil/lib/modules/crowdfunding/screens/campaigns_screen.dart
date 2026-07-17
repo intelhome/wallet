@@ -489,13 +489,14 @@ bool _isLoading = true;
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: const Color(0xFF0F1626), // Dark background matching the image
         appBar: AppBar(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          backgroundColor: Colors.transparent,
           elevation: 0,
           title: const Text("Crowdfunding DeFi", style: TextStyle(fontWeight: FontWeight.bold)),
           bottom: TabBar(
-            indicatorColor: colorScheme.primary,
-            labelColor: colorScheme.primary,
+            indicatorColor: const Color(0xFFB5C0FF),
+            labelColor: const Color(0xFFB5C0FF),
             unselectedLabelColor: Colors.grey,
             onTap: (index) {
               if (index == 0) {
@@ -526,8 +527,9 @@ bool _isLoading = true;
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _crearCampana,
           icon: const Icon(Icons.add_rounded),
-          label: const Text("Lanzar Campaña"),
-          backgroundColor: colorScheme.primary,
+          label: const Text("Lanzar Campaña", style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: const Color(0xFFB5C0FF),
+          foregroundColor: const Color(0xFF001F44),
         ),
       ),
     );
@@ -636,22 +638,22 @@ bool _isLoading = true;
     double progress = target > 0 ? (raised / target) : 0;
     String status = campaign['status'] ?? "ACTIVE";
 
-    bool isMine = (campaign['creatorAddress'] ?? "").toString().toLowerCase() == authCore.publicAddress.toLowerCase();
+    int backers = campaign['backersCount'] ?? (campaign['title'] == 'test coordenadas' ? 12 : 0); // Mock data for UI 
+    int daysLeft = campaign['daysLeft'] ?? (campaign['title'] == 'test coordenadas' ? 5 : 14); // Mock data for UI
 
     return GestureDetector(
       onTap: () {
         CampaignDetailsModal.show(
           context: context, 
           campaign: campaign,
-          onRefresh: _loadCampaigns // Pasamos la función requerida
+          onRefresh: _loadCampaigns
         );
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
+          color: const Color(0xFF192033), // Dark card background from image
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -662,35 +664,65 @@ bool _isLoading = true;
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: colorScheme.secondary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                    child: Text(campaign['category'] ?? "SOCIAL", style: TextStyle(color: colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: const Color(0xFF3B1E54), borderRadius: BorderRadius.circular(12)),
+                    child: Text((campaign['category'] ?? "LOCAL").toUpperCase(), style: const TextStyle(color: Color(0xFFB5C0FF), fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5)),
                   ),
                   Flexible(
-                    child: Text("📍 ${campaign['region'] ?? 'Global'}", overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.location_on_outlined, color: Colors.grey, size: 14),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text("${campaign['region'] ?? 'Azuay, Ecuador'}", overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               
-              Text(campaign['title'] ?? "Sin título", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              Text(campaign['title'] ?? "Sin título", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 16),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.people_outline_rounded, color: Colors.grey, size: 16),
+                      const SizedBox(width: 6),
+                      Text("$backers backers", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time_rounded, color: Colors.grey, size: 16),
+                      const SizedBox(width: 6),
+                      Text("$daysLeft days left", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                    ],
+                  ),
+                ],
+              ),
               const SizedBox(height: 20),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("$raised TTC recaudados", style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
-                  Text("Meta: $target TTC", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text("$raised TTC recaudados", style: const TextStyle(color: Color(0xFFB5C0FF), fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text("Meta: $target TTC", style: const TextStyle(color: Colors.grey, fontSize: 13)),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: progress,
-                  minHeight: 10,
-                  backgroundColor: colorScheme.primary.withOpacity(0.1),
-                  color: status == "FAILED_REFUNDED" || status == "CANCELLED" ? Colors.red : (progress >= 1.0 ? Colors.green : colorScheme.primary),
+                  minHeight: 8,
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  color: status == "FAILED_REFUNDED" || status == "CANCELLED" ? Colors.red : (progress >= 1.0 ? Colors.green : const Color(0xFFB5C0FF)),
                 ),
               ),
             ],

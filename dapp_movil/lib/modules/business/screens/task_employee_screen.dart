@@ -57,7 +57,7 @@ IOWebSocketChannel? _wsChannel;
     super.dispose();
   }
 
-  // 🔥 MOTOR DE ALERTAS GEORREFERENCIADAS / TIEMPO (2 HORAS ANTES)
+ 
   void _iniciarRastreadorDeVencimientos() {
     _deadlineTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       if (!mounted) return;
@@ -119,7 +119,6 @@ void ordenarTareas(List<dynamic> lista) {
       });
     }
     
-    // 🔥 1. CACHÉ INSTANTÁNEO (Elimina los tiempos muertos de carga)
     final cachedTasks = cacheService.getCachedEmployeeTasks();
     if (cachedTasks.isNotEmpty) {
       ordenarTareas(cachedTasks);
@@ -157,7 +156,105 @@ void ordenarTareas(List<dynamic> lista) {
     return _tasks.where((t) => t['status'] == _selectedStatus).toList();
   }
 
-  @override
+//   @override
+//   Widget build(BuildContext context) {
+//     final theme = Theme.of(context);
+//     final filteredTasks = _getFilteredTasks();
+
+//     return Scaffold(
+//       backgroundColor: theme.scaffoldBackgroundColor,
+//       appBar: AppBar(
+//         title: const Text("Mis Actividades", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+//         backgroundColor: theme.cardColor,
+//         elevation: 0,
+//       ),
+//       body: _isLoading
+//           ? const Center(child: CircularProgressIndicator())
+//           : Column(
+//               children: [
+//                 // 🛠️ BARRA DE FILTROS SIMPLIFICADA PARA EL EMPLEADO
+//                 Container(
+//                   color: theme.cardColor,
+//                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+//                   child: Row(
+//                     children: [
+//                       const Icon(Icons.filter_list_rounded, color: Colors.grey),
+//                       const SizedBox(width: 12),
+//                       Expanded(
+//                         child: Container(
+//                           padding: const EdgeInsets.symmetric(horizontal: 12),
+//                           decoration: BoxDecoration(
+//                             color: theme.scaffoldBackgroundColor,
+//                             borderRadius: BorderRadius.circular(12),
+//                           ),
+//                           child: DropdownButtonHideUnderline(
+//                             child: DropdownButton<String>(
+//                               isExpanded: true,
+//                               hint: const Text("Todas mis tareas", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+//                               value: _selectedStatus,
+//                               items: const [
+//                                 DropdownMenuItem(value: null, child: Text("Todas mis tareas")),
+//                                 DropdownMenuItem(value: "PENDING", child: Text("Pendientes")),
+//                                 DropdownMenuItem(value: "IN_PROGRESS", child: Text("En Progreso")),
+//                                 DropdownMenuItem(value: "REWORK_REQUESTED", child: Text("⚠️ Por Corregir (Rework)")),
+//                                 DropdownMenuItem(value: "COMPLETED", child: Text("En Revisión")),
+//                                 DropdownMenuItem(value: "APPROVED", child: Text("Aprobadas")),
+//                               ],
+//                               onChanged: (val) => setState(() => _selectedStatus = val),
+//                             ),
+//                           ),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+
+//                 // 📋 LISTADO DE TAREAS CON ANIMACIONES M3
+//                 Expanded(
+//                   child: RefreshIndicator(
+//                     onRefresh: _loadEmployeeData,
+//                     child: filteredTasks.isEmpty
+//                         ? UIHelper.emptyState(
+//                             context: context,
+//                             icon: Icons.task_alt_rounded,
+//                             title: "Todo al día",
+//                             message: "No tienes actividades pendientes por ahora.",
+//                           )
+//                         : ListView.builder(
+//                             padding: const EdgeInsets.all(16),
+//                             itemCount: filteredTasks.length,
+//                             itemBuilder: (ctx, i) {
+//                               // 🔥 ANIMACIÓN FLUIDA EN CASCADA
+//                               return TweenAnimationBuilder<double>(
+//                                 tween: Tween(begin: 0.0, end: 1.0),
+//                                 duration: Duration(milliseconds: 300 + (i * 100).clamp(0, 500)),
+//                                 curve: Curves.easeOutCubic,
+//                                 builder: (context, value, child) {
+//                                   return Opacity(
+//                                     opacity: value,
+//                                     child: Transform.translate(
+//                                       offset: Offset(0, 20 * (1 - value)),
+//                                       child: child,
+//                                     ),
+//                                   );
+//                                 },
+//                                 child: TaskCard(
+//                                   task: filteredTasks[i],
+//                                   isEmployer: false, 
+//                                   onRefresh: _loadEmployeeData,
+//                                 ),
+//                               );
+//                             },
+//                           ),
+//                   ),
+//                 ),
+//               ],
+//             ),
+//     );
+//   }
+// }
+
+@override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final filteredTasks = _getFilteredTasks();
@@ -165,91 +262,72 @@ void ordenarTareas(List<dynamic> lista) {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Mis Actividades", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: theme.cardColor,
+        title: const Text("Mis Actividades", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurface.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: PopupMenuButton<String>(
+              icon: Icon(Icons.filter_list_rounded, color: theme.colorScheme.onSurface.withOpacity(0.8)),
+              color: theme.cardColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              initialValue: _selectedStatus,
+              onSelected: (val) {
+                setState(() => _selectedStatus = (val == "TODAS") ? null : val);
+              },
+              itemBuilder: (ctx) => const [
+                PopupMenuItem(value: "TODAS", child: Text("Todas mis tareas")),
+                PopupMenuItem(value: "PENDING", child: Text("Pendientes")),
+                PopupMenuItem(value: "IN_PROGRESS", child: Text("En Progreso")),
+                PopupMenuItem(value: "REWORK_REQUESTED", child: Text("⚠️ Por Corregir")),
+                PopupMenuItem(value: "COMPLETED", child: Text("En Revisión")),
+                PopupMenuItem(value: "APPROVED", child: Text("Aprobadas")),
+              ],
+            ),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // 🛠️ BARRA DE FILTROS SIMPLIFICADA PARA EL EMPLEADO
-                Container(
-                  color: theme.cardColor,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.filter_list_rounded, color: Colors.grey),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: theme.scaffoldBackgroundColor,
-                            borderRadius: BorderRadius.circular(12),
+          : RefreshIndicator(
+              onRefresh: _loadEmployeeData,
+              child: filteredTasks.isEmpty
+                  ? UIHelper.emptyState(
+                      context: context,
+                      icon: Icons.task_alt_rounded,
+                      title: "Todo al día",
+                      message: "No tienes actividades pendientes por ahora.",
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: filteredTasks.length,
+                      itemBuilder: (ctx, i) {
+                        return TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          duration: Duration(milliseconds: 300 + (i * 100).clamp(0, 500)),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 20 * (1 - value)),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: TaskCard(
+                            task: filteredTasks[i],
+                            isEmployer: false, 
+                            onRefresh: _loadEmployeeData,
                           ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              isExpanded: true,
-                              hint: const Text("Todas mis tareas", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                              value: _selectedStatus,
-                              items: const [
-                                DropdownMenuItem(value: null, child: Text("Todas mis tareas")),
-                                DropdownMenuItem(value: "PENDING", child: Text("Pendientes")),
-                                DropdownMenuItem(value: "IN_PROGRESS", child: Text("En Progreso")),
-                                DropdownMenuItem(value: "REWORK_REQUESTED", child: Text("⚠️ Por Corregir (Rework)")),
-                                DropdownMenuItem(value: "COMPLETED", child: Text("En Revisión")),
-                                DropdownMenuItem(value: "APPROVED", child: Text("Aprobadas")),
-                              ],
-                              onChanged: (val) => setState(() => _selectedStatus = val),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 📋 LISTADO DE TAREAS CON ANIMACIONES M3
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _loadEmployeeData,
-                    child: filteredTasks.isEmpty
-                        ? UIHelper.emptyState(
-                            context: context,
-                            icon: Icons.task_alt_rounded,
-                            title: "Todo al día",
-                            message: "No tienes actividades pendientes por ahora.",
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: filteredTasks.length,
-                            itemBuilder: (ctx, i) {
-                              // 🔥 ANIMACIÓN FLUIDA EN CASCADA
-                              return TweenAnimationBuilder<double>(
-                                tween: Tween(begin: 0.0, end: 1.0),
-                                duration: Duration(milliseconds: 300 + (i * 100).clamp(0, 500)),
-                                curve: Curves.easeOutCubic,
-                                builder: (context, value, child) {
-                                  return Opacity(
-                                    opacity: value,
-                                    child: Transform.translate(
-                                      offset: Offset(0, 20 * (1 - value)),
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: TaskCard(
-                                  task: filteredTasks[i],
-                                  isEmployer: false, 
-                                  onRefresh: _loadEmployeeData,
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ),
-              ],
+                        );
+                      },
+                    ),
             ),
     );
   }

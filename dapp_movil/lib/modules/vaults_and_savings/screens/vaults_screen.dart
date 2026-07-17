@@ -114,6 +114,121 @@ class _VaultsScreenState extends State<VaultsScreen> {
   }
 
   // 🔥 Helper reutilizable para renderizar cada lista
+  // Widget _buildVaultList(List<dynamic> vaultsList, bool isFlexibleTab) {
+  //   final onSurfaceColor = Theme.of(context).colorScheme.onSurface;
+
+  //   if (vaultsList.isEmpty) {
+  //     return UIHelper.emptyState(
+  //       context: context,
+  //       icon: isFlexibleTab ? Icons.savings_rounded : Icons.lock_clock_rounded,
+  //       title: isFlexibleTab ? "Sin Uchas Flexibles" : "Sin Plazos Fijos",
+  //       message: isFlexibleTab 
+  //           ? "Crea una Ucha flexible para tus metas cortas y retira cuando quieras."
+  //           : "Bloquea tus fondos a un Plazo Fijo para generar ganancias anuales (APY).",
+  //       actionLabel: "Crear Bolsillo",
+  //       onAction: () => CreateVaultModal.show(context: context, onCreated: _cargarBovedas),
+  //     );
+  //   }
+
+  //   return RefreshIndicator(
+  //     onRefresh: () async => _cargarBovedas(),
+  //     child: ListView.builder(
+  //       padding: const EdgeInsets.only(left: 20, right: 20, bottom: 100, top: 16),
+  //       itemCount: vaultsList.length,
+  //       itemBuilder: (context, index) {
+  //         final vault = vaultsList[index];
+  //         final isFlexible = vault['vaultType'] == 'FLEXIBLE';
+  //         final balance = double.parse(vault['currentBalance'].toString());
+  //         final targetAmount = vault['targetAmount'] != null ? double.parse(vault['targetAmount'].toString()) : 0.0;
+  //         final hasTarget = targetAmount > 0;
+  //         final progress = hasTarget ? (balance / targetAmount).clamp(0.0, 1.0) : 0.0;
+
+  //         return Card(
+  //           margin: const EdgeInsets.only(bottom: 16),
+  //           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+  //           elevation: 0,
+  //           color: isFlexible ? Colors.blueAccent.withOpacity(0.05) : Colors.purpleAccent.withOpacity(0.05),
+  //           child: InkWell(
+  //             borderRadius: BorderRadius.circular(24),
+  //             onTap: () => VaultDetailModal.show(context: context, vault: vault, onUpdate: _cargarBovedas),
+  //             child: Padding(
+  //               padding: const EdgeInsets.all(20),
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Row(
+  //                     children: [
+  //                       Container(
+  //                         padding: const EdgeInsets.all(16),
+  //                         decoration: BoxDecoration(
+  //                           color: isFlexible ? Colors.blueAccent.withOpacity(0.1) : Colors.purpleAccent.withOpacity(0.1), 
+  //                           shape: BoxShape.circle
+  //                         ),
+  //                         child: Icon(
+  //                           isFlexible ? Icons.savings_rounded : Icons.lock_clock_rounded, 
+  //                           color: isFlexible ? Colors.blueAccent : Colors.purpleAccent, 
+  //                           size: 32
+  //                         ),
+  //                       ),
+  //                       const SizedBox(width: 16),
+  //                       Expanded(
+  //                         child: Column(
+  //                           crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: [
+  //                             Text(vault['goalName'] ?? "Sin Nombre", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+  //                             const SizedBox(height: 4),
+  //                             Row(
+  //                               children: [
+  //                                 Icon(isFlexible ? Icons.water_drop_rounded : Icons.shield_rounded, size: 12, color: onSurfaceColor.withOpacity(0.5)),
+  //                                 const SizedBox(width: 4),
+  //                                 Text(isFlexible ? "Ucha Flexible" : "Plazo Fijo", style: TextStyle(fontSize: 12, color: onSurfaceColor.withOpacity(0.6), fontWeight: FontWeight.bold)),
+  //                               ],
+  //                             ),
+  //                             const SizedBox(height: 8),
+  //                             Text("${balance.toStringAsFixed(2)} TTC", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: onSurfaceColor)),
+  //                           ],
+  //                         ),
+  //                       ),
+  //                       if (isFlexible)
+  //                         IconButton(
+  //                           style: IconButton.styleFrom(
+  //                             backgroundColor: Colors.blueAccent.withOpacity(0.1), 
+  //                             foregroundColor: Colors.blueAccent
+  //                           ),
+  //                           icon: const Icon(Icons.add_rounded),
+  //                           onPressed: () => VaultDetailModal.show(context: context, vault: vault, onUpdate: _cargarBovedas),
+  //                         )
+  //                     ],
+  //                   ),
+  //                   if (hasTarget) ...[
+  //                     const SizedBox(height: 15),
+  //                     Row(
+  //                       children: [
+  //                         Expanded(
+  //                           child: ClipRRect(
+  //                             borderRadius: BorderRadius.circular(8),
+  //                             child: LinearProgressIndicator(
+  //                               value: progress,
+  //                               minHeight: 6,
+  //                               backgroundColor: (isFlexible ? Colors.blueAccent : Colors.purpleAccent).withOpacity(0.2),
+  //                               valueColor: AlwaysStoppedAnimation<Color>(isFlexible ? Colors.blueAccent : Colors.purpleAccent),
+  //                             ),
+  //                           ),
+  //                         ),
+  //                         const SizedBox(width: 12),
+  //                         Text("${(progress * 100).toStringAsFixed(0)}%", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: onSurfaceColor.withOpacity(0.6))),
+  //                       ],
+  //                     )
+  //                   ]
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
   Widget _buildVaultList(List<dynamic> vaultsList, bool isFlexibleTab) {
     final onSurfaceColor = Theme.of(context).colorScheme.onSurface;
 
@@ -133,7 +248,7 @@ class _VaultsScreenState extends State<VaultsScreen> {
     return RefreshIndicator(
       onRefresh: () async => _cargarBovedas(),
       child: ListView.builder(
-        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 100, top: 16),
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 100, top: 16),
         itemCount: vaultsList.length,
         itemBuilder: (context, index) {
           final vault = vaultsList[index];
@@ -143,13 +258,15 @@ class _VaultsScreenState extends State<VaultsScreen> {
           final hasTarget = targetAmount > 0;
           final progress = hasTarget ? (balance / targetAmount).clamp(0.0, 1.0) : 0.0;
 
-          return Card(
+          return Container(
             margin: const EdgeInsets.only(bottom: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            elevation: 0,
-            color: isFlexible ? Colors.blueAccent.withOpacity(0.05) : Colors.purpleAccent.withOpacity(0.05),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: onSurfaceColor.withOpacity(0.08)),
+            ),
             child: InkWell(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(16),
               onTap: () => VaultDetailModal.show(context: context, vault: vault, onUpdate: _cargarBovedas),
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -159,15 +276,15 @@ class _VaultsScreenState extends State<VaultsScreen> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: isFlexible ? Colors.blueAccent.withOpacity(0.1) : Colors.purpleAccent.withOpacity(0.1), 
+                            color: onSurfaceColor.withOpacity(0.05), 
                             shape: BoxShape.circle
                           ),
                           child: Icon(
-                            isFlexible ? Icons.savings_rounded : Icons.lock_clock_rounded, 
-                            color: isFlexible ? Colors.blueAccent : Colors.purpleAccent, 
-                            size: 32
+                            isFlexible ? Icons.savings_outlined : Icons.shield_outlined, 
+                            color: onSurfaceColor.withOpacity(0.8), 
+                            size: 24
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -175,33 +292,42 @@ class _VaultsScreenState extends State<VaultsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(vault['goalName'] ?? "Sin Nombre", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text(
+                                (vault['goalName'] ?? "SIN NOMBRE").toUpperCase(), 
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)
+                              ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Icon(isFlexible ? Icons.water_drop_rounded : Icons.shield_rounded, size: 12, color: onSurfaceColor.withOpacity(0.5)),
+                                  Icon(isFlexible ? Icons.water_drop_outlined : Icons.shield_outlined, size: 12, color: onSurfaceColor.withOpacity(0.6)),
                                   const SizedBox(width: 4),
-                                  Text(isFlexible ? "Ucha Flexible" : "Plazo Fijo", style: TextStyle(fontSize: 12, color: onSurfaceColor.withOpacity(0.6), fontWeight: FontWeight.bold)),
+                                  Text(
+                                    isFlexible ? "Ucha Flexible" : "Plazo Fijo", 
+                                    style: TextStyle(fontSize: 12, color: onSurfaceColor.withOpacity(0.6))
+                                  ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              Text("${balance.toStringAsFixed(2)} TTC", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: onSurfaceColor)),
                             ],
                           ),
                         ),
                         if (isFlexible)
-                          IconButton(
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.blueAccent.withOpacity(0.1), 
-                              foregroundColor: Colors.blueAccent
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: onSurfaceColor.withOpacity(0.05),
+                              shape: BoxShape.circle,
                             ),
-                            icon: const Icon(Icons.add_rounded),
-                            onPressed: () => VaultDetailModal.show(context: context, vault: vault, onUpdate: _cargarBovedas),
+                            child: Icon(Icons.add, size: 18, color: onSurfaceColor.withOpacity(0.8)),
                           )
                       ],
                     ),
+                    const SizedBox(height: 20),
+                    Text(
+                      "${balance.toStringAsFixed(2)} TTC", 
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: onSurfaceColor)
+                    ),
                     if (hasTarget) ...[
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -210,13 +336,16 @@ class _VaultsScreenState extends State<VaultsScreen> {
                               child: LinearProgressIndicator(
                                 value: progress,
                                 minHeight: 6,
-                                backgroundColor: (isFlexible ? Colors.blueAccent : Colors.purpleAccent).withOpacity(0.2),
-                                valueColor: AlwaysStoppedAnimation<Color>(isFlexible ? Colors.blueAccent : Colors.purpleAccent),
+                                backgroundColor: onSurfaceColor.withOpacity(0.1),
+                                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4361EE)),
                               ),
                             ),
                           ),
                           const SizedBox(width: 12),
-                          Text("${(progress * 100).toStringAsFixed(0)}%", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: onSurfaceColor.withOpacity(0.6))),
+                          Text(
+                            "${(progress * 100).toStringAsFixed(0)}%", 
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: onSurfaceColor.withOpacity(0.6))
+                          ),
                         ],
                       )
                     ]

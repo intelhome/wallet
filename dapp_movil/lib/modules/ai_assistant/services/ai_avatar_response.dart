@@ -47,7 +47,7 @@ class AiAvatarResponse {
       final res = await aiMemoryService.sendMessageWithMemory("Evalúa este evento", promptAutonomo);
       if (res != null && res['response'] != null) {
         
-        // 🔥 FIX: Extracción Regex infalible del JSON Object
+      
         String aiRawResponse = res['response'].toString();
         final match = RegExp(r'\{[\s\S]*\}').firstMatch(aiRawResponse);
         

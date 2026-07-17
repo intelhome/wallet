@@ -34,7 +34,7 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
 
   IOWebSocketChannel? _wsChannel;
 
-  // 🔥 AGREGAR:
+  //  AGREGAR:
   AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: false);
   NotaryService get notaryService => Provider.of<NotaryService>(context, listen: false);
 
@@ -118,11 +118,23 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
-              label: Text(filtro),
+              showCheckmark: isSelected,
+              checkmarkColor: const Color(0xFF4A64F6), // Azul vibrante
+              label: Text(
+                filtro,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFF4A64F6) : Colors.grey[400],
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
               selected: isSelected,
               onSelected: (val) { if(val) setState(() => _filtroHistorial = filtro); },
-              selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              backgroundColor: const Color(0xFF1E2336), // Fondo oscuro inactivo
+              selectedColor: const Color(0xFFBCC6FF), // Fondo azul claro activo
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Colors.transparent),
+              ),
             ),
           );
         }).toList(),
@@ -141,7 +153,7 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
     }
   }
 
-  // 🔥 4. MÉTODO DE CONEXIÓN
+  //  4. MÉTODO DE CONEXIÓN
  void _conectarWebSocket() {
     try {
       // Reemplazamos http por ws y usamos la ruta correcta
@@ -183,7 +195,7 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
     super.dispose();
   }
 
-  // 🔥 MAGIA MATEMÁTICA: Extraer el Hash SHA-256 del archivo
+  // Extraer el Hash SHA-256 del archivo
   Future<String?> _generarHashDeArchivo() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -291,8 +303,8 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
       body: TabBarView(
         controller: _tabController,
         children: [
-          // --- TAB 1: PENDIENTES DE FIRMA ---
-         _isLoading 
+          // --- TAB 1: POR FIRMAR ---
+          _isLoading 
             ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
             : _pendingDocs.isEmpty
               ? UIHelper.emptyState(
@@ -306,48 +318,136 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
                   itemCount: _pendingDocs.length,
                   itemBuilder: (ctx, i) {
                     var doc = _pendingDocs[i];
-                    return Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        // Usando el colorScheme para mantener la consistencia visual
-                        leading: CircleAvatar(
-                          backgroundColor: colorScheme.primary.withOpacity(0.1), 
-                          child: Icon(Icons.description_rounded, color: colorScheme.primary)
+                    
+                    //  CARGAR USUARIOS DINÁMICAMENTE
+                    List<dynamic> signers = doc['requiredSigners'] ?? doc['signers'] ?? [];
+                    String signersText = signers.isNotEmpty ? signers.join(' / ') : 'Sin firmantes asignados';
+
+                    return GestureDetector(
+                      onTap: () {
+                        DocumentDetailsModal.show(context: context, docHash: doc['docHash']);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.cardColor, // 🔥 Color dinámico del tema
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
                         ),
-                        title: Text(
-                          doc['title'] ?? 'Documento sin título', 
-                          style: const TextStyle(fontWeight: FontWeight.bold)
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary.withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(Icons.description_rounded, color: colorScheme.primary),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        doc['title'] ?? 'Documento sin título', 
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.people_alt_outlined, size: 14, color: colorScheme.onSurface.withOpacity(0.6)),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              signersText, // 🔥 Usuarios reales cargados aquí
+                                              style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: colorScheme.primary, 
+                                    foregroundColor: colorScheme.onPrimary,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: () => _firmarDocumento(doc),
+                                  child: const Text("Firmar", style: TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: theme.scaffoldBackgroundColor, // 🔥 Fondo de contraste del tema
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                "Hash:  ${doc['docHash']}",
+                                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7), fontSize: 12, fontFamily: 'monospace'),
+                              ),
+                            ),
+                          ],
                         ),
-                        subtitle: Text("Hash: ${doc['docHash'].toString().substring(0, 10)}..."),
-                        trailing: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary, 
-                            foregroundColor: colorScheme.onPrimary
-                          ),
-                          onPressed: () => _firmarDocumento(doc),
-                          child: const Text("Firmar", style: TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                        // 🔥 Aquí está tu evento para ver el PDF
-                        onTap: () {
-                          DocumentDetailsModal.show(
-                            context: context, 
-                            docHash: doc['docHash'], 
-                          );
-                        },
                       ),
                     );
                   },
                 ),
+
           // --- TAB 2: CREAR NUEVO ---
           Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.fingerprint_rounded, size: 80, color: colorScheme.primary.withOpacity(0.5)),
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
+                  ),
+                  child: Icon(Icons.fingerprint_rounded, size: 60, color: colorScheme.primary.withOpacity(0.5)),
+                ),
+                const SizedBox(height: 30),
+                Text(
+                  "Sube un PDF para generar su huella\ndigital criptográfica (SHA-256) e\ninscribirlo en la Blockchain.", 
+                  textAlign: TextAlign.center, 
+                  style: TextStyle(fontSize: 16, color: colorScheme.onSurface, height: 1.5)
+                ),
                 const SizedBox(height: 20),
-                const Text("Sube un PDF para generar su huella digital criptográfica (SHA-256) e inscribirlo en la Blockchain.", textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurface.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 8),
+                      Text("Gasless Network", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 13, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 40),
                 SizedBox(
                   width: double.infinity,
@@ -355,8 +455,9 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       backgroundColor: colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                      foregroundColor: colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      elevation: 0,
                     ),
                     onPressed: _crearNuevoDocumento,
                     icon: const Icon(Icons.upload_file_rounded),
@@ -367,51 +468,108 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
             ),
           ),
 
-          // 🔥 TAB 3: HISTORIAL CON FILTROS
+          // --- TAB 3: HISTORIAL ---
           Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: TextField(
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    hintText: "Buscar documentos, hashes...",
+                    hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                    prefixIcon: Icon(Icons.search, color: colorScheme.onSurface.withOpacity(0.4)),
+                    filled: true,
+                    fillColor: theme.cardColor,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
               _buildFiltrosHistorial(),
               Expanded(
                 child: RefreshIndicator(
-                  //onRefresh: _cargarHistorial,
                   onRefresh: _cargarDatos,
-                  //child: _isHistoryLoading 
                   child: _isLoading && docsFiltrados.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : docsFiltrados.isEmpty
                       ? UIHelper.emptyState(context: context, icon: Icons.folder_open_rounded, title: "Sin documentos", message: "No se encontraron registros.")
                       : ListView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           itemCount: docsFiltrados.length,
                           itemBuilder: (ctx, i) {
                             var doc = docsFiltrados[i];
                             bool isDone = doc['fullySigned'] ?? false;
                             
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: isDone ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                                  child: Icon(isDone ? Icons.verified_rounded : Icons.pending_actions_rounded, color: isDone ? Colors.green : Colors.orange),
+                            // 🔥 HASH COMPLETO EN LUGAR DE RECORTADO
+                            String fullHash = doc['docHash'].toString();
+
+                            return GestureDetector(
+                              onTap: () {
+                                DocumentDetailsModal.show(context: context, docHash: fullHash);
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: theme.cardColor,
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                title: Text(doc['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text(isDone ? "Firmado inmutablemente" : "Faltan firmas"),
-                                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                                onTap: () {
-                                  // 🔥 Abrimos el modal que ya tiene el botón de VER/DESCARGAR PDF
-                                  DocumentDetailsModal.show(
-                                    context: context, 
-                                    docHash: doc['docHash'], 
-                                  );
-                                },
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: isDone ? Colors.teal.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      // 🔥 ICONOS DINÁMICOS SEGÚN ESTADO
+                                      child: Icon(
+                                        isDone ? Icons.check_circle_rounded : Icons.pending_actions_rounded, 
+                                        color: isDone ? Colors.teal : Colors.orange
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(doc['title'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            isDone ? "Firmado inmutablemente" : "Faltan firmas", 
+                                            style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 13)
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: theme.scaffoldBackgroundColor,
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              fullHash, //  Mostrar hash completo
+                                              style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7), fontSize: 11, fontFamily: 'monospace'),
+                                              overflow: TextOverflow.ellipsis, // Por si acaso es muy largo para una sola línea
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(Icons.chevron_right_rounded, color: colorScheme.onSurface, size: 24),
+                                  ],
+                                ),
                               ),
                             );
                           },
                         ),
                 ),
               ),
-              ],
+            ],
           ),
         ],
       ),

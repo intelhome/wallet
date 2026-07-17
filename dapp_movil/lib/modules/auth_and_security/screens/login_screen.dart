@@ -267,158 +267,381 @@ Future<void> _unlockConHuella() async {
     }
   }
 
-  @override
+//   @override
+//   Widget build(BuildContext context) {
+//     final theme = Theme.of(context);
+//     final colorScheme = theme.colorScheme;
+//     final onSurface = colorScheme.onSurface;
+//     return Scaffold(
+//      backgroundColor: theme.scaffoldBackgroundColor,
+//      appBar: AppBar(
+//         backgroundColor: Colors.transparent,
+//         elevation: 0,
+//         actions: [
+//           Padding(
+//             padding: const EdgeInsets.only(right: 12.0),
+//             child: IconButton(
+//               icon: Icon(Icons.qr_code_2_rounded, color: colorScheme.primary, size: 28),
+//               tooltip: "Recibir sin entrar",
+//               style: IconButton.styleFrom(
+//                 backgroundColor: colorScheme.primary.withOpacity(0.1),
+//               ),
+//             onPressed: () async {
+//                 // Esto pide la huella y automáticamente carga widget.service.publicAddress
+//                 HapticFeedback.mediumImpact();
+//                 String result = await authCore.loginWithBiometrics();
+
+//                 if (!context.mounted) return;
+
+//                 if (result == "SUCCESS") {
+//                   ReceiveModal.show(
+//                     context: context,
+//                   );
+//                 } 
+//                 else if (result == "2FA_REQUIRED") {
+//                   // Si el usuario tiene doble factor, le pedimos que inicie sesión normal por seguridad extra
+//                   ScaffoldMessenger.of(context).showSnackBar(
+//                     const SnackBar(
+//                       content: Text("Por seguridad 2FA, inicia sesión completo para ver tu QR.", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), 
+//                       backgroundColor: Colors.orange
+//                     )
+//                   );
+//                 } 
+//                 else if (result != "ERROR_CANCELLED") {
+//                   // Falló la huella o no hay bóveda creada
+//                   ScaffoldMessenger.of(context).showSnackBar(
+//                     SnackBar(
+//                       content: const Text("Error al acceder a la bóveda o huella incorrecta.", style: TextStyle(color: Colors.white)), 
+//                       backgroundColor: Theme.of(context).colorScheme.error
+//                     )
+//                   );
+//                 }
+//               },
+//             ),
+//           ),
+//         ],
+//       ),
+//       body: SafeArea(
+//         child: Center(
+//           child: SingleChildScrollView(
+//           padding: const EdgeInsets.all(24.0),
+//           child: Column(
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             crossAxisAlignment: CrossAxisAlignment.stretch,
+//             children: [
+//             Icon(Icons.lock_rounded, size: 80, color: colorScheme.primary),
+//               const SizedBox(height: 20),
+//               Text(
+//                 "Bienvenido de nuevo",
+//                 style: TextStyle(color: onSurface, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5), 
+//                 textAlign: TextAlign.center,
+//               ),
+//               const SizedBox(height: 10),
+//               Text(
+//                 "Ingresa tu contraseña para desbloquear tu billetera",
+//               style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 15),
+//                 textAlign: TextAlign.center,
+//               ),
+//               const SizedBox(height: 40),
+
+//               TextField(
+//                 controller: _passController,
+//                 keyboardType: TextInputType.text,
+//                 obscureText: _obscurePass,
+//                 style: TextStyle(color: onSurface, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2),
+//                 textAlign: TextAlign.center,
+//                 decoration: InputDecoration(
+//                   filled: true,
+//                   fillColor: onSurface.withOpacity(0.05),
+//                   hintText: "Contraseña",
+//                   hintStyle: TextStyle(color: onSurface.withOpacity(0.3), letterSpacing: 0),
+//                   prefixIcon: Icon(Icons.key_rounded, color: onSurface.withOpacity(0.5)),
+//                   suffixIcon: IconButton(
+//                     icon: Icon(_obscurePass ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: onSurface.withOpacity(0.5)),
+//                     onPressed: () => setState(() => _obscurePass = !_obscurePass),
+//                   ),
+//                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+//                 ),
+//               ),
+//               const SizedBox(height: 40),
+
+//               // if (_isLoading)
+//               //   const Center(
+//               //     child: CircularProgressIndicator(color: Colors.blueAccent),
+//               //   ),
+//               ElevatedButton(
+//                 style: ElevatedButton.styleFrom(
+//                   backgroundColor: colorScheme.primary, // 🔥 M3 Primary
+//                   foregroundColor: colorScheme.onPrimary,
+//                   elevation: 0,
+//                   padding: const EdgeInsets.symmetric(vertical: 16),
+//                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//                 ),
+//                 onPressed: _isLoading ? null : _unlock,
+//                 child: _isLoading
+//                     ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: colorScheme.onPrimary, strokeWidth: 2))
+//                     : const Text("Desbloquear con contraseña", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+//               ),
+//               const SizedBox(height: 30),
+//              Row(
+//                 children: [
+//                   Expanded(child: Divider(color: onSurface.withOpacity(0.1))),
+//                   Padding(
+//                     padding: const EdgeInsets.symmetric(horizontal: 16),
+//                     child: Text("O", style: TextStyle(color: onSurface.withOpacity(0.4), fontWeight: FontWeight.bold)),
+//                   ),
+//                   Expanded(child: Divider(color: onSurface.withOpacity(0.1))),
+//                 ],
+//               ),
+//               const SizedBox(height: 30),
+
+//               GestureDetector(
+//                 onTap: _isLoading ? null : _unlockConHuella,
+//                 child: Container(
+//                   padding: const EdgeInsets.all(24),
+//                   decoration: BoxDecoration(
+//                     shape: BoxShape.circle,
+//                     color: colorScheme.primary.withOpacity(0.1), // 🔥 Fondo tonal suave
+//                     border: Border.all(color: colorScheme.primary.withOpacity(0.2), width: 2),
+//                   ),
+//                   child: Icon(Icons.fingerprint_rounded, size: 60, color: colorScheme.primary),
+//                 ),
+//               ),
+//               const SizedBox(height: 10),
+//              Text(
+//                 "Toca para usar Biometría",
+//                 style: TextStyle(color: colorScheme.primary, fontSize: 14, fontWeight: FontWeight.bold),
+//                 textAlign: TextAlign.center,
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//       ),
+//     );
+//   }
+
+// }
+@override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final onSurface = colorScheme.onSurface;
+
     return Scaffold(
-     backgroundColor: theme.scaffoldBackgroundColor,
-     appBar: AppBar(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: IconButton(
-              icon: Icon(Icons.qr_code_2_rounded, color: colorScheme.primary, size: 28),
-              tooltip: "Recibir sin entrar",
-              style: IconButton.styleFrom(
-                backgroundColor: colorScheme.primary.withOpacity(0.1),
+            padding: const EdgeInsets.only(right: 20.0, top: 10.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: onSurface.withOpacity(0.05),
+                shape: BoxShape.circle,
               ),
-            onPressed: () async {
-                // Esto pide la huella y automáticamente carga widget.service.publicAddress
-                HapticFeedback.mediumImpact();
-                String result = await authCore.loginWithBiometrics();
+              child: IconButton(
+                icon: Icon(Icons.qr_code_scanner_rounded, color: colorScheme.onSurface.withOpacity(0.7), size: 22),
+                tooltip: "Recibir sin entrar",
+                onPressed: () async {
+                  HapticFeedback.mediumImpact();
+                  String result = await authCore.loginWithBiometrics();
 
-                if (!context.mounted) return;
+                  if (!context.mounted) return;
 
-                if (result == "SUCCESS") {
-                  ReceiveModal.show(
-                    context: context,
-                  );
-                } 
-                else if (result == "2FA_REQUIRED") {
-                  // Si el usuario tiene doble factor, le pedimos que inicie sesión normal por seguridad extra
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Por seguridad 2FA, inicia sesión completo para ver tu QR.", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), 
-                      backgroundColor: Colors.orange
-                    )
-                  );
-                } 
-                else if (result != "ERROR_CANCELLED") {
-                  // Falló la huella o no hay bóveda creada
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text("Error al acceder a la bóveda o huella incorrecta.", style: TextStyle(color: Colors.white)), 
-                      backgroundColor: Theme.of(context).colorScheme.error
-                    )
-                  );
-                }
-              },
+                  if (result == "SUCCESS") {
+                    ReceiveModal.show(context: context);
+                  } 
+                  else if (result == "2FA_REQUIRED") {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Por seguridad 2FA, inicia sesión completo para ver tu QR.", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), 
+                        backgroundColor: Colors.orange
+                      )
+                    );
+                  } 
+                  else if (result != "ERROR_CANCELLED") {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text("Error al acceder a la bóveda o huella incorrecta.", style: TextStyle(color: Colors.white)), 
+                        backgroundColor: Theme.of(context).colorScheme.error
+                      )
+                    );
+                  }
+                },
+              ),
             ),
           ),
         ],
       ),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-            Icon(Icons.lock_rounded, size: 80, color: colorScheme.primary),
-              const SizedBox(height: 20),
-              Text(
-                "Bienvenido de nuevo",
-                style: TextStyle(color: onSurface, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5), 
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                "Ingresa tu contraseña para desbloquear tu billetera",
-              style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 15),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Spacer(),
 
-              TextField(
-                controller: _passController,
-                keyboardType: TextInputType.text,
-                obscureText: _obscurePass,
-                style: TextStyle(color: onSurface, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2),
-                textAlign: TextAlign.center,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: onSurface.withOpacity(0.05),
-                  hintText: "Contraseña",
-                  hintStyle: TextStyle(color: onSurface.withOpacity(0.3), letterSpacing: 0),
-                  prefixIcon: Icon(Icons.key_rounded, color: onSurface.withOpacity(0.5)),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscurePass ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: onSurface.withOpacity(0.5)),
-                    onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                      // 1. ÍCONO CANDADO SUPERIOR
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: onSurface.withOpacity(0.05),
+                        ),
+                        child: Icon(Icons.lock_outline_rounded, size: 32, color: colorScheme.primary),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // 2. TEXTOS DE BIENVENIDA
+                      Text(
+                        "Bienvenido de nuevo",
+                        style: TextStyle(color: onSurface, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5), 
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Text(
+                          "Tu billetera está protegida por encriptación\nde grado bancario y seguridad biométrica.",
+                          style: TextStyle(color: onSurface.withOpacity(0.7), fontSize: 14, height: 1.5),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+
+                      // 3. TARJETA PRINCIPAL DE LOGIN
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+                        decoration: BoxDecoration(
+                          color: theme.cardColor.withOpacity(0.3), // Fondo sutil adaptativo
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: onSurface.withOpacity(0.08)), // Borde delimitador
+                        ),
+                        child: Column(
+                          children: [
+                            // HUELLA BIOMÉTRICA CON CÍRCULOS CONCÉNTRICOS
+                            GestureDetector(
+                              onTap: _isLoading ? null : _unlockConHuella,
+                              child: Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: colorScheme.primary.withOpacity(0.05),
+                                  border: Border.all(color: colorScheme.primary.withOpacity(0.1), width: 1),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: colorScheme.primary.withOpacity(0.1),
+                                  ),
+                                  child: Icon(Icons.fingerprint_rounded, size: 56, color: colorScheme.primary),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              "Toca para usar Biometría",
+                              style: TextStyle(color: colorScheme.primary, fontSize: 18, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                            
+                            const SizedBox(height: 40),
+                            
+                            // DIVISOR "o"
+                            Row(
+                              children: [
+                                Expanded(child: Divider(color: onSurface.withOpacity(0.1))),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text("o", style: TextStyle(color: onSurface.withOpacity(0.4), fontWeight: FontWeight.bold, fontSize: 14)),
+                                ),
+                                Expanded(child: Divider(color: onSurface.withOpacity(0.1))),
+                              ],
+                            ),
+                            const SizedBox(height: 32),
+
+                            // CAMPO DE CONTRASEÑA OUTLINED
+                            TextField(
+                              controller: _passController,
+                              keyboardType: TextInputType.text,
+                              obscureText: _obscurePass,
+                              style: TextStyle(color: onSurface, fontWeight: FontWeight.w500),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.transparent,
+                                hintText: "Contraseña",
+                                hintStyle: TextStyle(color: onSurface.withOpacity(0.4)),
+                                prefixIcon: Icon(Icons.key_outlined, color: onSurface.withOpacity(0.5)),
+                                suffixIcon: IconButton(
+                                  icon: Icon(_obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: onSurface.withOpacity(0.5)),
+                                  onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12), 
+                                  borderSide: BorderSide(color: onSurface.withOpacity(0.2))
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12), 
+                                  borderSide: BorderSide(color: colorScheme.primary)
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // BOTÓN DE DESBLOQUEO PILL-SHAPE
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: colorScheme.primary,
+                                  foregroundColor: colorScheme.onPrimary,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                                ),
+                                onPressed: _isLoading ? null : _unlock,
+                                child: _isLoading
+                                    ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: colorScheme.onPrimary, strokeWidth: 2))
+                                    : const Text("Desbloquear con contraseña", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const Spacer(),
+                      
+                      // 4. ENLACES INFERIORES
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 32.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text("Ayuda", style: TextStyle(color: onSurface.withOpacity(0.8), fontWeight: FontWeight.bold, fontSize: 13)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Icon(Icons.circle, size: 4, color: onSurface.withOpacity(0.2)),
+                            ),
+                            Text("Importar Billetera", style: TextStyle(color: onSurface.withOpacity(0.8), fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                 ),
               ),
-              const SizedBox(height: 40),
-
-              // if (_isLoading)
-              //   const Center(
-              //     child: CircularProgressIndicator(color: Colors.blueAccent),
-              //   ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary, // 🔥 M3 Primary
-                  foregroundColor: colorScheme.onPrimary,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                onPressed: _isLoading ? null : _unlock,
-                child: _isLoading
-                    ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: colorScheme.onPrimary, strokeWidth: 2))
-                    : const Text("Desbloquear con contraseña", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 30),
-             Row(
-                children: [
-                  Expanded(child: Divider(color: onSurface.withOpacity(0.1))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text("O", style: TextStyle(color: onSurface.withOpacity(0.4), fontWeight: FontWeight.bold)),
-                  ),
-                  Expanded(child: Divider(color: onSurface.withOpacity(0.1))),
-                ],
-              ),
-              const SizedBox(height: 30),
-
-              GestureDetector(
-                onTap: _isLoading ? null : _unlockConHuella,
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colorScheme.primary.withOpacity(0.1), // 🔥 Fondo tonal suave
-                    border: Border.all(color: colorScheme.primary.withOpacity(0.2), width: 2),
-                  ),
-                  child: Icon(Icons.fingerprint_rounded, size: 60, color: colorScheme.primary),
-                ),
-              ),
-              const SizedBox(height: 10),
-             Text(
-                "Toca para usar Biometría",
-                style: TextStyle(color: colorScheme.primary, fontSize: 14, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            );
+          }
         ),
-      ),
       ),
     );
   }
-
 }

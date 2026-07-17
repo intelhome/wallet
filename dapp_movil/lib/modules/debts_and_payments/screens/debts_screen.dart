@@ -10,7 +10,7 @@ import 'package:web_socket_channel/io.dart';
 import '../../../config/api_config.dart';
 import '../modals/create_debt_modal.dart';
 import '../../wallet_and_tx/modals/send_modal.dart';
-import '../modals/debt_details_modal.dart'; // 🔥 Importamos el nuevo modal
+import '../modals/debt_details_modal.dart'; 
 
 import '../../../core/helpers/ui_helper.dart';
 import '../../../core/services/transaction_skeleton.dart';
@@ -206,26 +206,60 @@ class _DebtsScreenState extends State<DebtsScreen> {
     );
   }
 
-  Widget _buildFiltros(List<String> opciones, String seleccionado, Function(String) onSelect) {
+  // Widget _buildFiltros(List<String> opciones, String seleccionado, Function(String) onSelect) {
+  //   final theme = Theme.of(context);
+  //   final colorScheme = theme.colorScheme;
+  //   return SingleChildScrollView(
+  //     scrollDirection: Axis.horizontal,
+  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+  //     child: Row(
+  //       children: opciones.map((opcion) {
+  //         bool isSelected = seleccionado == opcion;
+  //         return Padding(
+  //           padding: const EdgeInsets.only(right: 8),
+  //           child: ChoiceChip(
+  //             label: Text(opcion),
+  //             labelStyle: TextStyle(color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+  //             selected: isSelected,
+  //             selectedColor: colorScheme.primary,
+  //             backgroundColor: theme.cardColor,
+  //             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none), 
+  //             showCheckmark: false,
+  //             onSelected: (bool selected) { if (selected) onSelect(opcion); },
+  //           ),
+  //         );
+  //       }).toList(),
+  //     ),
+  //   );
+  // }
+
+Widget _buildFiltros(List<String> opciones, String seleccionado, Function(String) onSelect) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: opciones.map((opcion) {
           bool isSelected = seleccionado == opcion;
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(opcion),
-              labelStyle: TextStyle(color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
-              selected: isSelected,
-              selectedColor: colorScheme.primary,
-              backgroundColor: theme.cardColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none), 
-              showCheckmark: false,
-              onSelected: (bool selected) { if (selected) onSelect(opcion); },
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () => onSelect(opcion),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFFB5C0FF) : theme.colorScheme.onSurface.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  opcion,
+                  style: TextStyle(
+                    color: isSelected ? Colors.black87 : theme.colorScheme.onSurface.withOpacity(0.8),
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
             ),
           );
         }).toList(),
@@ -254,6 +288,90 @@ class _DebtsScreenState extends State<DebtsScreen> {
   }
 
   // 🔥 WIDGET REUTILIZABLE PARA LISTAS "POR PAGAR" (Normales o Divididas)
+  // Widget _buildVistaPorPagar(List<dynamic> lista, String filtroActual, Function(String) onSelectFiltro, String emptyTitle, String emptyMsg) {
+  //   final colorScheme = Theme.of(context).colorScheme;
+  //   return Column(
+  //     children: [
+  //       _buildFiltros(["Todos", "Por Aceptar", "Pendientes", "Pagados"], filtroActual, onSelectFiltro),
+  //       Expanded(
+  //         child: lista.isEmpty
+  //           ? UIHelper.emptyState(context: context, icon: Icons.credit_card_off_rounded, title: emptyTitle, message: emptyMsg)
+  //           : ListView.builder(
+  //               padding: const EdgeInsets.symmetric(horizontal: 16),
+  //               itemCount: lista.length,
+  //               itemBuilder: (ctx, i) {
+  //                 var d = lista[i];
+  //                 double total = double.tryParse(d['totalAmount'].toString()) ?? 0;
+  //                 double pagado = double.tryParse(d['paidAmount'].toString()) ?? 0;
+  //                 double restante = total - pagado;
+  //                 bool isPending = d['status'] == "PENDING_APPROVAL";
+  //                 bool isActive = d['status'] == "ACTIVE";
+  //                 bool isCompleted = d['status'] == "COMPLETED";
+
+  //                 return Card(
+  //                   margin: const EdgeInsets.only(bottom: 12),
+  //                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //                   child: InkWell(
+  //                     borderRadius: BorderRadius.circular(16),
+  //                     onTap: () => DebtDetailsModal.show(context: context, debt: d), 
+  //                     child: Padding(
+  //                       padding: const EdgeInsets.all(16),
+  //                       child: Column(
+  //                         crossAxisAlignment: CrossAxisAlignment.start,
+  //                         children: [
+  //                           Row(
+  //                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                             children: [
+  //                               Expanded(child: Text(d['reason'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis)),
+  //                               Chip(label: Text(d['status'], style: TextStyle(fontSize: 10, color: isCompleted ? Colors.green : (isPending ? Colors.orange : colorScheme.primary))), backgroundColor: isCompleted ? Colors.green.withOpacity(0.1) : (isPending ? Colors.orange.withOpacity(0.1) : colorScheme.primary.withOpacity(0.1)), side: BorderSide.none),
+  //                             ],
+  //                           ),
+  //                           const SizedBox(height: 8),
+  //                           Text("Acreedor: ${d['creditorAddress'].toString().substring(0, 10)}..."),
+  //                           Text("Restante: $restante TTC", style: TextStyle(color: isCompleted ? Colors.green : colorScheme.error, fontWeight: FontWeight.bold)),
+                            
+  //                           if (isPending) ...[
+  //                             const SizedBox(height: 16),
+  //                             Row(
+  //                               children: [
+  //                                 Expanded(child: OutlinedButton(onPressed: () => _responderDeuda(d['id'], false), child: const Text("Rechazar", style: TextStyle(color: Colors.red)))),
+  //                                 const SizedBox(width: 10),
+  //                                 Expanded(child: ElevatedButton(onPressed: () => _responderDeuda(d['id'], true), child: const Text("Aceptar"))),
+  //                               ],
+  //                             )
+  //                           ] else if (isActive) ...[
+  //                             const SizedBox(height: 16),
+  //                             Row(
+  //                               children: [
+  //                                 Expanded(child: OutlinedButton.icon(icon: const Icon(Icons.groups_rounded, size: 18), label: const Text("Ayuda"), onPressed: () => _compartirDeudaModal(d['id']))),
+  //                                 const SizedBox(width: 10),
+  //                                 Expanded(child: ElevatedButton.icon(
+  //                                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+  //                                   icon: const Icon(Icons.payment_rounded, size: 18), label: const Text("Pagar"),
+  //                                   onPressed: () async {
+  //                                     String miSaldo = await txService.getBalance();
+  //                                     if (!mounted) return;
+  //                                     SendModal.show(
+  //                                       context: context, balanceTTC: miSaldo, initialAddress: d['creditorAddress'], debtId: d['id'], onUpdateBalance: _cargarDeudas, 
+  //                                       mostrarMensaje: (msg, {bool esError = false}) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: esError ? Colors.red : Colors.green)); }
+  //                                     );
+  //                                   },
+  //                                 )),
+  //                               ],
+  //                             )
+  //                           ]
+  //                         ],
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 );
+  //               },
+  //             ),
+  //       ),
+  //     ],
+  //   );
+  // }
+
   Widget _buildVistaPorPagar(List<dynamic> lista, String filtroActual, Function(String) onSelectFiltro, String emptyTitle, String emptyMsg) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
@@ -274,9 +392,15 @@ class _DebtsScreenState extends State<DebtsScreen> {
                   bool isActive = d['status'] == "ACTIVE";
                   bool isCompleted = d['status'] == "COMPLETED";
 
-                  return Card(
+                  Color statusBg = isCompleted ? const Color(0xFF4361EE) : (isPending ? const Color(0xFFD97706) : colorScheme.primary);
+                  String statusText = d['status'];
+
+                  return Container(
                     margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () => DebtDetailsModal.show(context: context, debt: d), 
@@ -288,21 +412,32 @@ class _DebtsScreenState extends State<DebtsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Expanded(child: Text(d['reason'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis)),
-                                Chip(label: Text(d['status'], style: TextStyle(fontSize: 10, color: isCompleted ? Colors.green : (isPending ? Colors.orange : colorScheme.primary))), backgroundColor: isCompleted ? Colors.green.withOpacity(0.1) : (isPending ? Colors.orange.withOpacity(0.1) : colorScheme.primary.withOpacity(0.1)), side: BorderSide.none),
+                                Expanded(
+                                  child: Text(
+                                    d['reason'], 
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), 
+                                    overflow: TextOverflow.ellipsis
+                                  )
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(6)),
+                                  child: Text(statusText, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+                                ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text("Acreedor: ${d['creditorAddress'].toString().substring(0, 10)}..."),
-                            Text("Restante: $restante TTC", style: TextStyle(color: isCompleted ? Colors.green : colorScheme.error, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 12),
+                            Text("Acreedor: ${d['creditorAddress'].toString().substring(0, 10)}...", style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 14)),
+                            const SizedBox(height: 4),
+                            Text("Restante: $restante TTC", style: TextStyle(color: isCompleted ? const Color(0xFFB5C0FF) : const Color(0xFFFBBF24), fontWeight: FontWeight.bold, fontSize: 14)),
                             
                             if (isPending) ...[
                               const SizedBox(height: 16),
                               Row(
                                 children: [
-                                  Expanded(child: OutlinedButton(onPressed: () => _responderDeuda(d['id'], false), child: const Text("Rechazar", style: TextStyle(color: Colors.red)))),
+                                  Expanded(child: OutlinedButton(onPressed: () => _responderDeuda(d['id'], false), child: const Text("Rechazar", style: TextStyle(color: Colors.redAccent)))),
                                   const SizedBox(width: 10),
-                                  Expanded(child: ElevatedButton(onPressed: () => _responderDeuda(d['id'], true), child: const Text("Aceptar"))),
+                                  Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4361EE), foregroundColor: Colors.white), onPressed: () => _responderDeuda(d['id'], true), child: const Text("Aceptar"))),
                                 ],
                               )
                             ] else if (isActive) ...[
@@ -338,8 +473,8 @@ class _DebtsScreenState extends State<DebtsScreen> {
     );
   }
 
-  // 🔥 WIDGET REUTILIZABLE PARA LISTAS "POR COBRAR" (Normales o Divididas)
-  Widget _buildVistaPorCobrar(List<dynamic> lista, String filtroActual, Function(String) onSelectFiltro, String emptyTitle, String emptyMsg) {
+  //  WIDGET REUTILIZABLE PARA LISTAS "POR COBRAR" (Normales o Divididas)
+ Widget _buildVistaPorCobrar(List<dynamic> lista, String filtroActual, Function(String) onSelectFiltro, String emptyTitle, String emptyMsg) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
@@ -354,24 +489,47 @@ class _DebtsScreenState extends State<DebtsScreen> {
                   var d = lista[i];
                   double total = double.tryParse(d['totalAmount'].toString()) ?? 0;
                   double pagado = double.tryParse(d['paidAmount'].toString()) ?? 0;
+                  bool isPending = d['status'] == "PENDING_APPROVAL" || d['status'] == "ACTIVE";
                   bool isCompleted = d['status'] == "COMPLETED";
-                  bool isRejected = d['status'] == "REJECTED";
+                  
+                  Color statusBg = isCompleted ? const Color(0xFF4361EE) : (isPending ? const Color(0xFFD97706) : Colors.redAccent);
+                  String statusText = d['status'];
 
-                  return Card(
+                  return Container(
                     margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () => DebtDetailsModal.show(context: context, debt: d), 
-                      child: ListTile(
-                        leading: CircleAvatar(backgroundColor: isCompleted ? Colors.green.withOpacity(0.1) : (isRejected ? Colors.red.withOpacity(0.1) : colorScheme.primary.withOpacity(0.1)), child: Icon(isCompleted ? Icons.check_circle_rounded : (isRejected ? Icons.cancel_rounded : Icons.hourglass_top_rounded), color: isCompleted ? Colors.green : (isRejected ? Colors.red : colorScheme.primary))),
-                        title: Text(d['reason'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("Deudor: ${d['debtorAddress'].toString().substring(0, 8)}...\nPagado: $pagado / $total TTC"),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("${d['totalAmount']} TTC", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            Text(d['status'], style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    d['reason'], 
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), 
+                                    overflow: TextOverflow.ellipsis
+                                  )
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(6)),
+                                  child: Text(statusText, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text("Deudor: ${d['debtorAddress'].toString().substring(0, 10)}...", style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 14)),
+                            const SizedBox(height: 4),
+                            Text("Pagado: $pagado / $total TTC", style: const TextStyle(color: Color(0xFFFBBF24), fontWeight: FontWeight.bold, fontSize: 14)),
                           ],
                         ),
                       ),

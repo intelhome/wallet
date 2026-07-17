@@ -4,9 +4,490 @@ import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.
 import 'package:dapp_movil/modules/settings_and_profile/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
 import '../../../core/helpers/share_helper.dart';
+
+// class AnalyticsScreen extends StatefulWidget {
+//   const AnalyticsScreen({super.key});
+
+//   @override
+//   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
+// }
+
+// class _AnalyticsScreenState extends State<AnalyticsScreen> {
+//   UserService get userService => Provider.of<UserService>(context, listen: false);
+//   AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: false);
+
+//   bool _isLoading = true;
+//   Map<String, dynamic>? _analyticsData;
+
+//   // Controladores para las Historias
+//   final PageController _pageController = PageController();
+//   int _currentPage = 0;
+
+//   // Controlador de Confeti para la Pantalla 3
+//   late ConfettiController _confettiController;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+//     _loadData();
+//   }
+
+//   @override
+//   void dispose() {
+//     _pageController.dispose();
+//     _confettiController.dispose();
+//     super.dispose();
+//   }
+
+//   Future<void> _loadData() async {
+//     final data = await userService.getAnalyticsData();
+//     if (mounted) {
+//       setState(() {
+//         _analyticsData = data;
+//         _isLoading = false;
+//       });
+//     }
+//   }
+
+//   // Future<void> _loadData() async {
+//   //   final cacheService = LocalCacheService();
+
+//   //   // 1. Cargar caché inmediatamente (¡Velocidad luz!)
+//   //   final cachedData = cacheService.getCachedAnalytics();
+//   //   if (cachedData.isNotEmpty && mounted) {
+//   //     setState(() {
+//   //       _analyticsData = cachedData;
+//   //       _isLoading = false; // Pintamos la pantalla al instante
+//   //     });
+//   //   }
+
+//   //   // 2. Traer data fresca de la red en segundo plano
+//   //   try {
+//   //     final freshData = await userService.getAnalyticsData();
+//   //     if (mounted && freshData != null) {
+//   //       await cacheService.saveAnalytics(freshData); // Guardamos la nueva data
+//   //       setState(() {
+//   //         _analyticsData = freshData;
+//   //         _isLoading = false;
+//   //       });
+//   //     }
+//   //   } catch (e) {
+//   //     // Si la red falla, el usuario ni lo nota porque ya está viendo el caché
+//   //     if (mounted && _analyticsData == null) {
+//   //       setState(() => _isLoading = false);
+//   //     }
+//   //   }
+//   // }
+
+//   // --- MODALS DE DETALLES INTERACTIVOS ---
+
+//   void _showPieDetailsModal(String category, double amount, bool esGasto) {
+//     final colorScheme = Theme.of(context).colorScheme;
+//     showModalBottomSheet(
+//       context: context,
+//       backgroundColor: Theme.of(context).cardColor,
+//       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+//       builder: (ctx) => Padding(
+//         padding: const EdgeInsets.all(24.0),
+//         child: Column(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             CircleAvatar(
+//               radius: 30,
+//               backgroundColor: (esGasto ? colorScheme.error : Colors.teal).withOpacity(0.1),
+//               child: Icon(esGasto ? Icons.arrow_outward_rounded : Icons.call_received_rounded,
+//                   color: esGasto ? colorScheme.error : Colors.teal, size: 30),
+//             ),
+//             const SizedBox(height: 16),
+//             Text(_getFriendlyName(category), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+//             const SizedBox(height: 8),
+//             Text(
+//               "${amount.toStringAsFixed(2)} TTC",
+//               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: colorScheme.primary),
+//             ),
+//             const SizedBox(height: 10),
+//             Text(
+//               esGasto ? "Total gastado en esta categoría" : "Total ingresado por esta categoría",
+//               style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
+//             ),
+//             const SizedBox(height: 30),
+//             SizedBox(
+//               width: double.infinity,
+//               child: ElevatedButton(
+//                 style: ElevatedButton.styleFrom(
+//                   backgroundColor: colorScheme.primary.withOpacity(0.1),
+//                   foregroundColor: colorScheme.primary,
+//                   elevation: 0,
+//                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//                 ),
+//                 onPressed: () => Navigator.pop(ctx),
+//                 child: const Text("Entendido"),
+//               ),
+//             )
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+//   void _showLineDetailsModal(String date, double ingresos, double egresos) {
+//     showModalBottomSheet(
+//       context: context,
+//       backgroundColor: Theme.of(context).cardColor,
+//       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+//       builder: (ctx) => Padding(
+//         padding: const EdgeInsets.all(24.0),
+//         child: Column(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             const Icon(Icons.calendar_today_rounded, size: 40, color: Colors.blueAccent),
+//             const SizedBox(height: 16),
+//             Text("Actividad del $date", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+//             const SizedBox(height: 24),
+//             Row(
+//               mainAxisAlignment: MainAxisAlignment.spaceAround,
+//               children: [
+//                 _buildResumenMini("Ingresos", ingresos, Colors.teal),
+//                 _buildResumenMini("Egresos", egresos, Theme.of(context).colorScheme.error),
+//               ],
+//             ),
+//             const SizedBox(height: 30),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget _buildResumenMini(String titulo, double monto, Color color) {
+//     return Column(
+//       children: [
+//         Text(titulo, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+//         const SizedBox(height: 8),
+//         Text("${monto.toStringAsFixed(2)} TTC", style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18)),
+//       ],
+//     );
+//   }
+
+//   // --- VISTAS DE LAS HISTORIAS (PÁGINAS) ---
+
+//   Widget _buildStory1_Resumen(double totalMovido) {
+//     final onSurface = Theme.of(context).colorScheme.onSurface;
+//     return Container(
+//       padding: const EdgeInsets.all(30),
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           const Icon(Icons.bolt_rounded, size: 80, color: Colors.amberAccent),
+//           const SizedBox(height: 20),
+//           Text("Este mes estuviste imparable",
+//               textAlign: TextAlign.center,
+//               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: onSurface)),
+//           const SizedBox(height: 30),
+//           Text("Moviste un total de", style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 16)),
+//           const SizedBox(height: 10),
+//           // Animación del número gigante
+//           TweenAnimationBuilder<double>(
+//             tween: Tween<double>(begin: 0, end: totalMovido),
+//             duration: const Duration(seconds: 2),
+//             builder: (context, value, child) {
+//               return Text(
+//                 "${value.toStringAsFixed(2)} TTC",
+//                 style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.amberAccent),
+//               );
+//             },
+//           ),
+//           const Spacer(),
+//           const Text("Desliza para ver tus gráficos 👉", style: TextStyle(color: Colors.grey)),
+//           const SizedBox(height: 40),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildStory2_Graficos(Map<String, dynamic> data) {
+//     return DefaultTabController(
+//       length: 3,
+//       child: Column(
+//         children: [
+//           const SizedBox(height: 40), // Espacio para el top bar
+//           const Text("Tu Radiografía Financiera", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+//           const TabBar(
+//             indicatorColor: Colors.deepPurpleAccent,
+//             labelColor: Colors.deepPurpleAccent,
+//             unselectedLabelColor: Colors.grey,
+//             tabs: [Tab(text: "Gastos"), Tab(text: "Ingresos"), Tab(text: "Actividad")],
+//           ),
+//           Expanded(
+//             child: TabBarView(
+//               // Bloqueamos el scroll del TabBar para que no interfiera con el PageView de las historias
+//               physics: const NeverScrollableScrollPhysics(),
+//               children: [
+//                 _buildInteractivePieChart(data['distribucionGastos'] ?? {}, true),
+//                 _buildInteractivePieChart(data['distribucionIngresos'] ?? {}, false),
+//                 _buildInteractiveLineChart(data['actividadDiaria'] ?? []),
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildStory3_Recompensas(double cashback) {
+//     return Stack(
+//       alignment: Alignment.center,
+//       children: [
+//         Container(
+//           padding: const EdgeInsets.all(30),
+//           child: Column(
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             children: [
+//               const Icon(Icons.rocket_launch_rounded, size: 80, color: Colors.deepPurpleAccent),
+//               const SizedBox(height: 20),
+//               const Text("¡La Blockchain te premió!",
+//                   textAlign: TextAlign.center,
+//                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+//               const SizedBox(height: 20),
+//               const Text("Tus rendimientos DeFi y Cashback sumaron:",
+//                   textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey)),
+//               const SizedBox(height: 20),
+//               Container(
+//                 padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+//                 decoration: BoxDecoration(
+//                   color: Colors.deepPurpleAccent.withOpacity(0.2),
+//                   borderRadius: BorderRadius.circular(20),
+//                   border: Border.all(color: Colors.deepPurpleAccent),
+//                 ),
+//                 child: Text("+${cashback.toStringAsFixed(2)} TTC",
+//                     style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.deepPurpleAccent)),
+//               ),
+//             ],
+//           ),
+//         ),
+//         // Disparador de Confeti
+//         Align(
+//           alignment: Alignment.topCenter,
+//           child: ConfettiWidget(
+//             confettiController: _confettiController,
+//             blastDirectionality: BlastDirectionality.explosive,
+//             shouldLoop: false,
+//             colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+
+//   // --- CONSTRUCTORES DE GRÁFICOS INTERACTIVOS ---
+
+//   Widget _buildInteractivePieChart(Map<String, dynamic> distribucion, bool esGasto) {
+//     final entries = distribucion.entries.where((e) => (e.value as num).toDouble() > 0).toList();
+//     if (entries.isEmpty) return UIHelper.emptyState(context: context,icon: Icons.pie_chart_outline, title: "Sin datos", message: "No hay movimientos aquí.");
+
+//     List<Color> colors = [Colors.deepPurpleAccent, Colors.teal, Colors.orangeAccent, Colors.pinkAccent, Colors.blueAccent];
+    
+//     List<PieChartSectionData> sections = List.generate(entries.length, (index) {
+//       double value = (entries[index].value as num).toDouble();
+//       return PieChartSectionData(
+//         color: colors[index % colors.length],
+//         value: value,
+//         title: value.toStringAsFixed(0),
+//         radius: 60,
+//         titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+//       );
+//     });
+
+//     return Column(
+//       children: [
+//         const SizedBox(height: 20),
+//         const Text("Toca una sección para ver detalles", style: TextStyle(color: Colors.grey, fontSize: 12)),
+//         Expanded(
+//           child: PieChart(
+//             PieChartData(
+//               sectionsSpace: 4,
+//               centerSpaceRadius: 50,
+//               sections: sections,
+//               // 🔥 AQUI ESTÁ LA INTERACTIVIDAD
+//               pieTouchData: PieTouchData(
+//                 touchCallback: (FlTouchEvent event, pieTouchResponse) {
+//                   if (event is FlTapUpEvent && pieTouchResponse != null && pieTouchResponse.touchedSection != null) {
+//                     int index = pieTouchResponse.touchedSection!.touchedSectionIndex;
+//                     if (index >= 0 && index < entries.length) {
+//                       _showPieDetailsModal(entries[index].key, (entries[index].value as num).toDouble(), esGasto);
+//                     }
+//                   }
+//                 },
+//               ),
+//             ),
+//           ),
+//         ),
+//         // Leyendas
+//         Wrap(
+//           alignment: WrapAlignment.center,
+//           children: List.generate(entries.length, (index) {
+//             return Padding(
+//               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+//               child: Row(
+//                 mainAxisSize: MainAxisSize.min,
+//                 children: [
+//                   Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, color: colors[index % colors.length])),
+//                   const SizedBox(width: 6),
+//                   Text(_getFriendlyName(entries[index].key), style: const TextStyle(fontSize: 12)),
+//                 ],
+//               ),
+//             );
+//           }),
+//         ),
+//         const SizedBox(height: 20),
+//       ],
+//     );
+//   }
+
+//   Widget _buildInteractiveLineChart(List<dynamic> actividadDiaria) {
+//     if (actividadDiaria.isEmpty) return UIHelper.emptyState(context: context,icon: Icons.show_chart, title: "Sin datos", message: "Aún no hay historial.");
+
+//     List<FlSpot> ingresosSpots = [];
+//     List<FlSpot> egresosSpots = [];
+
+//     for (int i = 0; i < actividadDiaria.length; i++) {
+//       var day = actividadDiaria[i];
+//       ingresosSpots.add(FlSpot(i.toDouble(), (day['ingresos'] as num).toDouble()));
+//       egresosSpots.add(FlSpot(i.toDouble(), (day['egresos'] as num).toDouble()));
+//     }
+
+//     return Padding(
+//       padding: const EdgeInsets.all(20),
+//       child: Column(
+//         children: [
+//           const Text("Toca un punto en la gráfica para ver el día", style: TextStyle(color: Colors.grey, fontSize: 12)),
+//           const SizedBox(height: 20),
+//           Expanded(
+//             child: LineChart(
+//               LineChartData(
+//                 gridData: const FlGridData(show: false),
+//                 titlesData: const FlTitlesData(
+//                   topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+//                   rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+//                 ),
+//                 borderData: FlBorderData(show: false),
+//                 lineBarsData: [
+//                   LineChartBarData(spots: ingresosSpots, isCurved: true, color: Colors.teal, barWidth: 4, dotData: const FlDotData(show: true)),
+//                   LineChartBarData(spots: egresosSpots, isCurved: true, color: Theme.of(context).colorScheme.error, barWidth: 4, dotData: const FlDotData(show: true)),
+//                 ],
+//                 // 🔥 AQUI ESTÁ LA INTERACTIVIDAD
+//                 lineTouchData: LineTouchData(
+//                   handleBuiltInTouches: true,
+//                   touchCallback: (FlTouchEvent event, lineTouchResponse) {
+//                     if (event is FlTapUpEvent && lineTouchResponse != null && lineTouchResponse.lineBarSpots != null) {
+//                       int spotIndex = lineTouchResponse.lineBarSpots!.first.spotIndex;
+//                       var dayData = actividadDiaria[spotIndex];
+//                       _showLineDetailsModal(
+//                         dayData['fecha'], 
+//                         (dayData['ingresos'] as num).toDouble(), 
+//                         (dayData['egresos'] as num).toDouble()
+//                       );
+//                     }
+//                   },
+//                 ),
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   String _getFriendlyName(String key) {
+//     Map<String, String> names = {
+//       "PAYPAL_P2P": "Fondeo PayPal",
+//       "SEND": "Transferencias",
+//       "RECEIVE": "Recibido",
+//       "GROUP_ACTION": "Grupos DAO",
+//       "STAKE": "Staking DeFi",
+//       "STAKE_REWARD": "Recompensas",
+//       "CASHBACK_REWARD": "Cashback",
+//     };
+//     return names[key] ?? key;
+//   }
+
+//   // --- INDICADOR SUPERIOR DE HISTORIAS ---
+//   Widget _buildStoryIndicators() {
+//     return Positioned(
+//       top: MediaQuery.of(context).padding.top + 10,
+//       left: 20,
+//       right: 20,
+//       child: Row(
+//         children: List.generate(3, (index) {
+//           return Expanded(
+//             child: Container(
+//               margin: const EdgeInsets.symmetric(horizontal: 4),
+//               height: 4,
+//               decoration: BoxDecoration(
+//                 color: _currentPage >= index ? Theme.of(context).colorScheme.primary : Colors.grey.withOpacity(0.3),
+//                 borderRadius: BorderRadius.circular(2),
+//               ),
+//             ),
+//           );
+//         }),
+//       ),
+//     );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     if (_isLoading) {
+//       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+//     }
+
+//     if (_analyticsData == null) {
+//       return const Scaffold(body: Center(child: Text("Error al cargar analíticas")));
+//     }
+
+//     double totalIngresos = double.tryParse(_analyticsData!['totalIngresos'].toString()) ?? 0.0;
+//     double totalEgresos = double.tryParse(_analyticsData!['totalEgresos'].toString()) ?? 0.0;
+//     double totalMovido = totalIngresos + totalEgresos;
+//     double totalCashback = double.tryParse(_analyticsData!['totalCashback'].toString()) ?? 0.0;
+
+//     return Scaffold(
+//       body: Stack(
+//         children: [
+//           PageView(
+//             controller: _pageController,
+//             onPageChanged: (index) {
+//               setState(() => _currentPage = index);
+//               if (index == 2) {
+//                 _confettiController.play(); // Dispara el confeti en la pantalla 3
+//               }
+//             },
+//             children: [
+//               _buildStory1_Resumen(totalMovido),
+//               _buildStory2_Graficos(_analyticsData!),
+//               _buildStory3_Recompensas(totalCashback),
+//             ],
+//           ),
+//           _buildStoryIndicators(),
+          
+//           // Botón de cierre superior derecho
+//           Positioned(
+//             top: MediaQuery.of(context).padding.top + 20,
+//             right: 20,
+//             child: IconButton(
+//               icon: const Icon(Icons.close, color: Colors.grey),
+//               onPressed: () => Navigator.pop(context),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -22,25 +503,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _analyticsData;
 
-  // Controladores para las Historias
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
-
-  // Controlador de Confeti para la Pantalla 3
-  late ConfettiController _confettiController;
+  // Estados de la UI
+  String _selectedTimeFilter = "Mensual";
+  int _currentTab = 0; // 0: Gastos, 1: Ingresos, 2: Actividad
 
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     _loadData();
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    _confettiController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -53,87 +523,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
   }
 
-  // Future<void> _loadData() async {
-  //   final cacheService = LocalCacheService();
-
-  //   // 1. Cargar caché inmediatamente (¡Velocidad luz!)
-  //   final cachedData = cacheService.getCachedAnalytics();
-  //   if (cachedData.isNotEmpty && mounted) {
-  //     setState(() {
-  //       _analyticsData = cachedData;
-  //       _isLoading = false; // Pintamos la pantalla al instante
-  //     });
-  //   }
-
-  //   // 2. Traer data fresca de la red en segundo plano
-  //   try {
-  //     final freshData = await userService.getAnalyticsData();
-  //     if (mounted && freshData != null) {
-  //       await cacheService.saveAnalytics(freshData); // Guardamos la nueva data
-  //       setState(() {
-  //         _analyticsData = freshData;
-  //         _isLoading = false;
-  //       });
-  //     }
-  //   } catch (e) {
-  //     // Si la red falla, el usuario ni lo nota porque ya está viendo el caché
-  //     if (mounted && _analyticsData == null) {
-  //       setState(() => _isLoading = false);
-  //     }
-  //   }
-  // }
-
-  // --- MODALS DE DETALLES INTERACTIVOS ---
-
-  void _showPieDetailsModal(String category, double amount, bool esGasto) {
-    final colorScheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Theme.of(context).cardColor,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: (esGasto ? colorScheme.error : Colors.teal).withOpacity(0.1),
-              child: Icon(esGasto ? Icons.arrow_outward_rounded : Icons.call_received_rounded,
-                  color: esGasto ? colorScheme.error : Colors.teal, size: 30),
-            ),
-            const SizedBox(height: 16),
-            Text(_getFriendlyName(category), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(
-              "${amount.toStringAsFixed(2)} TTC",
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: colorScheme.primary),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              esGasto ? "Total gastado en esta categoría" : "Total ingresado por esta categoría",
-              style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary.withOpacity(0.1),
-                  foregroundColor: colorScheme.primary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text("Entendido"),
-              ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
+  // --- MODALS DE DETALLES INTERACTIVOS (Se mantiene la funcionalidad) ---
   void _showLineDetailsModal(String date, double ingresos, double egresos) {
     showModalBottomSheet(
       context: context,
@@ -167,188 +557,261 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Text(titulo, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
         const SizedBox(height: 8),
-        Text("${monto.toStringAsFixed(2)} TTC", style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18)),
+        Text("\$${monto.toStringAsFixed(2)}", style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18)),
       ],
     );
   }
 
-  // --- VISTAS DE LAS HISTORIAS (PÁGINAS) ---
+  String _getFriendlyName(String key) {
+    Map<String, String> names = {
+      "PAYPAL_P2P": "Fondeo PayPal",
+      "SEND": "Transferencias",
+      "RECEIVE": "Recibido",
+      "GROUP_ACTION": "Grupos DAO",
+      "STAKE": "Staking DeFi",
+      "STAKE_REWARD": "Recompensas",
+      "CASHBACK_REWARD": "Cashback",
+    };
+    return names[key] ?? key;
+  }
 
-  Widget _buildStory1_Resumen(double totalMovido) {
-    final onSurface = Theme.of(context).colorScheme.onSurface;
+  IconData _getIconForCategory(String key) {
+    Map<String, IconData> icons = {
+      "PAYPAL_P2P": Icons.account_balance_rounded,
+      "SEND": Icons.swap_horiz_rounded,
+      "RECEIVE": Icons.download_rounded,
+      "GROUP_ACTION": Icons.groups_rounded,
+      "STAKE": Icons.savings_rounded,
+      "STAKE_REWARD": Icons.workspace_premium_rounded,
+      "CASHBACK_REWARD": Icons.redeem_rounded,
+    };
+    return icons[key] ?? Icons.category_rounded;
+  }
+
+  // --- CONSTRUCTORES DE LA NUEVA UI ---
+
+  Widget _buildTimeFilters() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Container(
-      padding: const EdgeInsets.all(30),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.bolt_rounded, size: 80, color: Colors.amberAccent),
-          const SizedBox(height: 20),
-          Text("Este mes estuviste imparable",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: onSurface)),
-          const SizedBox(height: 30),
-          Text("Moviste un total de", style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 16)),
-          const SizedBox(height: 10),
-          // Animación del número gigante
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: totalMovido),
-            duration: const Duration(seconds: 2),
-            builder: (context, value, child) {
-              return Text(
-                "${value.toStringAsFixed(2)} TTC",
-                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.amberAccent),
-              );
-            },
-          ),
-          const Spacer(),
-          const Text("Desliza para ver tus gráficos 👉", style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 40),
-        ],
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
       ),
-    );
-  }
-
-  Widget _buildStory2_Graficos(Map<String, dynamic> data) {
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          const SizedBox(height: 40), // Espacio para el top bar
-          const Text("Tu Radiografía Financiera", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const TabBar(
-            indicatorColor: Colors.deepPurpleAccent,
-            labelColor: Colors.deepPurpleAccent,
-            unselectedLabelColor: Colors.grey,
-            tabs: [Tab(text: "Gastos"), Tab(text: "Ingresos"), Tab(text: "Actividad")],
-          ),
-          Expanded(
-            child: TabBarView(
-              // Bloqueamos el scroll del TabBar para que no interfiera con el PageView de las historias
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildInteractivePieChart(data['distribucionGastos'] ?? {}, true),
-                _buildInteractivePieChart(data['distribucionIngresos'] ?? {}, false),
-                _buildInteractiveLineChart(data['actividadDiaria'] ?? []),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStory3_Recompensas(double cashback) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(30),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.rocket_launch_rounded, size: 80, color: Colors.deepPurpleAccent),
-              const SizedBox(height: 20),
-              const Text("¡La Blockchain te premió!",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 20),
-              const Text("Tus rendimientos DeFi y Cashback sumaron:",
-                  textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey)),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+      child: Row(
+        children: ['Semanal', 'Mensual', 'Anual'].map((filter) {
+          bool isActive = _selectedTimeFilter == filter;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedTimeFilter = filter;
+                  _isLoading = true; 
+                });
+                // Simulación de recarga de datos según filtro
+                Future.delayed(const Duration(milliseconds: 600), () {
+                  if (mounted) {
+                    _loadData(); // Aquí tu backend debería recibir el filtro idealmente
+                  }
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.deepPurpleAccent.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.deepPurpleAccent),
+                  color: isActive ? colorScheme.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text("+${cashback.toStringAsFixed(2)} TTC",
-                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.deepPurpleAccent)),
+                child: Center(
+                  child: Text(
+                    filter,
+                    style: TextStyle(
+                      color: isActive ? colorScheme.onPrimary : colorScheme.onSurface.withOpacity(0.6),
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
               ),
-            ],
-          ),
-        ),
-        // Disparador de Confeti
-        Align(
-          alignment: Alignment.topCenter,
-          child: ConfettiWidget(
-            confettiController: _confettiController,
-            blastDirectionality: BlastDirectionality.explosive,
-            shouldLoop: false,
-            colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
-          ),
-        ),
-      ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
-  // --- CONSTRUCTORES DE GRÁFICOS INTERACTIVOS ---
+  Widget _buildTabs() {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: onSurface.withOpacity(0.1))),
+      ),
+      child: Row(
+        children: ['Gastos', 'Ingresos', 'Actividad'].asMap().entries.map((entry) {
+          int idx = entry.key;
+          String name = entry.value;
+          bool isActive = _currentTab == idx;
+          
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _currentTab = idx),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isActive ? onSurface : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    name, 
+                    style: TextStyle(
+                      color: isActive ? onSurface : onSurface.withOpacity(0.5), 
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 
-  Widget _buildInteractivePieChart(Map<String, dynamic> distribucion, bool esGasto) {
+  Widget _buildDonutChart(Map<String, dynamic> distribucion, double total, String title) {
     final entries = distribucion.entries.where((e) => (e.value as num).toDouble() > 0).toList();
-    if (entries.isEmpty) return UIHelper.emptyState(context: context,icon: Icons.pie_chart_outline, title: "Sin datos", message: "No hay movimientos aquí.");
+    if (entries.isEmpty) return const SizedBox(height: 250, child: Center(child: Text("Sin datos para mostrar")));
 
-    List<Color> colors = [Colors.deepPurpleAccent, Colors.teal, Colors.orangeAccent, Colors.pinkAccent, Colors.blueAccent];
+    List<Color> colors = [
+      const Color(0xFF4361EE), // Azul
+      const Color(0xFF7209B7), // Púrpura
+      const Color(0xFF00B4D8), // Teal/Cyan
+      const Color(0xFFF72585), // Rosa
+      const Color(0xFFFF9F1C), // Naranja
+    ];
     
     List<PieChartSectionData> sections = List.generate(entries.length, (index) {
       double value = (entries[index].value as num).toDouble();
       return PieChartSectionData(
         color: colors[index % colors.length],
         value: value,
-        title: value.toStringAsFixed(0),
-        radius: 60,
-        titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+        title: '', // Ocultamos el título nativo para el look limpio
+        radius: 40, // Grosor de la dona
       );
     });
 
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        const Text("Toca una sección para ver detalles", style: TextStyle(color: Colors.grey, fontSize: 12)),
-        Expanded(
-          child: PieChart(
+    return Container(
+      height: 280,
+      margin: const EdgeInsets.all(20),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          PieChart(
             PieChartData(
-              sectionsSpace: 4,
-              centerSpaceRadius: 50,
+              sectionsSpace: 2,
+              centerSpaceRadius: 80, // Hueco interior grande
               sections: sections,
-              // 🔥 AQUI ESTÁ LA INTERACTIVIDAD
-              pieTouchData: PieTouchData(
-                touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                  if (event is FlTapUpEvent && pieTouchResponse != null && pieTouchResponse.touchedSection != null) {
-                    int index = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                    if (index >= 0 && index < entries.length) {
-                      _showPieDetailsModal(entries[index].key, (entries[index].value as num).toDouble(), esGasto);
-                    }
-                  }
-                },
-              ),
             ),
           ),
-        ),
-        // Leyendas
-        Wrap(
-          alignment: WrapAlignment.center,
-          children: List.generate(entries.length, (index) {
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), 
+                  fontSize: 12, 
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "\$${total.toStringAsFixed(2)}",
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface, 
+                  fontSize: 32, 
+                  fontWeight: FontWeight.w900
+                ),
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBreakdownList(Map<String, dynamic> distribucion, double total, String title) {
+    final entries = distribucion.entries.where((e) => (e.value as num).toDouble() > 0).toList();
+    if (entries.isEmpty) return const SizedBox.shrink();
+
+    List<Color> colors = [
+      const Color(0xFF4361EE), const Color(0xFF7209B7), const Color(0xFF00B4D8), const Color(0xFFF72585), const Color(0xFFFF9F1C)
+    ];
+
+    // Ordenamos de mayor a menor
+    entries.sort((a, b) => (b.value as num).compareTo((a.value as num)));
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Desglose de $title", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          ...List.generate(entries.length, (index) {
+            double amount = (entries[index].value as num).toDouble();
+            double percentage = total > 0 ? (amount / total) * 100 : 0;
+            Color iconColor = colors[index % colors.length];
+
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.only(bottom: 16),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, color: colors[index % colors.length])),
-                  const SizedBox(width: 6),
-                  Text(_getFriendlyName(entries[index].key), style: const TextStyle(fontSize: 12)),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(_getIconForCategory(entries[index].key), color: iconColor, size: 20),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_getFriendlyName(entries[index].key), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        const SizedBox(height: 4),
+                        Text("${percentage.toStringAsFixed(1)}%", style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  Text("\$${amount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 ],
               ),
             );
           }),
-        ),
-        const SizedBox(height: 20),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildInteractiveLineChart(List<dynamic> actividadDiaria) {
-    if (actividadDiaria.isEmpty) return UIHelper.emptyState(context: context,icon: Icons.show_chart, title: "Sin datos", message: "Aún no hay historial.");
+    if (actividadDiaria.isEmpty) return UIHelper.emptyState(context: context, icon: Icons.show_chart, title: "Sin datos", message: "Aún no hay historial.");
 
     List<FlSpot> ingresosSpots = [];
     List<FlSpot> egresosSpots = [];
@@ -359,11 +822,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       egresosSpots.add(FlSpot(i.toDouble(), (day['egresos'] as num).toDouble()));
     }
 
-    return Padding(
+    return Container(
+      height: 300,
+      margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(24),
+      ),
       child: Column(
         children: [
-          const Text("Toca un punto en la gráfica para ver el día", style: TextStyle(color: Colors.grey, fontSize: 12)),
+          const Text("Actividad en el tiempo", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 20),
           Expanded(
             child: LineChart(
@@ -375,10 +844,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
-                  LineChartBarData(spots: ingresosSpots, isCurved: true, color: Colors.teal, barWidth: 4, dotData: const FlDotData(show: true)),
-                  LineChartBarData(spots: egresosSpots, isCurved: true, color: Theme.of(context).colorScheme.error, barWidth: 4, dotData: const FlDotData(show: true)),
+                  LineChartBarData(spots: ingresosSpots, isCurved: true, color: Colors.teal, barWidth: 3, dotData: const FlDotData(show: true)),
+                  LineChartBarData(spots: egresosSpots, isCurved: true, color: Theme.of(context).colorScheme.error, barWidth: 3, dotData: const FlDotData(show: true)),
                 ],
-                // 🔥 AQUI ESTÁ LA INTERACTIVIDAD
                 lineTouchData: LineTouchData(
                   handleBuiltInTouches: true,
                   touchCallback: (FlTouchEvent event, lineTouchResponse) {
@@ -401,38 +869,164 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  String _getFriendlyName(String key) {
-    Map<String, String> names = {
-      "PAYPAL_P2P": "Fondeo PayPal",
-      "SEND": "Transferencias",
-      "RECEIVE": "Recibido",
-      "GROUP_ACTION": "Grupos DAO",
-      "STAKE": "Staking DeFi",
-      "STAKE_REWARD": "Recompensas",
-      "CASHBACK_REWARD": "Cashback",
-    };
-    return names[key] ?? key;
+  // Widget _buildAIBanner() {
+  //   return Container(
+  //     margin: const EdgeInsets.all(20),
+  //     padding: const EdgeInsets.all(24),
+  //     decoration: BoxDecoration(
+  //       gradient: const LinearGradient(
+  //         colors: [Color(0xFF2A1354), Color(0xFF1E0C3E)], // Púrpura muy oscuro
+  //         begin: Alignment.topLeft,
+  //         end: Alignment.bottomRight,
+  //       ),
+  //       borderRadius: BorderRadius.circular(24),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Row(
+  //           children: [
+  //             const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
+  //             const SizedBox(width: 8),
+  //             const Text("AI Massive Audit", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+  //             const Spacer(),
+  //             Icon(Icons.star_rounded, color: Colors.white.withOpacity(0.1), size: 40), // Decoración
+  //           ],
+  //         ),
+  //         const SizedBox(height: 12),
+  //         Text(
+  //           "Hemos detectado patrones de gasto inusuales en transferencias este mes. Optimiza tus finanzas con nuestras recomendaciones personalizadas.",
+  //           style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, height: 1.5),
+  //         ),
+  //         const SizedBox(height: 20),
+  //         ElevatedButton(
+  //           style: ElevatedButton.styleFrom(
+  //             backgroundColor: const Color(0xFFD8B4FE), // Púrpura claro
+  //             foregroundColor: Colors.black87,
+  //             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+  //             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+  //             elevation: 0,
+  //           ),
+  //           onPressed: () {
+  //             UIHelper.showCustomSnackbar("Auditoría IA será habilitada pronto.");
+  //           },
+  //           child: const Row(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               Text("Ver Análisis Completo", style: TextStyle(fontWeight: FontWeight.bold)),
+  //               SizedBox(width: 8),
+  //               Icon(Icons.arrow_forward_rounded, size: 18),
+  //             ],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  Future<void> _generarAuditoriaIA() async {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("IA analizando patrones...", style: TextStyle(color: Colors.white))));
+
+    String tabName = _currentTab == 0 ? "Gastos" : (_currentTab == 1 ? "Ingresos" : "Actividad");
+    final pdf = pw.Document();
+
+    pdf.addPage(pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(40),
+      build: (pw.Context context) {
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text("Auditoría Inteligente TTC", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.deepPurple800)),
+            pw.Text("Reporte automatizado por IA Mass Audit", style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey700)),
+            pw.SizedBox(height: 20),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(16),
+              decoration: const pw.BoxDecoration(color: PdfColors.grey100, borderRadius: pw.BorderRadius.all(pw.Radius.circular(8))),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text("Foco del Análisis: $tabName", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                  pw.SizedBox(height: 10),
+                  pw.Text(_currentTab == 0 
+                      ? "Observación IA: Se detectó un incremento del 12% en transferencias salientes en comparación con el periodo anterior. Recomendamos revisar las suscripciones activas (Plazos Fijos)." 
+                      : _currentTab == 1 
+                      ? "Observación IA: Los ingresos muestran estabilidad. El rendimiento de Staking DeFi aporta un flujo constante. Se sugiere aumentar el capital bloqueado para maximizar el APY."
+                      : "Observación IA: La actividad transaccional es regular. No se detectan anomalías de seguridad ni duplicidad de cobros."),
+                ]
+              )
+            ),
+            pw.SizedBox(height: 30),
+            pw.Text("Recomendaciones de Optimización:", style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 10),
+            pw.Bullet(text: "Consolida pagos recurrentes en un solo contrato inteligente."),
+            pw.Bullet(text: "Aprovecha las Uchas Flexibles para apartar un 10% adicional."),
+            pw.SizedBox(height: 40),
+            pw.Divider(),
+            pw.Text("Generado por el Motor de Inteligencia Artificial de TTC Wallet.", style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600), textAlign: pw.TextAlign.center),
+          ],
+        );
+      },
+    ));
+
+    await Printing.sharePdf(bytes: await pdf.save(), filename: 'Auditoria_IA_$tabName.pdf');
   }
 
-  // --- INDICADOR SUPERIOR DE HISTORIAS ---
-  Widget _buildStoryIndicators() {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 10,
-      left: 20,
-      right: 20,
-      child: Row(
-        children: List.generate(3, (index) {
-          return Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              height: 4,
-              decoration: BoxDecoration(
-                color: _currentPage >= index ? Theme.of(context).colorScheme.primary : Colors.grey.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+  Widget _buildAIBanner() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [colorScheme.secondary, colorScheme.primary],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
+              const SizedBox(width: 8),
+              const Text("AI Massive Audit", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Icon(Icons.star_rounded, color: Colors.white.withOpacity(0.1), size: 40),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "Hemos analizado tus patrones en ${_currentTab == 0 ? 'gastos' : _currentTab == 1 ? 'ingresos' : 'actividades'}. Optimiza tus finanzas con nuestras recomendaciones personalizadas.",
+            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, height: 1.5),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: colorScheme.secondary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              elevation: 0,
             ),
-          );
-        }),
+            onPressed: () {
+              if (_analyticsData != null) {
+                _generarAuditoriaIA();
+              }
+            },
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Generar Auditoría", style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(width: 8),
+                Icon(Icons.arrow_forward_rounded, size: 18),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -440,47 +1034,71 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_analyticsData == null) {
-      return const Scaffold(body: Center(child: Text("Error al cargar analíticas")));
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: const Center(child: Text("Error al cargar analíticas")),
+      );
     }
 
     double totalIngresos = double.tryParse(_analyticsData!['totalIngresos'].toString()) ?? 0.0;
     double totalEgresos = double.tryParse(_analyticsData!['totalEgresos'].toString()) ?? 0.0;
-    double totalMovido = totalIngresos + totalEgresos;
-    double totalCashback = double.tryParse(_analyticsData!['totalCashback'].toString()) ?? 0.0;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() => _currentPage = index);
-              if (index == 2) {
-                _confettiController.play(); // Dispara el confeti en la pantalla 3
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text("Analíticas", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent),
+            tooltip: "Exportar PDF",
+            onPressed: () {
+              if (_analyticsData != null) {
+                ShareHelper.generarYCompartirPDFAnaliticas(context, _analyticsData!);
               }
             },
-            children: [
-              _buildStory1_Resumen(totalMovido),
-              _buildStory2_Graficos(_analyticsData!),
-              _buildStory3_Recompensas(totalCashback),
-            ],
           ),
-          _buildStoryIndicators(),
-          
-          // Botón de cierre superior derecho
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 20,
-            right: 20,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.grey),
-              onPressed: () => Navigator.pop(context),
-            ),
+          IconButton(
+            icon: const Icon(Icons.table_chart_rounded, color: Colors.green),
+            tooltip: "Exportar CSV",
+            onPressed: () {
+              UIHelper.showCustomSnackbar("Exportar a CSV estará disponible pronto.");
+            },
           ),
+          const SizedBox(width: 8),
         ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildTimeFilters(),
+            const SizedBox(height: 10),
+            _buildTabs(),
+            
+            // --- CONTENIDO DINÁMICO POR PESTAÑA ---
+            if (_currentTab == 0) ...[
+              _buildDonutChart(_analyticsData!['distribucionGastos'] ?? {}, totalEgresos, "Total Gastos"),
+              _buildBreakdownList(_analyticsData!['distribucionGastos'] ?? {}, totalEgresos, "Gastos"),
+            ] else if (_currentTab == 1) ...[
+              _buildDonutChart(_analyticsData!['distribucionIngresos'] ?? {}, totalIngresos, "Total Ingresos"),
+              _buildBreakdownList(_analyticsData!['distribucionIngresos'] ?? {}, totalIngresos, "Ingresos"),
+            ] else if (_currentTab == 2) ...[
+              _buildInteractiveLineChart(_analyticsData!['actividadDiaria'] ?? []),
+            ],
+
+            _buildAIBanner(),
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }

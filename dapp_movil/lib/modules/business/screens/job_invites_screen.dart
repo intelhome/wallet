@@ -128,7 +128,7 @@ class _JobInvitesScreenState extends State<JobInvitesScreen> {
         body: TabBarView(
           children: [
             // TAB 1: MIS EMPLEOS (EMPRESAS)
-            RefreshIndicator(
+          RefreshIndicator(
               onRefresh: _cargarDatos,
               child: _employers.isEmpty
                 ? UIHelper.emptyState(context: context, icon: Icons.domain_disabled_rounded, title: "Sin Empleos", message: "No formas parte de ninguna empresa.")
@@ -137,33 +137,54 @@ class _JobInvitesScreenState extends State<JobInvitesScreen> {
                     itemCount: _employers.length,
                     itemBuilder: (ctx, i) {
                       var emp = _employers[i];
+                      String empName = emp['businessName'] ?? "Empresa";
+                      String firstLetter = empName.isNotEmpty ? empName[0].toUpperCase() : "E";
+
                       return Card(
                         margin: const EdgeInsets.only(bottom: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        color: Theme.of(context).cardColor,
                         child: Padding(
-                          padding: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
+                           Row(
                                 children: [
-                                  SmartAvatar(address: emp['wallet'], size: 50),
+                                  // 🔥 FIX: Avatar Inteligente en lugar de inicial
+                                  SmartAvatar(address: emp['wallet'] ?? '', size: 65),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(emp['businessName'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                        Text("RUC: ${emp['ruc']}", style: const TextStyle(color: Colors.grey)),
+                                        Text(empName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.category_outlined, size: 16, color: Colors.grey),
+                                            const SizedBox(width: 4),
+                                            Text(emp['industry'] ?? "Tecnología y Software", style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                                          ],
+                                        ),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                              const Divider(height: 30),
-                              Row(children: [const Icon(Icons.email, size: 16, color: Colors.grey), const SizedBox(width: 8), Text(emp['email'] ?? "N/A")]),
-                              const SizedBox(height: 8),
-                              Row(children: [const Icon(Icons.phone, size: 16, color: Colors.grey), const SizedBox(width: 8), Text(emp['phoneNumber'] ?? "N/A")]),
+                              const SizedBox(height: 20),
+                              Divider(color: Colors.grey.withOpacity(0.2)),
+                              const SizedBox(height: 20),
+                              
+                              _buildInfoRow(Icons.fingerprint_rounded, "RUC", emp['ruc'] ?? "N/A"),
+                              const SizedBox(height: 16),
+                              _buildInfoRow(Icons.location_on_outlined, "UBICACIÓN", emp['location'] ?? "Cuenca, Ecuador"),
+                              const SizedBox(height: 16),
+                              _buildInfoRow(Icons.email_outlined, "EMAIL", emp['email'] ?? "N/A"),
+                              const SizedBox(height: 16),
+                              _buildInfoRow(Icons.phone_outlined, "TELÉFONO", emp['phoneNumber'] ?? "N/A"),
+                              const SizedBox(height: 16),
+                              _buildInfoRow(Icons.language_rounded, "SITIO WEB", emp['website'] ?? "No disponible"),
                             ],
                           ),
                         ),
@@ -173,7 +194,7 @@ class _JobInvitesScreenState extends State<JobInvitesScreen> {
             ),
 
             // TAB 2: INVITACIONES PENDIENTES
-            RefreshIndicator(
+          RefreshIndicator(
               onRefresh: _cargarDatos,
               child: _invites.isEmpty
                 ? UIHelper.emptyState(context: context, icon: Icons.inbox_rounded, title: "Sin invitaciones", message: "No tienes ofertas de trabajo pendientes.")
@@ -182,25 +203,72 @@ class _JobInvitesScreenState extends State<JobInvitesScreen> {
                     itemCount: _invites.length,
                     itemBuilder: (ctx, i) {
                       final inv = _invites[i];
+                      String empName = inv['businessName'] ?? 'Empresa';
+                      String firstLetter = empName.isNotEmpty ? empName[0].toUpperCase() : "E";
+
                       return Card(
                         margin: const EdgeInsets.only(bottom: 16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        color: Theme.of(context).cardColor,
+                        elevation: 0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05)),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.all(20),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
+                             Row(
                                 children: [
-                                  const Icon(Icons.storefront_rounded, color: Colors.blueAccent, size: 40),
+                                  
+                                  SmartAvatar(address: inv['businessWallet'] ?? '', size: 54),
                                   const SizedBox(width: 16),
-                                  Expanded(child: Text(inv['businessName'] ?? 'Empresa', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(empName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "Te ha invitado a unirte a su equipo comercial.", 
+                                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13)
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 24),
                               Row(
                                 children: [
-                                  Expanded(child: OutlinedButton(onPressed: () => _responder(inv['businessWallet'], false), style: OutlinedButton.styleFrom(foregroundColor: Colors.red), child: const Text("Rechazar"))),
-                                  const SizedBox(width: 10),
-                                  Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white), onPressed: () => _responder(inv['businessWallet'], true), child: const Text("Aceptar Puesto"))),
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () => _responder(inv['businessWallet'], false), 
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.redAccent,
+                                        side: BorderSide(color: Colors.redAccent.withOpacity(0.4)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                      ), 
+                                      child: const Text("Rechazar", style: TextStyle(fontWeight: FontWeight.bold))
+                                    )
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF4361EE), 
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        elevation: 0,
+                                      ), 
+                                      onPressed: () => _responder(inv['businessWallet'], true), 
+                                      child: const Text("Aceptar Puesto", style: TextStyle(fontWeight: FontWeight.bold))
+                                    )
+                                  ),
                                 ],
                               )
                             ],
@@ -210,7 +278,6 @@ class _JobInvitesScreenState extends State<JobInvitesScreen> {
                     },
                   ),
             ),
-
             // TAB 3: MIS TAREAS
             RefreshIndicator(
               onRefresh: _cargarDatos,
@@ -232,6 +299,26 @@ class _JobInvitesScreenState extends State<JobInvitesScreen> {
     );
   }
 }
+
+Widget _buildInfoRow(IconData icon, String title, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: Colors.grey),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+              const SizedBox(height: 2),
+              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 // class JobInvitesScreen extends StatefulWidget {
 //   const JobInvitesScreen({super.key});
 

@@ -160,225 +160,119 @@ final myAddress = authCore.publicAddress;
             : (type == 'STAKE' ? pendingColor : successColor);
         if (iconColor == Colors.blueAccent) iconColor = colorScheme.primary;
 
-        return Container(
+       return Container(
           decoration: BoxDecoration(
-            color: cardColor,
+            color: theme.scaffoldBackgroundColor, // 🔥 Tematizado
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(28),
               topRight: Radius.circular(28),
-            ), // 🔥 Bordes más redondeados M3
+            ),
           ),
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(bottomSheetContext).padding.bottom + 24,
-            left: 24,
-            right: 24,
-            top: 16,
+            left: 20,
+            right: 20,
+            top: 12,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 32,
+                width: 40,
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
-                  color: Theme.of(
-                    bottomSheetContext,
-                  ).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                  color: onSurfaceColor.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: currentColor.withOpacity(0.1),
-                child: Icon(mainIcon, color: currentColor, size: 32),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(mainIcon, color: currentColor, size: 28),
               ),
               const SizedBox(height: 16),
 
               (esFantasma && amount == 0.0)
-                  ? Text(
-                      "---",
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: iconColor,
-                      ),
-                    )
+                  ? Text("---", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: iconColor))
                   : Text(
                       "$prefix ${amount.toStringAsFixed(4)} TTC",
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: 28,
                         fontWeight: FontWeight.w900,
-                        color: isFailed
-                            ? Theme.of(bottomSheetContext).colorScheme.error
-                            : onSurfaceColor,
-                        decoration: isFailed
-                            ? TextDecoration.lineThrough
-                            : null,
+                        color: isFailed ? failColor : onSurfaceColor,
+                        decoration: isFailed ? TextDecoration.lineThrough : null,
                       ),
                     ),
-
               const SizedBox(height: 8),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: onSurfaceColor.withOpacity(0.7),
-                    ),
-                  ),
+                  Text(title, style: TextStyle(fontSize: 16, color: onSurfaceColor.withOpacity(0.6), fontWeight: FontWeight.w500)),
                   if (esFantasma) ...[
                     const SizedBox(width: 8),
-                    Tooltip(
-                      message: "Recuperada por el Indexer",
-                      child: Icon(Icons.healing, color: pendingColor, size: 18),
-                    ),
+                    Tooltip(message: "Recuperada", child: Icon(Icons.healing, color: pendingColor, size: 18)),
                   ],
                 ],
               ),
+              
               Container(
                 width: double.infinity,
-                margin: const EdgeInsets.symmetric(vertical: 20),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
+                margin: const EdgeInsets.symmetric(vertical: 24),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: currentColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: currentColor.withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: currentColor.withOpacity(0.2)),
                 ),
                 child: Column(
                   children: [
                     Text(
-                      isFailed
-                          ? "Fallida / Rechazada"
-                          : "Completada Exitosamente",
-                      style: TextStyle(
-                        color: currentColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                      isFailed ? "Fallida / Rechazada" : "Completada Exitosamente",
+                      style: TextStyle(color: currentColor, fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       statusMessage,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: onSurfaceColor.withOpacity(0.8),
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: onSurfaceColor.withOpacity(0.8), fontSize: 14, height: 1.4),
                     ),
                   ],
                 ),
               ),
-              Divider(color: onSurfaceColor.withOpacity(0.1)),
-              const SizedBox(height: 12),
 
-              _DetailRow(
-                label: "Fecha",
-                value: dateLabel,
-                copyable: false,
-                rootContext: rootContext,
-                bottomSheetContext: bottomSheetContext,
-              ),
-              _DetailRow(
-                label: "De",
-                value: sender,
-                copyable:
-                    sender != "ECOSYSTEM_CONTRACT" &&
-                    sender != "SYSTEM_REWARD" &&
-                    sender != "PAYPAL_ONRAMP",
-                rootContext: rootContext,
-                bottomSheetContext: bottomSheetContext,
-                myAddress: myAddress,
-              ),
-              _DetailRow(
-                label: "Para",
-                value: receiver,
-                copyable: receiver != "ECOSYSTEM_CONTRACT",
-                rootContext: rootContext,
-                bottomSheetContext: bottomSheetContext,
-                myAddress: myAddress,
-              ),
-              _DetailRow(
-                label: "Hash",
-                value: txHash,
-                copyable: true,
-                rootContext: rootContext,
-                bottomSheetContext: bottomSheetContext,
-              ),
-              _DetailRow(
-                label: "Red",
-                value: "Ethereum L2 (Local)",
-                copyable: false,
-                rootContext: rootContext,
-                bottomSheetContext: bottomSheetContext,
-              ),
+              _DetailRow(label: "FECHA", value: dateLabel, copyable: false, rootContext: rootContext, bottomSheetContext: bottomSheetContext),
+              _DetailRow(label: "DE", value: sender, copyable: sender != "ECOSYSTEM_CONTRACT" && sender != "SYSTEM_REWARD" && sender != "PAYPAL_ONRAMP", rootContext: rootContext, bottomSheetContext: bottomSheetContext, myAddress: myAddress),
+              _DetailRow(label: "PARA", value: receiver, copyable: receiver != "ECOSYSTEM_CONTRACT", rootContext: rootContext, bottomSheetContext: bottomSheetContext, myAddress: myAddress),
+              
+              // 🔥 AÑADIDA LA TARJETA CON EL HASH DE TRANSACCIÓN
+              _DetailRow(label: "HASH DE TRANSACCIÓN", value: txHash, copyable: true, rootContext: rootContext, bottomSheetContext: bottomSheetContext),
 
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            colorScheme.primary, // 🔥 Botón principal M3
-                        foregroundColor: colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: const Icon(
-                        Icons.share,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      label: const Text(
-                        "Compartir",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      //onPressed: () => ShareHelper.compartirTransaccionTexto(tx, myAddress),
-                      onPressed: () {
-                        // Opcional: Si quieres que el modal se cierre automáticamente al darle a compartir
-                        Navigator.pop(bottomSheetContext);
-
-                        ShareHelper.compartirTransaccionPDF(
-                          rootContext,
-                          tx,
-                          myAddress,
-                        );
-                      },
-                    ),
+              const SizedBox(height: 16),
+              
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), 
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton(
-                      // 🔥 Botón secundario M3
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: onSurfaceColor,
-                        side: BorderSide(
-                          color: onSurfaceColor.withOpacity(0.2),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pop(bottomSheetContext),
-                      child: const Text(
-                        "Cerrar",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ],
+                  icon: const Icon(Icons.share, size: 20),
+                  label: const Text("Compartir", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  onPressed: () {
+                    Navigator.pop(bottomSheetContext);
+                    ShareHelper.compartirTransaccionPDF(rootContext, tx, myAddress);
+                  },
+                ),
               ),
             ],
           ),
@@ -568,6 +462,107 @@ final myAddress = authCore.publicAddress;
   }
 }
 
+// class _DetailRow extends StatelessWidget {
+//   final String label;
+//   final String value;
+//   final bool copyable;
+//   final BuildContext rootContext;
+//   final BuildContext bottomSheetContext;
+//   final String? myAddress;
+
+//   const _DetailRow({
+//     required this.label,
+//     required this.value,
+//     required this.copyable,
+//     required this.rootContext,
+//     required this.bottomSheetContext,
+//     this.myAddress,
+//   });
+
+//   @override
+//   Widget build(BuildContext ctx) {
+//     String dysplayValue = value;
+//     if (value.length > 25 && value.startsWith('0x')) {
+//       dysplayValue =
+//           "${value.substring(0, 10)}... ${value.substring(value.length - 8)}";
+//     }
+
+//     final onSurfaceColor = Theme.of(ctx).colorScheme.onSurface;
+
+//     return Padding(
+//       padding: const EdgeInsets.symmetric(vertical: 20),
+//       child: Row(
+//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//         children: [
+//           Text(
+//             label,
+//             style: TextStyle(
+//               color: onSurfaceColor.withOpacity(0.6),
+//               fontSize: 14,
+//             ),
+//           ),
+//           const SizedBox(width: 16),
+//           Expanded(
+//             child: Row(
+//               mainAxisAlignment: MainAxisAlignment.end,
+//               children: [
+//                 if (value.startsWith('0x') && value.length == 42) ...[
+//                   SmartAvatar(address: value, size: 20),
+//                   const SizedBox(width: 8),
+//                 ],
+//                 Flexible(
+//                   child: Text(
+//                     dysplayValue,
+//                     style: TextStyle(
+//                       color: onSurfaceColor,
+//                       fontSize: 14,
+//                       fontFamily: 'monospace',
+//                     ),
+//                     overflow: TextOverflow.ellipsis,
+//                   ),
+//                 ),
+
+//                 if (copyable) ...[
+//                   const SizedBox(width: 8),
+//                   InkWell(
+//                     onTap: () {
+//                       HapticFeedback.lightImpact();
+//                       Clipboard.setData(ClipboardData(text: value));
+//                       UIHelper.showCustomSnackbar("¡Copiado al portapapeles!", isError: false);
+//                     },
+//                     child: const Icon(
+//                       Icons.copy,
+//                       color: Colors.blueAccent,
+//                       size: 16,
+//                     ),
+//                   ),
+
+//                   // 🔥 EL BOTÓN MÁGICO 🔥
+//                   if (value.startsWith('0x') &&
+//                       myAddress != null &&
+//                       value.toLowerCase() != myAddress!.toLowerCase()) ...[
+//                     const SizedBox(width: 15),
+//                     InkWell(
+//                       onTap: () {
+//                         TransactionDetailsModal.mostrarDialogoGuardarContacto(rootContext, bottomSheetContext, value, myAddress!);
+//                       },
+//                       child: Icon(
+//                         Icons.person_add_rounded,
+//                         color: Theme.of(ctx).colorScheme.primary,
+//                         size: 22,
+//                       ), // 🔥 M3
+//                     ),
+//                   ],
+//                 ],
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
 class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
@@ -589,79 +584,70 @@ class _DetailRow extends StatelessWidget {
   Widget build(BuildContext ctx) {
     String dysplayValue = value;
     if (value.length > 25 && value.startsWith('0x')) {
-      dysplayValue =
-          "${value.substring(0, 10)}... ${value.substring(value.length - 8)}";
+      dysplayValue = "${value.substring(0, 8)}...${value.substring(value.length - 4)}";
     }
 
-    final onSurfaceColor = Theme.of(ctx).colorScheme.onSurface;
+    final theme = Theme.of(ctx);
+    final colorScheme = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: theme.cardColor, // 🔥 Tematizado (Oscuro o Claro según AppTheme)
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
-            style: TextStyle(
-              color: onSurfaceColor.withOpacity(0.6),
-              fontSize: 14,
-            ),
+            label.toUpperCase(),
+            style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (value.startsWith('0x') && value.length == 42) ...[
-                  SmartAvatar(address: value, size: 20),
-                  const SizedBox(width: 8),
-                ],
-                Flexible(
-                  child: Text(
-                    dysplayValue,
-                    style: TextStyle(
-                      color: onSurfaceColor,
-                      fontSize: 14,
-                      fontFamily: 'monospace',
-                    ),
-                    overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (value.startsWith('0x') && value.length == 42) ...[
+                SmartAvatar(address: value, size: 28),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Text(
+                  dysplayValue,
+                  style: TextStyle(color: colorScheme.onSurface, fontSize: 14, fontFamily: 'monospace', fontWeight: FontWeight.w500),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (copyable) ...[
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Clipboard.setData(ClipboardData(text: value));
+                    UIHelper.showCustomSnackbar("¡Copiado al portapapeles!", isError: false);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.05), shape: BoxShape.circle),
+                    child: Icon(Icons.copy, color: colorScheme.onSurface.withOpacity(0.7), size: 16),
                   ),
                 ),
-
-                if (copyable) ...[
+                if (value.startsWith('0x') && myAddress != null && value.toLowerCase() != myAddress!.toLowerCase()) ...[
                   const SizedBox(width: 8),
                   InkWell(
                     onTap: () {
-                      HapticFeedback.lightImpact();
-                      Clipboard.setData(ClipboardData(text: value));
-                      UIHelper.showCustomSnackbar("¡Copiado al portapapeles!", isError: false);
+                      TransactionDetailsModal.mostrarDialogoGuardarContacto(rootContext, bottomSheetContext, value, myAddress!);
                     },
-                    child: const Icon(
-                      Icons.copy,
-                      color: Colors.blueAccent,
-                      size: 16,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.05), shape: BoxShape.circle),
+                      child: Icon(Icons.person_add_alt_1_rounded, color: colorScheme.onSurface.withOpacity(0.7), size: 16),
                     ),
                   ),
-
-                  // 🔥 EL BOTÓN MÁGICO 🔥
-                  if (value.startsWith('0x') &&
-                      myAddress != null &&
-                      value.toLowerCase() != myAddress!.toLowerCase()) ...[
-                    const SizedBox(width: 15),
-                    InkWell(
-                      onTap: () {
-                        TransactionDetailsModal.mostrarDialogoGuardarContacto(rootContext, bottomSheetContext, value, myAddress!);
-                      },
-                      child: Icon(
-                        Icons.person_add_rounded,
-                        color: Theme.of(ctx).colorScheme.primary,
-                        size: 22,
-                      ), // 🔥 M3
-                    ),
-                  ],
                 ],
               ],
-            ),
+            ],
           ),
         ],
       ),

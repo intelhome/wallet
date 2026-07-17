@@ -658,7 +658,7 @@ onPressed: isProcessing ? null : () async {
                       final txService = Provider.of<TransactionService>(context, listen: false);
                       double allocatedBudget = double.tryParse(budgetCtrl.text) ?? 0.0;
 
-                      // 🔥 FIX 1: VERIFICACIÓN DE SALDO ANTES DE CONTINUAR
+                   
                       if (allocatedBudget > 0) {
                         String saldoRealStr = await txService.getBalance();
                         double saldoReal = double.tryParse(saldoRealStr) ?? 0.0;

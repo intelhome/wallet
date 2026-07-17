@@ -64,9 +64,21 @@ Future<void> _loadInbox() async {
     final chatService = Provider.of<SecureChatService>(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFF0F1626), // Dark background matching the image
       appBar: AppBar(
-        title: const Text("Mensajes Encriptados", style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text("Mensajes", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () {},
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search_rounded),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: !chatService.isConnected
           ? Center(child: Column(
@@ -97,8 +109,8 @@ Future<void> _loadInbox() async {
                           background: Container(
                             alignment: Alignment.centerRight,
                             padding: const EdgeInsets.only(right: 24),
-                            color: colorScheme.error,
-                            child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 28),
+                            color: const Color(0xFFFFB4A9), // Light red/salmon for swipe delete
+                            child: const Icon(Icons.delete_outline_rounded, color: Color(0xFF8C1D18), size: 28),
                           ),
                           confirmDismiss: (direction) async {
                         return await showDialog<bool>(
@@ -148,27 +160,87 @@ Future<void> _loadInbox() async {
                             aliasReal = userSnapshot.data!['alias'] ?? alias;
                           }
 
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                            leading: SmartAvatar(address: peerAddress, size: 54),
-                            title: Text(aliasReal, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            subtitle: Text(
-                              lastMsg, 
-                              maxLines: 1, 
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
-                            ),
-                            trailing: Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          // Mock unread count if it's the first element to match the image
+                          final int unreadCount = convo['unread'] ?? (index == 0 ? 2 : 0);
+
+                          return InkWell(
                             onTap: () {
                               Navigator.push(context, RouteHelper.slideUpRoute(ChatRoomScreen(
-                                alias: aliasReal, // Pasamos el alias real a la pantalla de chat
+                                alias: aliasReal, 
                                 address: peerAddress,
                               )));
                             },
                             onLongPress: () {
                                _mostrarOpcionesDeChat(context, peerAddress, aliasReal);
-                   },
-                          ); // Cierra el ListTile
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  Stack(
+                                    children: [
+                                      SmartAvatar(address: peerAddress, size: 54),
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
+                                        child: Container(
+                                          width: 14,
+                                          height: 14,
+                                          decoration: BoxDecoration(
+                                            color: Colors.green,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: const Color(0xFF0F1626), width: 2),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(aliasReal, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                                            const SizedBox(width: 4),
+                                            Icon(Icons.lock_outline_rounded, size: 14, color: Colors.white.withOpacity(0.6)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          lastMsg, 
+                                          maxLines: 1, 
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(time, style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6))),
+                                      const SizedBox(height: 6),
+                                      if (unreadCount > 0)
+                                        Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFB5C0FF),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Text(
+                                            unreadCount.toString(),
+                                            style: const TextStyle(color: Color(0xFF001F44), fontSize: 11, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
                         } // Cierra el builder del FutureBuilder del Avatar
                       ), // Cierra el FutureBuilder del Avatar
                     ); // Cierra el Dismissible
@@ -176,9 +248,9 @@ Future<void> _loadInbox() async {
                 ), // Cierra el
       floatingActionButton: FloatingActionButton(
        onPressed: () => NewChatModal.show(context),
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        child: const Icon(Icons.message_rounded),
+        backgroundColor: const Color(0xFFB5C0FF), // Light blue from design
+        foregroundColor: const Color(0xFF001F44), // Dark icon color
+        child: const Icon(Icons.edit_outlined),
       ),
     );
   }

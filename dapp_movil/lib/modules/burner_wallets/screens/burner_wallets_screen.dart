@@ -149,8 +149,8 @@ class _BurnerWalletsScreenState extends State<BurnerWalletsScreen> {
         onPressed: () => CreateBurnerModal.show(context: context, onSuccess: _refresh), // 🔥 LLamamos al nuevo modal independiente
         label: const Text("Nueva Tarjeta", style: TextStyle(fontWeight: FontWeight.bold)),
         icon: const Icon(Icons.add_card_rounded),
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
+        backgroundColor: const Color(0xFF4361EE),
+        foregroundColor: Colors.white,
         elevation: 2,
       ),
     );
@@ -183,7 +183,7 @@ class _BurnerWalletsScreenState extends State<BurnerWalletsScreen> {
   }
 }
 
-// 🔥 WIDGET DE LA TARJETA 🔥
+// WIDGET DE LA TARJETA
 class _BurnerCard extends StatelessWidget {
   final dynamic wallet;
   final VoidCallback onRefresh;
@@ -193,22 +193,24 @@ class _BurnerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final String address = wallet['burnerAddress'];
+    final String address = wallet['burnerAddress'] ?? '';
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      elevation: 4,
-      shadowColor: colorScheme.primary.withOpacity(0.3),
+      elevation: 8,
+      shadowColor: Colors.black45,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => BurnerDetailsModal.show(context, wallet, onRefresh), // 🔥 Llamamos al modal de detalles externo
+        onTap: () => BurnerDetailsModal.show(context, wallet, onRefresh),
         child: Container(
+          height: 240,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [colorScheme.primary, colorScheme.tertiary],
+              colors: [colorScheme.primary, colorScheme.secondary, const Color(0xFFFFB86B)], 
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
+              stops: const [0.0, 0.6, 1.0],
             ),
           ),
           child: Padding(
@@ -219,47 +221,79 @@ class _BurnerCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.contactless_outlined, color: Colors.white, size: 36),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
-                      child: const Text("VIRTUAL", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1.5)),
+                      width: 45,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0A96D),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white38, width: 0.5),
+                      ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 30),
-                Text(
-                  (wallet['label'] ?? '').toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "${wallet['balance'] ?? '0.0'} TTC",
-                  style: const TextStyle(color: Colors.amberAccent, fontSize: 28, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 12),
-                
-                Text(
-                  address,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'monospace'),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                
-                const Divider(color: Colors.white24, height: 40),
-                
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
                     Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text("CREADA", style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold)),
-                        Text(wallet['createdAt'] != null ? DateTime.parse(wallet['createdAt']).toLocal().toString().substring(0, 10) : "Hoy", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                          child: const Text("VIRTUAL", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1.0)),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text("TTC", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic)),
                       ],
                     ),
-                    const Icon(Icons.touch_app_rounded, color: Colors.white54)
                   ],
-                )
+                ),
+                const Spacer(),
+              
+                Text(
+                  address,
+                  style: const TextStyle(color: Colors.white, fontSize: 15, fontFamily: 'monospace', letterSpacing: 1.0),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("CARD HOLDER", style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                          const SizedBox(height: 4),
+                          Text(
+                            (wallet['label'] ?? 'BILLETERA TEMPORAL').toUpperCase(),
+                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text("BALANCE", style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                        const SizedBox(height: 4),
+                        Text(
+                          "${wallet['balance'] ?? '0.0'} TTC",
+                          style: const TextStyle(color: Color(0xFFFFD166), fontSize: 18, fontWeight: FontWeight.w900),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.info_outline_rounded, color: Colors.white.withOpacity(0.5), size: 12),
+                      const SizedBox(width: 4),
+                      Text("TOCA PARA VER DETALLES", style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10, letterSpacing: 1.0, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

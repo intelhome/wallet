@@ -82,7 +82,7 @@ class AiMemoryService {
         body: jsonEncode({
           "walletAddress": authCore.publicAddress.toLowerCase(),
           "message": message,
-          "systemPrompt": systemPrompt // 🔥 Le pasamos tus reglas gigantes al backend
+          "systemPrompt": systemPrompt 
         }),
       ).timeout(const Duration(seconds: 30));
 
@@ -98,10 +98,10 @@ class AiMemoryService {
     return null;
   }
 
- // 🔥 NUEVO: Envía un bloque temporal de mensajes para extraer gustos
+
  Future<bool> extractPreferencesFromChat(List<String> plainMessages) async {
     try {
-      // 🔥 FIX 1: Apuntar a la nueva ruta REST del Backend
+
       final url = Uri.parse("${ApiConfig.baseUrl}/ai/memory/${authCore.publicAddress.toLowerCase()}/extract"); 
       
       final res = await http.post(

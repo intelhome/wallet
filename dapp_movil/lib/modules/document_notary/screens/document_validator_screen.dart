@@ -238,92 +238,124 @@ class _DocumentValidatorScreenState extends State<DocumentValidatorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
-      appBar: AppBar(title: const Text("Validador Criptográfico", style: TextStyle(fontWeight: FontWeight.bold)), centerTitle: true, elevation: 0, backgroundColor: Colors.transparent),
+      backgroundColor: const Color(0xFF0F1423), // Fondo oscuro
+      appBar: AppBar(
+        title: const Text("Validador Criptográfico", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Center(
-child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(30),
-                decoration: BoxDecoration(color: Colors.deepPurpleAccent.withOpacity(0.1), shape: BoxShape.circle),
-                child: const Icon(Icons.document_scanner_rounded, size: 100, color: Colors.deepPurpleAccent),
-              ),
-              const SizedBox(height: 30),
-              const Text("Auditoría Zero-Trust", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 15),
-              Text(
-                "Sube cualquier archivo para calcular su huella digital y comprobar matemáticamente si fue alterado o si sus firmas son auténticas.",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7), fontSize: 16),
-              ),
-              const SizedBox(height: 40),
-           _isProcessing
-                  ? const CircularProgressIndicator(color: Colors.deepPurpleAccent)
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Círculo oscuro con brillo morado
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E2336),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: const Color(0xFF4A64F6).withOpacity(0.2), blurRadius: 40, spreadRadius: 10),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.document_scanner_rounded, size: 40, color: Colors.white24),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                const Text("Auditoría Zero-Trust", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 16),
+                Text(
+                  "Sube cualquier archivo para calcular su huella digital y comprobar matemáticamente si fue alterado o si sus firmas son auténticas.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[400], fontSize: 15, height: 1.5),
+                ),
+                const SizedBox(height: 40),
+                
+                _isProcessing
+                  ? const CircularProgressIndicator(color: Color(0xFF4A64F6))
                   : Column(
                       children: [
+                        // Botón primario azul
                         SizedBox(
                           width: double.infinity,
-                          height: 56,
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurpleAccent,
+                              backgroundColor: const Color(0xFF4A64F6),
                               foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              elevation: 0,
                             ),
                             onPressed: _validarDocumento,
                             icon: const Icon(Icons.upload_file_rounded),
-                            label: const Text("Seleccionar Archivo a Validar", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            label: const Text("Seleccionar Archivo a Validar", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                           ),
                         ),
+                        
+                        // Separador
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          padding: const EdgeInsets.symmetric(vertical: 32),
                           child: Row(
                             children: [
-                              const Expanded(child: Divider()),
+                              Expanded(child: Divider(color: Colors.grey[800])),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text("O verificar por código Hash", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5))),
+                                child: Text("O verificar por código Hash", style: TextStyle(color: Colors.grey[500], fontSize: 13)),
                               ),
-                              const Expanded(child: Divider()),
+                              Expanded(child: Divider(color: Colors.grey[800])),
                             ],
                           ),
                         ),
+                        
+                        // Input oscuro
                         TextField(
                           controller: _hashController,
+                          style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: "Pega el Hash del documento (0x...)",
-                            prefixIcon: const Icon(Icons.tag_rounded, color: Colors.deepPurpleAccent),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                            hintText: "Pega el Hash del documento (0x...)",
+                            hintStyle: TextStyle(color: Colors.grey[500]),
+                            prefixIcon: const Icon(Icons.numbers_rounded, color: Colors.white54), // # icon
+                            filled: true,
+                            fillColor: const Color(0xFF141824), // Fondo input
+                            contentPadding: const EdgeInsets.symmetric(vertical: 20),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.05))),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.05))),
+                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF4A64F6))),
                           ),
                           onSubmitted: (_) => _validarPorHash(),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 24),
+                        
+                        // Botón de validación (ahora es ElevatedButton azul completo)
                         SizedBox(
                           width: double.infinity,
-                          height: 50,
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.deepPurpleAccent,
-                              side: const BorderSide(color: Colors.deepPurpleAccent),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4A64F6),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), // Píldora
+                              elevation: 0,
                             ),
                             onPressed: _validarPorHash,
                             icon: const Icon(Icons.search_rounded),
-                            label: const Text("Verificar Hash en Blockchain", style: TextStyle(fontWeight: FontWeight.bold)),
+                            label: const Text("Verificar Hash en Blockchain", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           ),
                         ),
                       ],
                     ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }

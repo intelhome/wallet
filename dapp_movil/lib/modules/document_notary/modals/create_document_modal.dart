@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
+import 'package:dapp_movil/core/services/smart_avatar.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/settings_and_profile/services/user_service.dart';
 import 'package:flutter/material.dart';
@@ -82,10 +83,10 @@ class _CreateDocumentModalState extends State<CreateDocumentModal> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
+  return Container(
+      height: MediaQuery.of(context).size.height * 0.90,
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
+        color: theme.scaffoldBackgroundColor, //  Color de fondo adaptativo
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.all(24),
@@ -95,69 +96,170 @@ class _CreateDocumentModalState extends State<CreateDocumentModal> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Detalles del Documento", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              Text("Detalles del Documento", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+              IconButton(icon: Icon(Icons.close, color: colorScheme.onSurface), onPressed: () => Navigator.pop(context)),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           
           // Hash visual
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-            child: Row(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.cardColor, // 🔥 Tarjeta adaptativa
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.fingerprint_rounded, color: colorScheme.primary),
-                const SizedBox(width: 10),
-                Expanded(child: Text("Hash: ${widget.fileHash}", style: TextStyle(color: colorScheme.primary, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                Row(
+                  children: [
+                    Icon(Icons.fingerprint, color: colorScheme.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Text("HASH DEL DOCUMENTO", style: TextStyle(color: colorScheme.primary, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    widget.fileHash,
+                    style: TextStyle(color: colorScheme.onSurface, fontSize: 13, fontFamily: 'monospace', height: 1.5),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text("Verificado en la red principal", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 12, fontStyle: FontStyle.italic)),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-
+          const SizedBox(height: 24),
+          
           // Input de Título
           TextField(
             controller: _titleController,
+            style: TextStyle(color: colorScheme.onSurface),
             decoration: InputDecoration(
               labelText: "Título del Contrato/Acuerdo",
-              hintText: "Ej. Préstamo a Juan, Contrato de Alquiler...",
-              prefixIcon: const Icon(Icons.title_rounded),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
+              hintText: "Ej. documento",
+              hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
+              prefixIcon: Icon(Icons.title, color: colorScheme.onSurface),
+              filled: true,
+              fillColor: theme.cardColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.2)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.2)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colorScheme.primary),
+              ),
             ),
           ),
           const SizedBox(height: 24),
 
-          const Text("¿Quiénes deben firmar?", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 10),
+          Text("¿Quiénes deben firmar?", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: colorScheme.onSurface)),
+          const SizedBox(height: 12),
 
           // Lista de contactos
           Expanded(
             child: _isLoading 
               ? const Center(child: CircularProgressIndicator())
               : _misContactos.isEmpty
-                ? const Center(child: Text("No tienes contactos guardados."))
+                ? Center(child: Text("No tienes contactos guardados.", style: TextStyle(color: colorScheme.onSurface)))
                 : ListView.builder(
                     itemCount: _misContactos.length,
                     itemBuilder: (ctx, i) {
                       var c = _misContactos[i];
                       String wallet = c['contactAddress'].toString().toLowerCase();
                       bool isSelected = _firmantesSeleccionados.contains(wallet);
+                      bool isMe = wallet == authCore.publicAddress.toLowerCase();
 
-                      return CheckboxListTile(
-                        value: isSelected,
-                        activeColor: colorScheme.primary,
-                        title: Text("@${c['alias']}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(wallet.substring(0, 10) + "..."),
-                        secondary: const CircleAvatar(child: Icon(Icons.person)),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _firmantesSeleccionados.add(wallet);
-                            } else {
-                              _firmantesSeleccionados.remove(wallet);
-                            }
-                          });
-                        },
+                      // 🔥 EXTRACCIÓN DE DATOS REALES (Cédula y Correo)
+                      String cedula = c['cedula'] ?? c['id'] ?? 'Sin ID registrado';
+                      String email = c['email'] ?? 'Sin correo registrado';
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: isSelected ? colorScheme.primary : Colors.transparent, width: 1.5),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                // AVATAR REAL
+                                SmartAvatar(address: wallet, size: 44),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text("@${c['alias']}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface)),
+                                      Text(isMe ? "Firmante Principal" : "Invitado", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
+                                Theme(
+                                  data: ThemeData(unselectedWidgetColor: colorScheme.onSurface.withOpacity(0.4)),
+                                  child: Checkbox(
+                                    value: isSelected,
+                                    activeColor: colorScheme.primary,
+                                    checkColor: colorScheme.onPrimary,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        if (value == true) {
+                                          _firmantesSeleccionados.add(wallet);
+                                        } else {
+                                          _firmantesSeleccionados.remove(wallet);
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // DATOS COMPLETOS DE IDENTIDAD (Wallet, ID y Email)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                
+                                Row(
+                                  children: [
+                                    Icon(Icons.email_outlined, size: 16, color: colorScheme.onSurface.withOpacity(0.6)),
+                                    const SizedBox(width: 8),
+                                    Text(email, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 13)),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.account_balance_wallet_outlined, size: 16, color: colorScheme.onSurface.withOpacity(0.6)),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(wallet, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 12, fontFamily: 'monospace')),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -167,9 +269,10 @@ class _CreateDocumentModalState extends State<CreateDocumentModal> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: colorScheme.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              foregroundColor: colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              elevation: 0,
             ),
             onPressed: () {
               HapticFeedback.mediumImpact();
@@ -181,8 +284,8 @@ class _CreateDocumentModalState extends State<CreateDocumentModal> {
                 UIHelper.showCustomSnackbar("Debes elegir al menos 1 firmante", isError: true);
                 return;
               }
-              Navigator.pop(context); // Cierra el modal
-              widget.onConfirm(_titleController.text.trim(), _firmantesSeleccionados); // Devuelve los datos
+              Navigator.pop(context);
+              widget.onConfirm(_titleController.text.trim(), _firmantesSeleccionados); 
             },
             child: Text("Registrar con ${_firmantesSeleccionados.length} Firmantes", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           )

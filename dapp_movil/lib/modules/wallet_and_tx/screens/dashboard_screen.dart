@@ -46,6 +46,8 @@ import 'package:flutter/services.dart';
 import '../modals/send_modal.dart';
 import '../../vaults_and_savings/modals/stake_modal.dart';
 import '../modals/buy_modal.dart';
+import '../screens/buy_screen.dart';
+import '../../vaults_and_savings/screens/stake_screen.dart';
 import '../../auth_and_security/screens/splash_screen.dart';
 import '../../../core/services/app_drawer.dart';
 import '../modals/receive_modal.dart';
@@ -55,7 +57,7 @@ import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../../core/services/smart_avatar.dart';
 import '../../auth_and_security/screens/app_lock_screen.dart';
-import '../../settings_and_profile/screens/profile_screen.dart';
+import '../../settings_and_profile/screens/settings_screen.dart';
 import '../../../core/notifications/push_notification_service.dart';
 import 'package:app_links/app_links.dart';
 
@@ -97,7 +99,7 @@ UserService get userService => Provider.of<UserService>(context, listen: false);
   Future<List<dynamic>>? _debtsFuture;
  DebtService get debtService => Provider.of<DebtService>(context, listen: false);
 late AppLinks _appLinks;
-StreamSubscription<Uri>? _sub; // 🔥 NUEVA VARIABLE PARA LOS LINKS
+StreamSubscription<Uri>? _sub; 
 
   // final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
   //     FlutterLocalNotificationsPlugin();
@@ -611,13 +613,14 @@ Future<void> _cargarCacheLocal() async {
   }
 
   void _abrirModalComprar() {
-    BuyModal.show(
-      context: context,
-      // balanceTTC: _balanceTTC,
-      // balanceETH: _balanceETH,
-      // ethPriceUSD: _ethPriceUSD,
-      onUpdateBalance: _cargarBalance,
-      mostrarMensaje: _mostrarMensaje,
+    Navigator.push(
+      context,
+      RouteHelper.slideUpRoute(
+        BuyScreen(
+          onUpdateBalance: _cargarBalance,
+          mostrarMensaje: _mostrarMensaje,
+        )
+      )
     );
   }
 
@@ -644,12 +647,16 @@ Future<void> _cargarCacheLocal() async {
   }
 
   void _abrirModalStake() {
-    StakeModal.show(
-      context: context,
-      balanceTTC: _balanceTTC,
-      stakedTTC: _stakedTTC,
-      onUpdateBalance: _cargarBalance,
-      mostrarMensaje: _mostrarMensaje,
+    Navigator.push(
+      context,
+      RouteHelper.slideUpRoute(
+        StakeScreen(
+          balanceTTC: _balanceTTC,
+          stakedTTC: _stakedTTC,
+          onUpdateBalance: _cargarBalance,
+          mostrarMensaje: _mostrarMensaje,
+        )
+      )
     );
   }
 
@@ -829,9 +836,9 @@ return Scaffold(
       floatingActionButton: FloatingActionButton(
        // heroTag: 'fab_principal',
        heroTag: 'fab_dashboard_ai',
-        backgroundColor: (planConfig.hasFeature(currentTier, 'IA') || isBusiness) ? colorScheme.secondary : Colors.grey,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), 
+        backgroundColor: (planConfig.hasFeature(currentTier, 'IA') || isBusiness) ? colorScheme.tertiary : Colors.grey,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), 
         onPressed: () {
        
           if (planConfig.hasFeature(currentTier, 'IA') || isBusiness) {
@@ -840,7 +847,7 @@ return Scaffold(
             PremiumBlockerModal.show(context, planRequerido: "BASIC", featureName: "Asistente Inteligente IA");
           }
         },
-        child: const Icon(Icons.smart_toy_rounded, color: Colors.white, size: 28),
+        child: Icon(Icons.smart_toy_rounded, color: theme.scaffoldBackgroundColor, size: 28),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
@@ -866,7 +873,7 @@ return Scaffold(
                         child: Row(
                           children: [
                             GestureDetector(
-                              onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(ProfileScreen(aliasUsuario: _miAlias.replaceAll("@", "")))),
+                              onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(SettingsScreen(aliasUsuario: _miAlias.replaceAll("@", "")))),
                               child: Container(
                                 padding: const EdgeInsets.all(2),
                                 decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: colorScheme.primary.withOpacity(0.3), width: 2)),
@@ -931,15 +938,17 @@ return Scaffold(
                             isDiscreet: isDiscreet,
                             useAvatarColors: isCustom, 
                             onToggleDiscreet: _toggleDiscreetMode,
+                            presupuestoMensual: _presupuestoMensual,
+                            gastadoMes: _gastadoMes,
                           );
                         },
                       );
                     }
                   ),
 
-                  _buildBudgetTracker(),              
+                  // Budget Tracker se removió porque ahora vive en la UserCard
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
                   Text("Operaciones Rápidas", style: TextStyle(color: colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 16),
 
@@ -947,11 +956,14 @@ return Scaffold(
                   // Usamos SingleChildScrollView horizontal para que se adapte a cualquier pantalla
                  Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         // Calculamos el espacio para forzar exactamente 4 columnas
-                     // Calculamos el espacio para forzar exactamente 4 columnas
                         const double spacing = 12.0; 
                         final double itemWidth = (constraints.maxWidth - (spacing * 3)) / 4;
                         
@@ -1274,17 +1286,15 @@ class _BotonAccionState extends State<_BotonAccion> with SingleTickerProviderSta
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 58, // Tamaño perfeccionado para encajar en 4 columnas
-              height: 58,
+              width: 60, // Tamaño perfeccionado para encajar en 4 columnas
+              height: 60,
               decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: widget.color.withOpacity(0.15), blurRadius: 10, offset: const Offset(0, 4))],
-                border: Border.all(color: widget.color.withOpacity(0.1)),
+                color: theme.colorScheme.onSurface.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(widget.icono, color: widget.color, size: 28),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               widget.texto,
               textAlign: TextAlign.center,

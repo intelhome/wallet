@@ -287,32 +287,33 @@ child:Scaffold(
         elevation: 0,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       actions: [
-        
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf, color: Colors.redAccent),
-            tooltip: "Descargar Estado de Cuenta",
-            onPressed: () {
-              if (_allTransactions.isEmpty) { // 🔥 FIX: Cambiado a _allTransactions
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No hay transacciones para generar un reporte.")));
-                return;
-              }
-              // 🔥 FIX: Pasamos _allTransactions a la función generadora
-             // _generarYCompartirPDF(_allTransactions, widget.service.publicAddress); 
-             ShareHelper.generarYCompartirPDFHistory(context, _allTransactions, authCore.publicAddress);
-            },
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(color: Colors.deepOrangeAccent.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+            child: IconButton(
+              icon: const Icon(Icons.picture_as_pdf, color: Colors.deepOrangeAccent, size: 20),
+              tooltip: "Descargar Estado de Cuenta",
+              onPressed: () {
+                if (_allTransactions.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No hay transacciones para generar un reporte.")));
+                  return;
+                }
+               ShareHelper.generarYCompartirPDFHistory(context, _allTransactions, authCore.publicAddress);
+              },
+            ),
           ),
           if (_allTransactions.isNotEmpty && !_isLoading)
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0),
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(color: const Color(0xFFB5C0FF).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
               child: IconButton(
-                icon: Icon(Icons.download_rounded, color: colorScheme.primary),
+                icon: const Icon(Icons.download_rounded, color: Color(0xFFB5C0FF), size: 20),
                 tooltip: "Descargar Excel (CSV)",
-                style: IconButton.styleFrom(backgroundColor: colorScheme.primary.withOpacity(0.1)),
                 onPressed: () {
                   ShareHelper.exportarHistorialCSV(
                     context, 
                     _allTransactions, 
-                    authCore.publicAddress // Tu dirección para calcular si enviaste o recibiste
+                    authCore.publicAddress 
                   );
                 },
               ),
@@ -326,69 +327,65 @@ child:Scaffold(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ActionChip(
-                    // avatar: Icon(
-                    //   _fechaInicio != null ? Icons.calendar_month_rounded : Icons.date_range_rounded,
-                    //   size: 18,
-                    //   color: _fechaInicio != null ? colorScheme.onPrimary : colorScheme.primary,
-                    // ),
-                    // label: Text(
-                    //   _fechaInicio != null 
-                    //       ? "${_fechaInicio!.day}/${_fechaInicio!.month} - ${_fechaFin!.day}/${_fechaFin!.month}"
-                    //       : "Fechas",
-                    //   style: TextStyle(
-                    //     color: _fechaInicio != null ? colorScheme.onPrimary : colorScheme.primary,
-                    //     fontWeight: FontWeight.bold
-                    //   )
-                    // ),
-                    label: Icon(
-                      _fechaInicio != null ? Icons.calendar_month_rounded : Icons.date_range_rounded,
-                      size: 20,
-                      color: _fechaInicio != null ? colorScheme.onPrimary : colorScheme.primary,
+                GestureDetector(
+                  onTap: _seleccionarRangoFechas,
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _fechaInicio != null ? const Color(0xFFB5C0FF) : colorScheme.onSurface.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: _fechaInicio != null ? colorScheme.primary : colorScheme.primary.withOpacity(0.1),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                    onPressed: _seleccionarRangoFechas,
+                    child: Icon(
+                      Icons.calendar_today_rounded,
+                      size: 20,
+                      color: _fechaInicio != null ? Colors.black87 : colorScheme.onSurface.withOpacity(0.8),
+                    ),
                   ),
                 ),
                 
-                // 🔥 BOTÓN DE ELIMINAR FECHA (Solo aparece si hay una seleccionada)
                 if (_fechaInicio != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ActionChip(
-                      // avatar: Icon(Icons.close_rounded, size: 16, color: colorScheme.error),
-                      // label: Text("Quitar", style: TextStyle(color: colorScheme.error, fontSize: 12, fontWeight: FontWeight.bold)),
-                      label: Icon(Icons.close_rounded, size: 20, color: colorScheme.error),
-                      backgroundColor: colorScheme.error.withOpacity(0.1),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                      onPressed: _limpiarFiltroFechas,
-                    )
+                  GestureDetector(
+                    onTap: _limpiarFiltroFechas,
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.error.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.close_rounded, size: 20, color: colorScheme.error),
+                    ),
                   ),
 
                 ...filters.map((filter) {
-                final isSelected = _selectedFilter == filter;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(filter, style: TextStyle(color: isSelected ? theme.cardColor: colorScheme.onSurface.withOpacity(0.7), fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                    selected: isSelected,
-                    selectedColor: colorScheme.primary,
-                    backgroundColor: colorScheme.onSurface.withOpacity(0.05),
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _selectedFilter = filter;
-                          _applyFilter();
-                        });
-                      }
+                  final isSelected = _selectedFilter == filter;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedFilter = filter;
+                        _applyFilter();
+                      });
                     },
-                  ),
-                );
-              }).toList(),
-        ]
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFFB5C0FF) : colorScheme.onSurface.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        filter,
+                        style: TextStyle(
+                          color: isSelected ? Colors.black87 : colorScheme.onSurface.withOpacity(0.8),
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ]
             ),
           ),
           Expanded(
@@ -416,10 +413,13 @@ child:Scaffold(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                child: Text(date, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 14)),
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                                child: Text(date.toUpperCase(), style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2)),
                               ),
-                              ...txs.map((tx) => _buildTransactionCard(tx, colorScheme.onSurface, context)).toList(),
+                              ...txs.map((tx) => Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: _buildTransactionCard(tx, colorScheme.onSurface, context),
+                              )).toList(),
                             ],
                           );
                         },
@@ -431,8 +431,7 @@ child:Scaffold(
 );
   }
 
- Widget _buildTransactionCard(dynamic tx, Color onSurfaceColor, BuildContext context) {
-    // 🔥 REGLA 1: Extraer ColorScheme
+  Widget _buildTransactionCard(dynamic tx, Color onSurfaceColor, BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     final String type = (tx['txType'] ?? 'Unknown').toString().toUpperCase().trim();
@@ -441,73 +440,72 @@ child:Scaffold(
     final bool isFailed = status == 'FAILED' || status == 'REVERTED' || status == 'REJECTED';
     final bool esFantasma = tx['recovered'] == true || tx['isGhost'] == true;
 
-    final String sender = (tx['senderAddress'] ?? '').toString();
     final String receiver = (tx['receiverAddress'] ?? '').toString();
     final String myAddress = authCore.publicAddress;
     final bool iAmReceiver = receiver.toLowerCase() == myAddress.toLowerCase();
 
     String title = 'Desconocido';
-    IconData icon = Icons.help_outline;
-    Color iconColor = Colors.grey;
+    IconData icon = Icons.help_outline_rounded;
+    Color iconColor = const Color(0xFFB5C0FF);
+    Color iconBgColor = onSurfaceColor.withOpacity(0.1);
     String prefix = "";
-    Color amountColor = onSurfaceColor;
+    Color amountColor = const Color(0xFFB5C0FF);
 
-    // 🔥 REGLA 3 Y 4: Mapeo de Colores Semánticos M3
     if (type == 'SEND' || type == 'SEND_FIAT' || type == 'BINANCE_PAY'|| type == 'SCHEDULED_PAYMENT') {
       if (iAmReceiver) {
         title = type == 'BINANCE_PAY' ? "Recibido Instantáneo" : (type == 'SCHEDULED_PAYMENT' ? "Cobro Programado" : "Recibido");
-        icon = type == 'BINANCE_PAY' ? Icons.flash_on_rounded : Icons.call_received_rounded;
-        iconColor = type == 'BINANCE_PAY' ? colorScheme.secondary : Colors.green; // Secondary = Amber
-        amountColor = Colors.green;
+        icon = Icons.call_received_rounded;
+        iconColor = const Color(0xFFB5C0FF);
+        iconBgColor = const Color(0xFF5A49D3).withOpacity(0.3);
+        amountColor = const Color(0xFFB5C0FF);
         prefix = "+";
       } else {
-     title = type == 'BINANCE_PAY' ? "Envío Instantáneo" : (type == 'SCHEDULED_PAYMENT' ? "Pago Programado" : "Enviado");
-        icon = type == 'BINANCE_PAY' ? Icons.flash_on_rounded : (type == 'SCHEDULED_PAYMENT' ? Icons.event_repeat_rounded : Icons.call_made_rounded);
-        iconColor = type == 'BINANCE_PAY' ? colorScheme.secondary : colorScheme.primary; // Primary = Azul
+        title = type == 'BINANCE_PAY' ? "Envío Instantáneo" : (type == 'SCHEDULED_PAYMENT' ? "Pago Programado" : "Enviado");
+        icon = Icons.arrow_outward_rounded;
+        iconColor = const Color(0xFFB5C0FF);
+        iconBgColor = const Color(0xFF5A49D3).withOpacity(0.3);
+        amountColor = Colors.white;
         prefix = "-";
       }
     } else if (type == 'BUY' || type == 'BUY_FIAT') {
       title = "Compra";
       icon = Icons.add_shopping_cart_rounded;
-      iconColor = Colors.green;
-      amountColor = Colors.green;
+      iconColor = const Color(0xFFB5C0FF);
+      iconBgColor = const Color(0xFF5A49D3).withOpacity(0.3);
+      amountColor = const Color(0xFFB5C0FF);
       prefix = "+";
     } else if (type == 'CASHBACK_REWARD') {
       title = "Cashback";
       icon = Icons.stars_rounded;
-      iconColor = colorScheme.secondary; // Secondary = Amber
-      amountColor = colorScheme.secondary;
+      iconColor = Colors.orangeAccent;
+      iconBgColor = Colors.orangeAccent.withOpacity(0.2);
+      amountColor = Colors.orangeAccent;
       prefix = "+";
     } else if (type == 'STAKE') {
       title = "Stake";
       icon = Icons.lock_outline_rounded;
-      iconColor = Colors.orange; // Colores fijos suaves para estados específicos
+      iconColor = Colors.orangeAccent;
+      iconBgColor = Colors.orangeAccent.withOpacity(0.2);
+      amountColor = Colors.white;
       prefix = "-";
-    } else if (type == 'UNSTAKE') {
-      title = "Recompensa";
+    } else if (type == 'UNSTAKE' || type == 'WITHDRAW') {
+      title = type == 'UNSTAKE' ? "Recompensa" : "Liquidación";
       icon = Icons.lock_open_rounded;
-      iconColor = Colors.deepPurple;
-      amountColor = Colors.deepPurple;
+      iconColor = const Color(0xFFB5C0FF);
+      iconBgColor = const Color(0xFF5A49D3).withOpacity(0.3);
+      amountColor = const Color(0xFFB5C0FF);
       prefix = "+";
-    } else if (type == 'WITHDRAW') {
-      title = "Liquidación de Stake";
-      icon = Icons.lock_open_rounded;
-      iconColor = Colors.green;
-      amountColor = Colors.green;
-      prefix = "+";
-    } else if (type == 'RECOVERY') {
-      title = "Recuperación";
-      icon = Icons.healing_rounded;
-      iconColor = Colors.orange;
-      amountColor = Colors.orange;
-    } else if (type == "STAKE_CONTRACT") {
-      title = "Contrato de Staking";
-      icon = Icons.build_circle_outlined;
-      iconColor = Colors.orange;
+    } else {
+      title = "Desconocido";
+      icon = Icons.help_outline_rounded;
+      iconColor = onSurfaceColor.withOpacity(0.7);
+      iconBgColor = onSurfaceColor.withOpacity(0.1);
+      amountColor = const Color(0xFFB5C0FF);
     }
 
     if (isFailed) {
-      iconColor = colorScheme.error; // 🔥 Error = Rojo M3
+      iconColor = colorScheme.error;
+      iconBgColor = colorScheme.error.withOpacity(0.15);
       amountColor = colorScheme.error;
       prefix = "x";
     }
@@ -522,76 +520,91 @@ child:Scaffold(
       }
     }
 
-    // Avatar con color tonal transparente
-    Widget leadingWidget = CircleAvatar(
-      backgroundColor: iconColor.withOpacity(0.1),
-      child: Icon(icon, color: iconColor),
+    Widget leadingWidget = Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: iconBgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: iconColor, size: 20),
     );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24), // 🔥 REGLA 2: Bordes 24px
-        border: isFailed ? Border.all(color: colorScheme.error.withOpacity(0.3), width: 1.5) : Border.all(color: Colors.transparent, width: 0),
+        borderRadius: BorderRadius.circular(16),
+        border: isFailed ? Border.all(color: colorScheme.error.withOpacity(0.3), width: 1.5) : null,
       ),
       child: InkWell(
         onTap: () {
-          TransactionDetailsModal.show(
-            context: context,
-            tx: tx,
-          );
+          TransactionDetailsModal.show(context: context, tx: tx);
         },
-        borderRadius: BorderRadius.circular(24), // 🔥 REGLA 2: Ripple alineado al borde
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Más padding = Más Premium
-          leading: leadingWidget, 
-          title: Row(
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Row(
             children: [
-              Text(title, style: TextStyle(color: onSurfaceColor, fontWeight: FontWeight.bold, fontSize: 16)),
-              if (esFantasma) ...[
-                const SizedBox(width: 6),
-                const Icon(Icons.healing_rounded, color: Colors.orange, size: 14),
-              ]
-            ],
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              Text(isFailed ? "Fallida" : "Completada", style: TextStyle(color: isFailed ? colorScheme.error : onSurfaceColor.withOpacity(0.5), fontSize: 12, fontWeight: FontWeight.w500)),
-              const SizedBox(height: 2),
-              Text(timeStr, style: TextStyle(color: onSurfaceColor.withOpacity(0.4), fontSize: 11)),
-            ],
-          ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              ValueListenableBuilder<bool>(
-                valueListenable: discreetModeNotifier,
-                builder: (context, isDiscreet, _) {
-                  if (esFantasma && amount == 0.0) {
-                    return Text("---", style: TextStyle(color: amountColor, fontWeight: FontWeight.w900, fontSize: 18));
-                  }
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    transitionBuilder: (Widget child, Animation<double> animation) {
-                      return FadeTransition(opacity: animation, child: child);
-                    },
-                    child: Text(
-                      isDiscreet ? "**** TTC" : "$prefix ${amount.toStringAsFixed(2)} TTC", // A 2 decimales para que se vea más a fiat
-                      key: ValueKey<bool>(isDiscreet),
-                      style: TextStyle(
-                        color: amountColor,
-                        fontWeight: FontWeight.w900, // Letra más gruesa para saldos
-                        fontSize: 16,
-                        letterSpacing: -0.5,
-                        decoration: isFailed ? TextDecoration.lineThrough : null,
-                      ),
+              leadingWidget,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title, 
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (esFantasma) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.healing_rounded, color: Colors.orange, size: 14),
+                        ]
+                      ],
                     ),
-                  );
-                },
+                    const SizedBox(height: 4),
+                    Text(
+                      "• ${isFailed ? 'Fallida' : 'Completada'} • $timeStr", 
+                      style: TextStyle(color: onSurfaceColor.withOpacity(0.5), fontSize: 13, fontWeight: FontWeight.w500)
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                flex: 1,
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: discreetModeNotifier,
+                  builder: (context, isDiscreet, _) {
+                    if (esFantasma && amount == 0.0) {
+                      return Text("---", style: TextStyle(color: amountColor, fontWeight: FontWeight.w900, fontSize: 16));
+                    }
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          isDiscreet ? "**** TTC" : "$prefix ${amount.toStringAsFixed(2)} TTC",
+                          key: ValueKey<bool>(isDiscreet),
+                          style: TextStyle(
+                            color: amountColor,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                            letterSpacing: -0.5,
+                            decoration: isFailed ? TextDecoration.lineThrough : null,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           ),

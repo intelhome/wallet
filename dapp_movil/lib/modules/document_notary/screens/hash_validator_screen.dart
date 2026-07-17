@@ -202,38 +202,57 @@ class _HashValidatorScreenState extends State<HashValidatorScreen> {
     );
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
-      appBar: AppBar(title: const Text("Validador de Hash", style: TextStyle(fontWeight: FontWeight.bold)), elevation: 0, backgroundColor: Colors.transparent, centerTitle: true),
+      backgroundColor: const Color(0xFF0F1423), // Fondo oscuro
+      appBar: AppBar(
+        title: const Text("Validador de Hash", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)), 
+        elevation: 0, 
+        backgroundColor: Colors.transparent, 
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Círculo oscuro con brillo
             Container(
-              padding: const EdgeInsets.all(30),
-              decoration: BoxDecoration(color: Colors.deepPurpleAccent.withOpacity(0.1), shape: BoxShape.circle),
-              child: const Icon(Icons.barcode_reader, size: 80, color: Colors.deepPurpleAccent),
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E2336),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: const Color(0xFF4A64F6).withOpacity(0.15), blurRadius: 40, spreadRadius: 10),
+                ],
+              ),
+              child: const Center(
+                child: Icon(Icons.compare_arrows_rounded, size: 30, color: Colors.white24),
+              ),
             ),
-            const SizedBox(height: 30),
-            const Text("Comprobación de Pagos", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
+            const SizedBox(height: 40),
+            const Text("Comprobación de Pagos", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 16),
             Text(
               "Verifica la autenticidad de un comprobante escaneando su QR o pegando el Hash SHA-256.",
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.7)),
+              style: TextStyle(fontSize: 15, color: Colors.grey[400], height: 1.5),
             ),
             const SizedBox(height: 40),
+            
+            // Input para Hash/QR
             TextField(
               controller: _hashController,
+              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: "Hash de Transacción (0x...)",
-                prefixIcon: const Icon(Icons.tag),
+                hintText: "Hash de Transacción (0x...)",
+                hintStyle: TextStyle(color: Colors.grey[500]),
+                prefixIcon: const Icon(Icons.numbers_rounded, color: Colors.white54), // Ícono #
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.qr_code_scanner, color: Colors.deepPurpleAccent),
+                  icon: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white54),
                   onPressed: () async {
                     final scanned = await Navigator.push(context, MaterialPageRoute(builder: (context) => const QRScannerScreen()));
                     if (scanned != null) {
@@ -243,24 +262,33 @@ class _HashValidatorScreenState extends State<HashValidatorScreen> {
                   },
                 ),
                 filled: true,
-                fillColor: colorScheme.onSurface.withOpacity(0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                fillColor: const Color(0xFF141824), // Fondo input oscuro
+                contentPadding: const EdgeInsets.symmetric(vertical: 20),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.05))),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.white.withOpacity(0.05))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF4A64F6))),
               ),
             ),
-            const SizedBox(height: 24),
+            const Spacer(), // Empuja el botón al fondo como en la imagen
+            
+            // Botón Inferior
             SizedBox(
               width: double.infinity,
-              height: 56,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurpleAccent, 
+                  backgroundColor: const Color(0xFF4A64F6), 
                   foregroundColor: Colors.white, 
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), // Píldora
+                  elevation: 0,
                 ),
                 onPressed: _isLoading ? null : _validarHash,
-                child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("Verificar en Blockchain", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: _isLoading 
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                  : const Text("Verificar en Blockchain", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
-            )
+            ),
+            const SizedBox(height: 20), // Margen inferior
           ],
         ),
       ),
