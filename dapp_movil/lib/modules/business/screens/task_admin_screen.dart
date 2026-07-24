@@ -4,8 +4,10 @@ import 'package:dapp_movil/config/api_config.dart';
 import 'package:dapp_movil/core/helpers/share_helper.dart';
 import 'package:dapp_movil/core/notifications/push_notification_service.dart';
 import 'package:dapp_movil/core/services/local_cache_service.dart';
+import 'package:dapp_movil/core/services/smart_avatar.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/business/screens/ai_task_report_screen.dart';
+import 'package:dapp_movil/modules/business/screens/task_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:web_socket_channel/io.dart';
@@ -139,7 +141,7 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
     }
   }
 
-  // 🔥 MOTOR DE FILTRADO EN TIEMPO REAL
+  // MOTOR DE FILTRADO EN TIEMPO REAL
   List<dynamic> _getFilteredTasks() {
     return _allTasks.where((task) {
       // 1. Filtro por Empleado Asignado
@@ -179,141 +181,484 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
     });
   }
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   final theme = Theme.of(context);
+  //   final colorScheme = theme.colorScheme;
+  //   final filteredTasks = _getFilteredTasks();
+
+  //   return Scaffold(
+  //     backgroundColor: theme.scaffoldBackgroundColor,
+  //   appBar: AppBar(
+  //       title: const Text("Panel de Administración", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+  //       backgroundColor: theme.cardColor,
+  //       elevation: 0,
+  //       actions: [
+  //         // 🔥 NUEVO: BOTÓN DE EXPORTAR PDF
+  //        IconButton(
+  //           icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent),
+  //           tooltip: "Exportar Reporte PDF",
+  //           onPressed: () => _mostrarModalConfiguracionPDF(context),
+  //         ),
+  //         IconButton(
+  //           icon: const Icon(Icons.filter_alt_off_rounded, color: Colors.grey),
+  //           tooltip: "Limpiar Filtros",
+  //           onPressed: _limpiarFiltros,
+  //         ),
+  //       ],
+  //     ),
+  //     body: _isLoading
+  //         ? const Center(child: CircularProgressIndicator())
+  //         : Column(
+  //             children: [
+  //               // 🛠️ SECCIÓN DE FILTROS AVANZADOS (ZONA HORIZONTAL SCROLL)
+  //               Container(
+  //                 color: theme.cardColor,
+  //                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+  //                 child: SingleChildScrollView(
+  //                   scrollDirection: Axis.horizontal,
+  //                   child: Row(
+  //                     children: [
+  //                       // FILTRO A: EMPLEADOS
+  //                       _buildFilterDropdown<String>(
+  //                         hint: "Filtrar Empleado",
+  //                         value: _selectedWallet,
+  //                         items: _teamMembers.map((m) {
+  //                           String name = m['alias'] ?? m['name'] ?? 'Usuario';
+  //                           String wallet = m['walletAddress'] ?? m['wallet'] ?? '';
+  //                           return DropdownMenuItem<String>(
+  //                             value: wallet.toLowerCase(),
+  //                             child: Text("@$name", style: const TextStyle(fontSize: 13)),
+  //                           );
+  //                         }).toList(),
+  //                         onChanged: (val) => setState(() => _selectedWallet = val),
+  //                       ),
+  //                       const SizedBox(width: 8),
+
+  //                       // FILTRO B: DEPARTAMENTOS
+  //                       _buildFilterDropdown<String>(
+  //                         hint: "Filtrar Área",
+  //                         value: _selectedDepartmentId,
+  //                         items: _departments.map((d) {
+  //                           return DropdownMenuItem<String>(
+  //                             value: d['id'].toString(),
+  //                             child: Text(d['name'] ?? '', style: const TextStyle(fontSize: 13)),
+  //                           );
+  //                         }).toList(),
+  //                         onChanged: (val) => setState(() => _selectedDepartmentId = val),
+  //                       ),
+  //                       const SizedBox(width: 8),
+
+  //                       // FILTRO C: ESTADOS
+  //                       _buildFilterDropdown<String>(
+  //                         hint: "Filtrar Estado",
+  //                         value: _selectedStatus,
+  //                         items: const [
+  //                           DropdownMenuItem(value: "PENDING", child: Text("Pendientes", style: TextStyle(fontSize: 13))),
+  //                           DropdownMenuItem(value: "IN_PROGRESS", child: Text("En Progreso", style: TextStyle(fontSize: 13))),
+  //                           DropdownMenuItem(value: "COMPLETED", child: Text("Completadas", style: TextStyle(fontSize: 13))),
+  //                           DropdownMenuItem(value: "REWORK_REQUESTED", child: Text("En Corrección", style: TextStyle(fontSize: 13))),
+  //                           DropdownMenuItem(value: "APPROVED", child: Text("Aprobadas", style: TextStyle(fontSize: 13))),
+  //                         ],
+  //                         onChanged: (val) => setState(() => _selectedStatus = val),
+  //                       ),
+  //                       const SizedBox(width: 8),
+
+  //                       // FILTRO D: CALENDARIO / FECHAS
+  //                       ElevatedButton.icon(
+  //                         style: ElevatedButton.styleFrom(
+  //                           backgroundColor: _selectedDate != null ? colorScheme.primary : theme.scaffoldBackgroundColor,
+  //                           foregroundColor: _selectedDate != null ? Colors.white : colorScheme.onSurface,
+  //                           elevation: 0,
+  //                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  //                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  //                         ),
+  //                         icon: const Icon(Icons.calendar_month_rounded, size: 16),
+  //                         label: Text(
+  //                           _selectedDate == null 
+  //                               ? "Por Fecha" 
+  //                               : "${_selectedDate!.day}/${_selectedDate!.month}",
+  //                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+  //                         ),
+  //                         onPressed: () async {
+  //                           DateTime? picked = await showDatePicker(
+  //                             context: context,
+  //                             initialDate: DateTime.now(),
+  //                             firstDate: DateTime(2020),
+  //                             lastDate: DateTime(2030),
+  //                           );
+  //                           if (picked != null) {
+  //                             setState(() => _selectedDate = picked);
+  //                           }
+  //                         },
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ),
+
+  //               // 📋 LISTADO DE RESULTADOS FILTRADOS
+  //               Expanded(
+  //                 child: RefreshIndicator(
+  //                   onRefresh: _loadAdminData,
+  //                   child: filteredTasks.isEmpty
+  //                       ? UIHelper.emptyState(
+  //                           context: context,
+  //                           icon: Icons.filter_list_off_rounded,
+  //                           title: "Sin Tareas Coincidentes",
+  //                           message: "Ninguna actividad cumple con los filtros seleccionados actualmente.",
+  //                         )
+  //                       : ListView.builder(
+  //                           padding: const EdgeInsets.all(16),
+  //                           itemCount: filteredTasks.length,
+  //                           itemBuilder: (ctx, i) {
+  //                             return TaskCard(
+  //                               task: filteredTasks[i],
+  //                               isEmployer: true, // Modo Administración de Gerencia
+  //                               onRefresh: _loadAdminData, // Acción de refresco al volver de los detalles
+  //                             );
+  //                           },
+  //                         ),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //   floatingActionButton: Column(
+  //       mainAxisSize: MainAxisSize.min, // Importante para que no ocupe toda la pantalla
+  //       crossAxisAlignment: CrossAxisAlignment.end,
+  //       children: [
+  //         // 🤖 OPCIONES DESPLEGADAS
+  //         if (_isFabExpanded) ...[
+  //           FloatingActionButton.extended(
+  //             heroTag: "btn_ai_audit",
+  //             backgroundColor: Colors.deepPurpleAccent,
+  //             foregroundColor: Colors.white,
+  //             onPressed: () {
+  //               setState(() => _isFabExpanded = false); // Cerramos el menú al hacer clic
+  //               Navigator.push(
+  //                 context, 
+  //                 MaterialPageRoute(builder: (_) => AiTaskReportScreen(
+  //                   allTasks: _allTasks, 
+  //                   onRefreshBack: _loadAdminData
+  //                 ))
+  //               );
+  //             },
+  //             icon: const Icon(Icons.auto_awesome_rounded),
+  //             label: const Text("Auditoría IA", style: TextStyle(fontWeight: FontWeight.bold)),
+  //           ),
+  //           const SizedBox(height: 12),
+            
+  //           FloatingActionButton.extended(
+  //             heroTag: "btn_new_task",
+  //             onPressed: () {
+  //               setState(() => _isFabExpanded = false); // Cerramos el menú al hacer clic
+  //               CreateTaskModal.show(context, _teamMembers, _departments, _loadAdminData);
+  //             },
+  //             icon: const Icon(Icons.add_task_rounded),
+  //             label: const Text("Nueva Actividad"),
+  //           ),
+  //           const SizedBox(height: 12),
+  //         ],
+          
+  //         // 🔥 BOTÓN PRINCIPAL (TOGGLE)
+  //         FloatingActionButton(
+  //           heroTag: "btn_main_toggle",
+  //           backgroundColor: _isFabExpanded ? Colors.grey.shade700 : Theme.of(context).colorScheme.primary,
+  //           foregroundColor: Colors.white,
+  //           onPressed: () {
+  //             setState(() {
+  //               _isFabExpanded = !_isFabExpanded;
+  //             });
+  //           },
+  //           // Animación suave del ícono (Cambia de Menú a X)
+  //           child: AnimatedSwitcher(
+  //             duration: const Duration(milliseconds: 200),
+  //             transitionBuilder: (child, anim) => RotationTransition(
+  //               turns: child.key == const ValueKey('icon1') ? Tween<double>(begin: 1, end: 0.75).animate(anim) : Tween<double>(begin: 0.75, end: 1).animate(anim),
+  //               child: ScaleTransition(scale: anim, child: child),
+  //             ),
+  //             child: _isFabExpanded
+  //                 ? const Icon(Icons.close_rounded, key: ValueKey('icon1'))
+  //                 : const Icon(Icons.dashboard_customize_rounded, key: ValueKey('icon2')),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final onSurface = colorScheme.onSurface;
     final filteredTasks = _getFilteredTasks();
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-    appBar: AppBar(
-        title: const Text("Panel de Administración", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: theme.cardColor,
+      appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: SmartAvatar(
+            address: Provider.of<AuthCoreService>(context, listen: false).publicAddress, 
+            size: 36
+          ),
+        ),
+        title: const Text("Panel de actividades", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         actions: [
-          // 🔥 NUEVO: BOTÓN DE EXPORTAR PDF
-         IconButton(
-            icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent),
+          IconButton(
+            icon: Icon(Icons.picture_as_pdf_outlined, color: onSurface.withOpacity(0.7)),
             tooltip: "Exportar Reporte PDF",
             onPressed: () => _mostrarModalConfiguracionPDF(context),
           ),
           IconButton(
-            icon: const Icon(Icons.filter_alt_off_rounded, color: Colors.grey),
+            icon: Icon(Icons.filter_list_off_rounded, color: onSurface.withOpacity(0.7)),
             tooltip: "Limpiar Filtros",
             onPressed: _limpiarFiltros,
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🛠️ SECCIÓN DE FILTROS AVANZADOS (ZONA HORIZONTAL SCROLL)
+                // 🛠️ FILTROS (DISEÑO UNIFICADO OSCURO)
                 Container(
-                  color: theme.cardColor,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        // FILTRO A: EMPLEADOS
+                        // ESTADO
                         _buildFilterDropdown<String>(
-                          hint: "Filtrar Empleado",
-                          value: _selectedWallet,
-                          items: _teamMembers.map((m) {
-                            String name = m['alias'] ?? m['name'] ?? 'Usuario';
-                            String wallet = m['walletAddress'] ?? m['wallet'] ?? '';
-                            return DropdownMenuItem<String>(
-                              value: wallet.toLowerCase(),
-                              child: Text("@$name", style: const TextStyle(fontSize: 13)),
-                            );
-                          }).toList(),
-                          onChanged: (val) => setState(() => _selectedWallet = val),
+                          hint: "Estado: Todos",
+                          value: _selectedStatus,
+                          items: const [
+                            DropdownMenuItem(value: "PENDING", child: Text("Pendientes")),
+                            DropdownMenuItem(value: "IN_PROGRESS", child: Text("En Progreso")),
+                            DropdownMenuItem(value: "COMPLETED", child: Text("En Revisión")),
+                            DropdownMenuItem(value: "REWORK_REQUESTED", child: Text("En Corrección")),
+                            DropdownMenuItem(value: "APPROVED", child: Text("Aprobadas")),
+                          ],
+                          onChanged: (val) => setState(() => _selectedStatus = val),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
 
-                        // FILTRO B: DEPARTAMENTOS
+                        // ÁREA (Sustituye al de prioridad de la imagen para mantener tu funcionalidad)
                         _buildFilterDropdown<String>(
-                          hint: "Filtrar Área",
+                          hint: "Área: Todas",
                           value: _selectedDepartmentId,
                           items: _departments.map((d) {
                             return DropdownMenuItem<String>(
                               value: d['id'].toString(),
-                              child: Text(d['name'] ?? '', style: const TextStyle(fontSize: 13)),
+                              child: Text(d['name'] ?? ''),
                             );
                           }).toList(),
                           onChanged: (val) => setState(() => _selectedDepartmentId = val),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
 
-                        // FILTRO C: ESTADOS
-                        _buildFilterDropdown<String>(
-                          hint: "Filtrar Estado",
-                          value: _selectedStatus,
-                          items: const [
-                            DropdownMenuItem(value: "PENDING", child: Text("Pendientes", style: TextStyle(fontSize: 13))),
-                            DropdownMenuItem(value: "IN_PROGRESS", child: Text("En Progreso", style: TextStyle(fontSize: 13))),
-                            DropdownMenuItem(value: "COMPLETED", child: Text("Completadas", style: TextStyle(fontSize: 13))),
-                            DropdownMenuItem(value: "REWORK_REQUESTED", child: Text("En Corrección", style: TextStyle(fontSize: 13))),
-                            DropdownMenuItem(value: "APPROVED", child: Text("Aprobadas", style: TextStyle(fontSize: 13))),
-                          ],
-                          onChanged: (val) => setState(() => _selectedStatus = val),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // FILTRO D: CALENDARIO / FECHAS
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _selectedDate != null ? colorScheme.primary : theme.scaffoldBackgroundColor,
-                            foregroundColor: _selectedDate != null ? Colors.white : colorScheme.onSurface,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          ),
-                          icon: const Icon(Icons.calendar_month_rounded, size: 16),
-                          label: Text(
-                            _selectedDate == null 
-                                ? "Por Fecha" 
-                                : "${_selectedDate!.day}/${_selectedDate!.month}",
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                          onPressed: () async {
+                        // FECHA (Estilizado como dropdown)
+                        InkWell(
+                          onTap: () async {
                             DateTime? picked = await showDatePicker(
                               context: context,
                               initialDate: DateTime.now(),
                               firstDate: DateTime(2020),
                               lastDate: DateTime(2030),
                             );
-                            if (picked != null) {
-                              setState(() => _selectedDate = picked);
-                            }
+                            if (picked != null) setState(() => _selectedDate = picked);
                           },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: theme.cardColor,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: onSurface.withOpacity(0.1)),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  _selectedDate == null 
+                                      ? "Fecha: Todas" 
+                                      : "Fecha: ${_selectedDate!.day}/${_selectedDate!.month}",
+                                  style: TextStyle(fontSize: 13, color: onSurface.withOpacity(0.8), fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(Icons.arrow_drop_down_rounded, color: onSurface.withOpacity(0.6), size: 20),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
+                
+                Divider(color: onSurface.withOpacity(0.05), height: 1),
+                const SizedBox(height: 16),
 
-                // 📋 LISTADO DE RESULTADOS FILTRADOS
+                // 📋 CABECERA DE LOGS
+               Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Envolvemos el título en un Expanded para evitar el overflow en pantallas pequeñas
+                      Expanded(
+                        child: Text(
+                          "Registro de Auditoría", 
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: onSurface),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Mostrando ${filteredTasks.length} de ${_allTasks.length} registros", 
+                        style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 12)
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // LISTA DE AUDITORÍA (NUEVO DISEÑO DE CARDS)
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: _loadAdminData,
                     child: filteredTasks.isEmpty
-                        ? UIHelper.emptyState(
-                            context: context,
-                            icon: Icons.filter_list_off_rounded,
-                            title: "Sin Tareas Coincidentes",
-                            message: "Ninguna actividad cumple con los filtros seleccionados actualmente.",
-                          )
+                        ? UIHelper.emptyState(context: context, icon: Icons.filter_list_off_rounded, title: "Sin Resultados", message: "Ninguna actividad cumple con los filtros.")
                         : ListView.builder(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                             itemCount: filteredTasks.length,
                             itemBuilder: (ctx, i) {
-                              return TaskCard(
-                                task: filteredTasks[i],
-                                isEmployer: true, // Modo Administración de Gerencia
-                                onRefresh: _loadAdminData, // Acción de refresco al volver de los detalles
+                              final task = filteredTasks[i];
+                              final urgency = task['urgency'] ?? 'MEDIUM';
+                              final status = task['status'] ?? 'PENDING';
+                              final title = task['title'] ?? 'Operación de Sistema';
+                              final desc = task['description'] ?? 'Detalles no proporcionados.';
+                              final type = task['taskType'] ?? 'STANDARD';
+                              
+                              // Formateo de fecha
+                              final rawDate = task['createdAt']?.toString() ?? '';
+                              String dateStr = "Reciente";
+                              if (rawDate.length >= 16) {
+                                dateStr = "${rawDate.substring(8, 10)}/${rawDate.substring(5, 7)}, ${rawDate.substring(11, 16)}";
+                              }
+
+                              // Colores e Íconos Dinámicos
+                              Color indicatorColor = urgency == 'URGENT' || urgency == 'HIGH' ? Colors.redAccent : urgency == 'MEDIUM' ? Colors.orangeAccent : onSurface.withOpacity(0.5);
+                              IconData iconLog = urgency == 'URGENT' || urgency == 'HIGH' ? Icons.warning_amber_rounded : urgency == 'MEDIUM' ? Icons.account_balance_rounded : Icons.sync_rounded;
+                              
+                              // Traducción de Urgencia
+                              String urgencyText = urgency == 'URGENT' ? 'URGENCIA EXTREMA' : urgency == 'HIGH' ? 'URGENCIA ALTA' : urgency == 'MEDIUM' ? 'URGENCIA MEDIA' : 'URGENCIA BAJA';
+                              
+                              // Traducción de Estado
+                              String statusText = status == 'PENDING' ? 'Pendiente' : status == 'IN_PROGRESS' ? 'En Progreso' : status == 'COMPLETED' ? 'En Revisión' : status == 'REWORK_REQUESTED' ? 'En Corrección' : 'Aprobada';
+                              IconData statusIcon = status == 'APPROVED' ? Icons.verified_rounded : status == 'COMPLETED' ? Icons.fact_check_rounded : Icons.pending_actions_rounded;
+
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                color: theme.cardColor,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(color: onSurface.withOpacity(0.05)),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                 onTap: () {
+                                    // Abrimos la pantalla de detalles de la tarea
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => TaskDetailsScreen(
+                                          task: task,
+                                          isEmployer: true,
+                                          onRefresh: _loadAdminData,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(border: Border(left: BorderSide(color: indicatorColor, width: 4))),
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: indicatorColor.withOpacity(0.1), 
+                                                borderRadius: BorderRadius.circular(8), 
+                                                border: Border.all(color: indicatorColor.withOpacity(0.3))
+                                              ),
+                                              child: Icon(iconLog, color: indicatorColor, size: 24),
+                                            ),
+                                            Text(dateStr, style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(title, style: TextStyle(color: onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            // Badge Urgencia
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), 
+                                              decoration: BoxDecoration(
+                                                color: indicatorColor.withOpacity(0.1), 
+                                                borderRadius: BorderRadius.circular(6), 
+                                                border: Border.all(color: indicatorColor.withOpacity(0.3))
+                                              ), 
+                                              child: Text(urgencyText, style: TextStyle(color: indicatorColor, fontSize: 10, fontWeight: FontWeight.bold))
+                                            ),
+                                            const SizedBox(width: 8),
+                                            // Badge Tipo de Tarea
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), 
+                                              decoration: BoxDecoration(
+                                                color: onSurface.withOpacity(0.05), 
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: onSurface.withOpacity(0.1))
+                                              ), 
+                                              child: Text(type.toUpperCase(), style: TextStyle(color: onSurface.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.bold))
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(desc, style: TextStyle(color: onSurface.withOpacity(0.7), fontSize: 13, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                        const SizedBox(height: 16),
+                                        // Badge de Estado Final
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.primary.withOpacity(0.1), 
+                                            borderRadius: BorderRadius.circular(6), 
+                                            border: Border.all(color: colorScheme.primary.withOpacity(0.3))
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(statusIcon, size: 14, color: colorScheme.primary),
+                                              const SizedBox(width: 6),
+                                              Text(statusText, style: TextStyle(color: colorScheme.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               );
                             },
                           ),
@@ -321,24 +666,21 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
                 ),
               ],
             ),
-    floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min, // Importante para que no ocupe toda la pantalla
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           // 🤖 OPCIONES DESPLEGADAS
           if (_isFabExpanded) ...[
             FloatingActionButton.extended(
               heroTag: "btn_ai_audit",
-              backgroundColor: Colors.deepPurpleAccent,
-              foregroundColor: Colors.white,
+              backgroundColor: const Color(0xFFBAC3FF), // Color claro acorde al tema
+              foregroundColor: const Color(0xFF00218d),
               onPressed: () {
-                setState(() => _isFabExpanded = false); // Cerramos el menú al hacer clic
+                setState(() => _isFabExpanded = false);
                 Navigator.push(
                   context, 
-                  MaterialPageRoute(builder: (_) => AiTaskReportScreen(
-                    allTasks: _allTasks, 
-                    onRefreshBack: _loadAdminData
-                  ))
+                  MaterialPageRoute(builder: (_) => AiTaskReportScreen(allTasks: _allTasks, onRefreshBack: _loadAdminData))
                 );
               },
               icon: const Icon(Icons.auto_awesome_rounded),
@@ -348,12 +690,14 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
             
             FloatingActionButton.extended(
               heroTag: "btn_new_task",
+              backgroundColor: const Color(0xFFBAC3FF),
+              foregroundColor: const Color(0xFF00218d),
               onPressed: () {
-                setState(() => _isFabExpanded = false); // Cerramos el menú al hacer clic
+                setState(() => _isFabExpanded = false);
                 CreateTaskModal.show(context, _teamMembers, _departments, _loadAdminData);
               },
               icon: const Icon(Icons.add_task_rounded),
-              label: const Text("Nueva Actividad"),
+              label: const Text("Nueva Actividad", style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 12),
           ],
@@ -361,14 +705,14 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
           // 🔥 BOTÓN PRINCIPAL (TOGGLE)
           FloatingActionButton(
             heroTag: "btn_main_toggle",
-            backgroundColor: _isFabExpanded ? Colors.grey.shade700 : Theme.of(context).colorScheme.primary,
-            foregroundColor: Colors.white,
+            backgroundColor: _isFabExpanded ? onSurface.withOpacity(0.2) : const Color(0xFFBAC3FF),
+            foregroundColor: _isFabExpanded ? onSurface : const Color(0xFF00218d),
+            elevation: 0,
             onPressed: () {
               setState(() {
                 _isFabExpanded = !_isFabExpanded;
               });
             },
-            // Animación suave del ícono (Cambia de Menú a X)
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
               transitionBuilder: (child, anim) => RotationTransition(
@@ -377,10 +721,39 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
               ),
               child: _isFabExpanded
                   ? const Icon(Icons.close_rounded, key: ValueKey('icon1'))
-                  : const Icon(Icons.dashboard_customize_rounded, key: ValueKey('icon2')),
+                  : const Icon(Icons.fact_check_outlined, key: ValueKey('icon2')),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // HELPER REFACTORIZADO PARA LOS DROPDOWNS DEL HEADER
+  Widget _buildFilterDropdown<T>({
+    required String hint,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: onSurface.withOpacity(0.1)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          hint: Text(hint, style: TextStyle(fontSize: 13, color: onSurface.withOpacity(0.8), fontWeight: FontWeight.bold)),
+          value: value,
+          items: items,
+          onChanged: onChanged,
+          style: TextStyle(color: onSurface, fontSize: 13, fontWeight: FontWeight.bold),
+          icon: Icon(Icons.arrow_drop_down_rounded, color: onSurface.withOpacity(0.6), size: 20),
+        ),
       ),
     );
   }
@@ -574,30 +947,30 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
   }
 
   // HELPER PARA CONSTRUIR LOS DROPDOWNS COMPACTOS EN LA BARRA DE HERRAMIENTAS
-  Widget _buildFilterDropdown<T>({
-    required String hint,
-    required T? value,
-    required List<DropdownMenuItem<T>> items,
-    required ValueChanged<T?> onChanged,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: value != null ? theme.colorScheme.primary.withOpacity(0.12) : theme.scaffoldBackgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: value != null ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.08)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          hint: Text(hint, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.bold)),
-          value: value,
-          items: items,
-          onChanged: onChanged,
-          style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
-          icon: const Icon(Icons.arrow_drop_down_rounded, size: 20),
-        ),
-      ),
-    );
-  }
+  // Widget _buildFilterDropdown<T>({
+  //   required String hint,
+  //   required T? value,
+  //   required List<DropdownMenuItem<T>> items,
+  //   required ValueChanged<T?> onChanged,
+  // }) {
+  //   final theme = Theme.of(context);
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 12),
+  //     decoration: BoxDecoration(
+  //       color: value != null ? theme.colorScheme.primary.withOpacity(0.12) : theme.scaffoldBackgroundColor,
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(color: value != null ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.08)),
+  //     ),
+  //     child: DropdownButtonHideUnderline(
+  //       child: DropdownButton<T>(
+  //         hint: Text(hint, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.bold)),
+  //         value: value,
+  //         items: items,
+  //         onChanged: onChanged,
+  //         style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
+  //         icon: const Icon(Icons.arrow_drop_down_rounded, size: 20),
+  //       ),
+  //     ),
+  //   );
+  // }
 }

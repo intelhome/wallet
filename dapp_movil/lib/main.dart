@@ -1,5 +1,6 @@
 import 'package:dapp_movil/config/api_config.dart';
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
+import 'package:dapp_movil/core/theme/app_theme.dart';
 import 'package:dapp_movil/modules/admin/services/admin_service.dart';
 import 'package:dapp_movil/modules/ai_assistant/services/ai_chat_handler.dart';
 import 'package:dapp_movil/modules/ai_assistant/services/ai_memory_service.dart';
@@ -250,28 +251,111 @@ class _MiDAppState extends State<MiDApp> with WidgetsBindingObserver {
     }
   }
 
+// @override
+//   Widget build(BuildContext context) {
+//     const lightBg = Color(0xFFF8FAFC);
+//     const lightSurface = Color(0xFFFFFFFF);
+//     const lightPrimary = Color(0xFF0F62FE);
+//     const lightSecondary = Color(0xFFF59E0B);
+//     const lightText = Color(0xFF1E293B);
+
+//     const darkBg = Color(0xFF0B1120);
+//     const darkSurface = Color(0xFF1E293B);
+//     const darkPrimary = Color(0xFF3B82F6);
+//     const darkSecondary = Color(0xFFFBBF24);
+//     const darkText = Color(0xFFF8FAFC);
+
+//     return ValueListenableBuilder<ThemeMode>(
+//       valueListenable: themeNotifier,
+//       builder: (_, ThemeMode currentMode, _) {
+//         return MaterialApp(
+          
+//           scaffoldMessengerKey: UIHelper.messengerKey,
+//          navigatorKey: navigatorKey,
+         
+//           localizationsDelegates: const [
+//             GlobalMaterialLocalizations.delegate,
+//             GlobalWidgetsLocalizations.delegate,
+//             GlobalCupertinoLocalizations.delegate,
+//           ],
+//           supportedLocales: const [
+//             Locale('es', 'ES'), 
+//             Locale('en', 'US'), 
+//           ],
+//           debugShowCheckedModeBanner: false,
+//           title: 'TTC Wallet',
+//           themeMode: currentMode,
+          
+         
+//           theme: ThemeData.light(useMaterial3: true).copyWith(
+//             primaryColor: lightPrimary,
+//             scaffoldBackgroundColor: lightBg,
+//             cardColor: lightSurface,
+//             appBarTheme: const AppBarTheme(
+//               backgroundColor: Colors.transparent,
+//               elevation: 0,
+//               iconTheme: IconThemeData(color: lightText),
+//               titleTextStyle: TextStyle(color: lightText, fontSize: 20, fontWeight: FontWeight.bold),
+//             ),
+//             colorScheme: const ColorScheme.light(
+//               primary: lightPrimary,
+//               secondary: lightSecondary,
+//               surface: lightSurface,
+//               onSurface: lightText,
+//               error: Color(0xFFEF4444), 
+//             ),
+//             iconTheme: const IconThemeData(color: lightText),
+//             dividerColor: lightText.withOpacity(0.1),
+//             cardTheme: const CardThemeData( 
+//               color: lightSurface,
+//               elevation: 0.0,
+//               shape: RoundedRectangleBorder(
+//                 borderRadius: BorderRadius.all(Radius.circular(24.0)),
+//               ),
+//             ),
+//           ),
+
+//           darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
+//             primaryColor: darkPrimary,
+//             scaffoldBackgroundColor: darkBg,
+//             cardColor: darkSurface,
+//             appBarTheme: const AppBarTheme(
+//               backgroundColor: Colors.transparent,
+//               elevation: 0,
+//               iconTheme: IconThemeData(color: darkText),
+//               titleTextStyle: TextStyle(color: darkText, fontSize: 20, fontWeight: FontWeight.bold),
+//             ),
+//             colorScheme: const ColorScheme.dark(
+//               primary: darkPrimary,
+//               secondary: darkSecondary,
+//               surface: darkSurface,
+//               onSurface: darkText,
+//               error: Color(0xFFEF4444),
+//             ),
+//             iconTheme: const IconThemeData(color: darkText),
+//             dividerColor: darkText.withOpacity(0.1),
+//             cardTheme: const CardThemeData( 
+//               color: darkSurface,
+//               elevation: 0.0,
+//               shape: RoundedRectangleBorder(
+//                 borderRadius: BorderRadius.all(Radius.circular(24.0)),
+//               ),
+//             ),
+//           ),
+//           home: const InitialRouter(), // Pantalla Splash/Auth inicial
+//         );
+//       },
+//     );
+//   }
+
 @override
   Widget build(BuildContext context) {
-    const lightBg = Color(0xFFF8FAFC);
-    const lightSurface = Color(0xFFFFFFFF);
-    const lightPrimary = Color(0xFF0F62FE);
-    const lightSecondary = Color(0xFFF59E0B);
-    const lightText = Color(0xFF1E293B);
-
-    const darkBg = Color(0xFF0B1120);
-    const darkSurface = Color(0xFF1E293B);
-    const darkPrimary = Color(0xFF3B82F6);
-    const darkSecondary = Color(0xFFFBBF24);
-    const darkText = Color(0xFFF8FAFC);
-
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (_, ThemeMode currentMode, _) {
         return MaterialApp(
-          
           scaffoldMessengerKey: UIHelper.messengerKey,
-         navigatorKey: navigatorKey,
-         
+          navigatorKey: navigatorKey,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -283,65 +367,13 @@ class _MiDAppState extends State<MiDApp> with WidgetsBindingObserver {
           ],
           debugShowCheckedModeBanner: false,
           title: 'TTC Wallet',
-          themeMode: currentMode,
           
+          themeMode: currentMode,
          
-          theme: ThemeData.light(useMaterial3: true).copyWith(
-            primaryColor: lightPrimary,
-            scaffoldBackgroundColor: lightBg,
-            cardColor: lightSurface,
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              iconTheme: IconThemeData(color: lightText),
-              titleTextStyle: TextStyle(color: lightText, fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            colorScheme: const ColorScheme.light(
-              primary: lightPrimary,
-              secondary: lightSecondary,
-              surface: lightSurface,
-              onSurface: lightText,
-              error: Color(0xFFEF4444), 
-            ),
-            iconTheme: const IconThemeData(color: lightText),
-            dividerColor: lightText.withOpacity(0.1),
-            cardTheme: const CardThemeData( 
-              color: lightSurface,
-              elevation: 0.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(24.0)),
-              ),
-            ),
-          ),
-
-          darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
-            primaryColor: darkPrimary,
-            scaffoldBackgroundColor: darkBg,
-            cardColor: darkSurface,
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              iconTheme: IconThemeData(color: darkText),
-              titleTextStyle: TextStyle(color: darkText, fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            colorScheme: const ColorScheme.dark(
-              primary: darkPrimary,
-              secondary: darkSecondary,
-              surface: darkSurface,
-              onSurface: darkText,
-              error: Color(0xFFEF4444),
-            ),
-            iconTheme: const IconThemeData(color: darkText),
-            dividerColor: darkText.withOpacity(0.1),
-            cardTheme: const CardThemeData( 
-              color: darkSurface,
-              elevation: 0.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(24.0)),
-              ),
-            ),
-          ),
-          home: const InitialRouter(), // Pantalla Splash/Auth inicial
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          
+          home: const InitialRouter(),
         );
       },
     );

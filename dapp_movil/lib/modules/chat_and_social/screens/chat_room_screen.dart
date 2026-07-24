@@ -454,49 +454,381 @@ Future<void> _iniciarGrabacion() async {
     }
   }
   
-  @override
+//   @override
+//   Widget build(BuildContext context) {
+//     final theme = Theme.of(context);
+//     final colorScheme = theme.colorScheme;
+//     final authCore = Provider.of<AuthCoreService>(context, listen: false);
+
+//     return Scaffold(
+//       backgroundColor: theme.scaffoldBackgroundColor,
+//      appBar: AppBar(
+//         backgroundColor: theme.cardColor,
+//         elevation: 1,
+//         titleSpacing: 0,
+//         actions: [
+//           IconButton(
+//             icon: const Icon(Icons.auto_awesome_rounded, color: Colors.amberAccent),
+//             tooltip: 'Aprender de este chat',
+//             onPressed: () => _extraerConocimiento(context),
+//           ),
+//         ],
+//         title: GestureDetector(
+//           onTap: () => ChatProfileModal.show(context, widget.address), // 🔥 MAGIA: Abre el modal al tocar
+//           child: Row(
+//             children: [
+//               SmartAvatar(address: widget.address, size: 36),
+//               const SizedBox(width: 12),
+//               Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Text(widget.alias, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  
+//                   // 🔥 Animación de "Escribiendo..."
+//                 Consumer<SecureChatService>(
+//                       builder: (context, chatService, child) {
+//                         if (chatService.typingUser == widget.address.toLowerCase()) {
+//                           return Text("escribiendo...", style: TextStyle(color: colorScheme.primary, fontSize: 12, fontStyle: FontStyle.italic));
+//                         }
+//                         return Text(
+//                           "${widget.address.substring(0,6)}...${widget.address.substring(widget.address.length - 4)}", 
+//                           style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.5), fontFamily: 'monospace')
+//                         );
+//                       },
+//                   ),
+//                 ],
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//       body: _isLoading 
+//         ? const Center(child: CircularProgressIndicator())
+//         : Stack(
+//             children: [
+//               // 1. EL CONTENIDO PRINCIPAL (LISTA DE CHAT Y BARRA)
+//               Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Expanded(
+//                     child: ListView.builder(
+//                       controller: _scrollController, // 🔥 AQUÍ LO AGREGAS
+//                       physics: const BouncingScrollPhysics(),
+//                       padding: const EdgeInsets.symmetric(vertical: 20),
+//                       reverse: true, // Empieza desde abajo
+//                       itemCount: _messages.length,
+//                       itemBuilder: (context, index) {
+//                         final rawMsg = _messages[index];
+//                         final parsedMap = _parseMessageContent(rawMsg['content'].toString());
+                        
+//                         final miBilletera = authCore.publicAddress.toLowerCase();
+//                         final senderWallet = rawMsg['sender'].toString().toLowerCase();
+//                         final isMe = (senderWallet == miBilletera) || (senderWallet == 'me');
+                        
+//                         return MessageBubble(message: parsedMap, isMe: isMe, peerAddress: widget.address);
+//                       },
+//                     ),
+//                   ),
+                  
+//                   // 🔥 INDICADOR DE "ESCRIBIENDO..."
+//                   Consumer<SecureChatService>(
+//                     builder: (context, chatService, child) {
+//                       if (chatService.typingUser == widget.address.toLowerCase()) {
+//                         return Padding(
+//                           padding: const EdgeInsets.only(left: 24.0, bottom: 8.0),
+//                           child: Row(
+//                             mainAxisSize: MainAxisSize.min,
+//                             children: [
+//                               Text(
+//                                 "${widget.alias} está escribiendo", 
+//                                 style: TextStyle(color: colorScheme.primary, fontSize: 13, fontStyle: FontStyle.italic, fontWeight: FontWeight.bold)
+//                               ),
+//                               Text("...", style: TextStyle(color: colorScheme.primary, fontSize: 13, fontWeight: FontWeight.bold)),
+//                             ],
+//                           ),
+//                         );
+//                       }
+//                       return const SizedBox.shrink();
+//                     },
+//                   ),
+
+//                   // 🔥 BARRA DE ENTRADA DE CHAT EXTRÍDA
+//                   _buildInputArea(),
+//                 ],
+//               ),
+
+//               // 🔥 2. EL MENÚ DESPLEGABLE DEL CLIP (AHORA ES CLICKEABLE)
+//               if (_showAttachmentMenu)
+//                 Positioned(
+//                   bottom: 75, // Justo encima de la barra
+//                   left: 5,
+//                   child: _buildAttachmentMenu(),
+//                 ),
+
+//               // 🔥 3. TOOLTIP TEMPORAL DE ENSEÑANZA
+//               if (_showMicTutorial)
+//                 Positioned(
+//                   bottom: 80,
+//                   right: 15,
+//                   child: Material(
+//                     color: Colors.transparent,
+//                     child: Container(
+//                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+//                       decoration: BoxDecoration(
+//                         color: colorScheme.primary,
+//                         borderRadius: BorderRadius.circular(16),
+//                         boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
+//                       ),
+//                       child: const Text(
+//                         "Mantén presionado para Audio 🎤\n¡O arrastra a la izquierda para IA! ✨",
+//                         style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+//                         textAlign: TextAlign.center,
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//             ],
+//           ),
+//     );
+//   }
+
+// Widget _buildAttachmentMenu() {
+//     final theme = Theme.of(context);
+//     return Material(
+//       color: Colors.transparent,
+//       child: Container(
+//         margin: const EdgeInsets.only(bottom: 10, left: 10),
+//         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+//         decoration: BoxDecoration(
+//           color: theme.cardColor,
+//           borderRadius: BorderRadius.circular(24),
+//           boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, spreadRadius: 2)],
+//         ),
+//         child: Column(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             IconButton(
+//               icon: const Icon(Icons.attach_money_rounded, color: Colors.green),
+//               tooltip: "Enviar TTC",
+//               onPressed: () async {
+//                 setState(() => _showAttachmentMenu = false);
+//                 String saldo = await Provider.of<TransactionService>(context, listen: false).getBalance();
+//                 if (!mounted) return;
+//                 SendModal.show(context: context, balanceTTC: saldo, initialAddress: "@${widget.alias}", onUpdateBalance: () {}, mostrarMensaje: (m, {bool esError=false}) {});
+//               },
+//             ),
+//             IconButton(
+//               icon: Icon(Icons.timer_rounded, color: _isEphemeral ? Colors.redAccent : Colors.grey),
+//               tooltip: "Chat Efímero",
+//               onPressed: () {
+//                 setState(() { _isEphemeral = !_isEphemeral; _showAttachmentMenu = false; });
+//                 UIHelper.showCustomSnackbar(_isEphemeral ? "Modo Efímero Activado (10 min)" : "Modo Efímero Desactivado");
+//               },
+//             ),
+//             IconButton(
+//               icon: const Icon(Icons.image_rounded, color: Colors.blueAccent),
+//               tooltip: "Enviar Imagen",
+//               onPressed: () {
+//                 setState(() => _showAttachmentMenu = false);
+//                _enviarImagen();
+//               },
+//             ),
+//           IconButton(
+//               icon: const Icon(Icons.auto_awesome_rounded, color: Colors.deepPurpleAccent),
+//               tooltip: "Redactar Tarea IA",
+//               onPressed: () {
+//                 setState(() => _showAttachmentMenu = false);
+//                 if (_hasText) _crearTareaConIA(); // 🔥 CORREGIDO
+//               },
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+//   // 🔥 NUEVO MÉTODO CON LA BARRA DE CHAT SEPARADA Y ORDENADA 🔥
+// Widget _buildInputArea() {
+//     final theme = Theme.of(context);
+//     final colorScheme = theme.colorScheme;
+
+//     // 🔥 BARRA DE ESCRITURA PRINCIPAL (Sin Stack, pura UI de texto)
+//     return Container(
+//       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+//       decoration: BoxDecoration(
+//         color: theme.scaffoldBackgroundColor,
+//         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, -4))],
+//       ),
+//       child: SafeArea(
+//         child: Row(
+//           crossAxisAlignment: CrossAxisAlignment.end,
+//           children: [
+//             // BOTÓN DEL CLIP (Muestra/Oculta el Menú)
+//             Padding(
+//               padding: const EdgeInsets.only(bottom: 2),
+//               child: IconButton(
+//                 icon: AnimatedRotation(
+//                   turns: _showAttachmentMenu ? 0.125 : 0, // Gira 45° al abrir (efecto X)
+//                   duration: const Duration(milliseconds: 200),
+//                   child: Icon(Icons.attach_file_rounded, color: colorScheme.primary, size: 28),
+//                 ),
+//                 onPressed: () {
+//                   setState(() {
+//                     _showAttachmentMenu = !_showAttachmentMenu;
+//                     _showMicTutorial = false; // Ocultar tooltip si interactúa
+//                   });
+//                 },
+//               ),
+//             ),
+
+//             // TEXTFIELD LIMPIO (GIGANTE)
+//             Expanded(
+//               child: Container(
+//                 decoration: BoxDecoration(
+//                   color: theme.cardColor,
+//                   borderRadius: BorderRadius.circular(24),
+//                   border: Border.all(color: _isEphemeral ? Colors.redAccent.withOpacity(0.5) : colorScheme.onSurface.withOpacity(0.1)),
+//                 ),
+//                 child: TextField(
+//                   controller: _msgController,
+//                   focusNode: _focusNode,
+//                   maxLines: 5,
+//                   minLines: 1,
+//                   textCapitalization: TextCapitalization.sentences,
+//                   style: TextStyle(color: colorScheme.onSurface),
+//                   onChanged: (val) {
+//                     if (val.isNotEmpty && !_hasText) setState(() => _hasText = true);
+//                     else if (val.isEmpty && _hasText) setState(() => _hasText = false);
+//                     if (_showMicTutorial) setState(() => _showMicTutorial = false); // Ocultar tooltip al teclear
+//                   },
+//                   decoration: InputDecoration(
+//                     hintText: _isEphemeral ? "Mensaje efímero..." : "Escribe un mensaje...",
+//                     hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
+//                     border: InputBorder.none,
+//                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//                   ),
+//                 ),
+//               ),
+//             ),
+//             const SizedBox(width: 8),
+
+//             // 🚀 BOTÓN MÁGICO 3 EN 1: Enviar / Grabar / IA (Swipe Left)
+//             Padding(
+//               padding: const EdgeInsets.only(bottom: 2),
+//               child: GestureDetector(
+//                 onTap: _hasText ? () {
+//                   _enviarMensajeTexto();
+//                   setState(() => _showAttachmentMenu = false);
+//                 } : null,
+                
+//                 onLongPress: () async {
+//                   setState(() => _showMicTutorial = false);
+//                   if (!_hasText) {
+//                     HapticFeedback.heavyImpact();
+//                     await _iniciarGrabacion();
+//                   }
+//                 },
+                
+//                 onLongPressMoveUpdate: _hasText ? (details) {
+//                   if (details.offsetFromOrigin.dx < -40 && !_isSwipingLeftForAi) {
+//                     setState(() => _isSwipingLeftForAi = true);
+//                     HapticFeedback.mediumImpact(); 
+//                   } else if (details.offsetFromOrigin.dx >= -40 && _isSwipingLeftForAi) {
+//                     setState(() => _isSwipingLeftForAi = false);
+//                   }
+//                 } : null,
+                
+//                 onLongPressEnd: (details) async {
+//                   if (!_hasText) {
+//                     await _detenerYEnviarAudio();
+//                   } else {
+//                     if (_isSwipingLeftForAi) {
+//                       setState(() => _isSwipingLeftForAi = false);
+//                       HapticFeedback.heavyImpact();
+//                       _crearTareaConIA(); 
+//                     } else {
+//                       _enviarMensajeTexto();
+//                     }
+//                   }
+//                 },
+                
+//                 child: AnimatedContainer(
+//                   duration: const Duration(milliseconds: 200),
+//                   padding: EdgeInsets.all(_isRecording ? 16 : 14),
+//                   decoration: BoxDecoration(
+//                     color: _isSwipingLeftForAi 
+//                       ? Colors.deepPurpleAccent 
+//                       : (_hasText ? colorScheme.primary : (_isRecording ? Colors.redAccent : colorScheme.primary)),
+//                     shape: BoxShape.circle,
+//                     boxShadow: _isSwipingLeftForAi ? [const BoxShadow(color: Colors.deepPurpleAccent, blurRadius: 12)] : [],
+//                   ),
+//                   child: Icon(
+//                     _isSwipingLeftForAi
+//                         ? Icons.auto_awesome_rounded 
+//                         : (_hasText ? Icons.send_rounded : (_isRecording ? Icons.mic_rounded : Icons.mic_none_rounded)),
+//                     color: Colors.white,
+//                     size: _isRecording || _isSwipingLeftForAi ? 26 : 22,
+//                   ),
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+@override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final onSurface = colorScheme.onSurface;
     final authCore = Provider.of<AuthCoreService>(context, listen: false);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-     appBar: AppBar(
-        backgroundColor: theme.cardColor,
-        elevation: 1,
+      appBar: AppBar(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
         titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded), 
+          onPressed: () => Navigator.pop(context)
+        ),
         actions: [
+          //  BOTÓN IA RESTAURADO ARRIBA A LA DERECHA
           IconButton(
-            icon: const Icon(Icons.auto_awesome_rounded, color: Colors.amberAccent),
+            icon: const Icon(Icons.auto_awesome_rounded, color: Colors.deepPurpleAccent),
             tooltip: 'Aprender de este chat',
             onPressed: () => _extraerConocimiento(context),
           ),
         ],
         title: GestureDetector(
-          onTap: () => ChatProfileModal.show(context, widget.address), // 🔥 MAGIA: Abre el modal al tocar
+          onTap: () => ChatProfileModal.show(context, widget.address),
           child: Row(
             children: [
-              SmartAvatar(address: widget.address, size: 36),
+              SmartAvatar(address: widget.address, size: 40),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.alias, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  
-                  // 🔥 Animación de "Escribiendo..."
-                Consumer<SecureChatService>(
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.alias, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18), overflow: TextOverflow.ellipsis),
+                    
+                    // Estado de "escribiendo" o última vez visto
+                    Consumer<SecureChatService>(
                       builder: (context, chatService, child) {
                         if (chatService.typingUser == widget.address.toLowerCase()) {
                           return Text("escribiendo...", style: TextStyle(color: colorScheme.primary, fontSize: 12, fontStyle: FontStyle.italic));
                         }
                         return Text(
-                          "${widget.address.substring(0,6)}...${widget.address.substring(widget.address.length - 4)}", 
-                          style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.5), fontFamily: 'monospace')
+                          "últ. vez hoy a las 10:30", 
+                          style: TextStyle(fontSize: 12, color: onSurface.withOpacity(0.6))
                         );
                       },
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -506,16 +838,22 @@ Future<void> _iniciarGrabacion() async {
         ? const Center(child: CircularProgressIndicator())
         : Stack(
             children: [
-              // 1. EL CONTENIDO PRINCIPAL (LISTA DE CHAT Y BARRA)
+              // 🔥 NUEVO: FONDO DE CUADRÍCULA ESTILO MOCKUP
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _GridPainter(color: onSurface.withOpacity(0.04)),
+                ),
+              ),
+
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: ListView.builder(
-                      controller: _scrollController, // 🔥 AQUÍ LO AGREGAS
+                      controller: _scrollController, 
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      reverse: true, // Empieza desde abajo
+                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                      reverse: true, 
                       itemCount: _messages.length,
                       itemBuilder: (context, index) {
                         final rawMsg = _messages[index];
@@ -529,47 +867,24 @@ Future<void> _iniciarGrabacion() async {
                       },
                     ),
                   ),
-                  
-                  // 🔥 INDICADOR DE "ESCRIBIENDO..."
-                  Consumer<SecureChatService>(
-                    builder: (context, chatService, child) {
-                      if (chatService.typingUser == widget.address.toLowerCase()) {
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 24.0, bottom: 8.0),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "${widget.alias} está escribiendo", 
-                                style: TextStyle(color: colorScheme.primary, fontSize: 13, fontStyle: FontStyle.italic, fontWeight: FontWeight.bold)
-                              ),
-                              Text("...", style: TextStyle(color: colorScheme.primary, fontSize: 13, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
 
-                  // 🔥 BARRA DE ENTRADA DE CHAT EXTRÍDA
+                  // BARRA DE ENTRADA DE CHAT TIPO PÍLDORA
                   _buildInputArea(),
                 ],
               ),
 
-              // 🔥 2. EL MENÚ DESPLEGABLE DEL CLIP (AHORA ES CLICKEABLE)
+              // MENÚ DESPLEGABLE DE ADJUNTOS
               if (_showAttachmentMenu)
                 Positioned(
-                  bottom: 75, // Justo encima de la barra
-                  left: 5,
+                  bottom: 80, 
+                  left: 16,
                   child: _buildAttachmentMenu(),
                 ),
 
-              // 🔥 3. TOOLTIP TEMPORAL DE ENSEÑANZA
               if (_showMicTutorial)
                 Positioned(
-                  bottom: 80,
-                  right: 15,
+                  bottom: 90,
+                  right: 16,
                   child: Material(
                     color: Colors.transparent,
                     child: Container(
@@ -591,24 +906,25 @@ Future<void> _iniciarGrabacion() async {
           ),
     );
   }
+  
 
-Widget _buildAttachmentMenu() {
+
+  Widget _buildAttachmentMenu() {
     final theme = Theme.of(context);
     return Material(
       color: Colors.transparent,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10, left: 10),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
           color: theme.cardColor,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, spreadRadius: 2)],
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, spreadRadius: 5)],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.attach_money_rounded, color: Colors.green),
+              icon: const Icon(Icons.attach_money_rounded, color: Colors.amber),
               tooltip: "Enviar TTC",
               onPressed: () async {
                 setState(() => _showAttachmentMenu = false);
@@ -626,19 +942,19 @@ Widget _buildAttachmentMenu() {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.image_rounded, color: Colors.blueAccent),
+              icon: const Icon(Icons.image_rounded, color: Colors.white),
               tooltip: "Enviar Imagen",
               onPressed: () {
                 setState(() => _showAttachmentMenu = false);
-               _enviarImagen();
+                _enviarImagen();
               },
             ),
-          IconButton(
+            IconButton(
               icon: const Icon(Icons.auto_awesome_rounded, color: Colors.deepPurpleAccent),
               tooltip: "Redactar Tarea IA",
               onPressed: () {
                 setState(() => _showAttachmentMenu = false);
-                if (_hasText) _crearTareaConIA(); // 🔥 CORREGIDO
+                if (_hasText) _crearTareaConIA(); 
               },
             ),
           ],
@@ -647,134 +963,149 @@ Widget _buildAttachmentMenu() {
     );
   }
 
-  // 🔥 NUEVO MÉTODO CON LA BARRA DE CHAT SEPARADA Y ORDENADA 🔥
-Widget _buildInputArea() {
+  Widget _buildInputArea() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final onSurface = colorScheme.onSurface;
 
-    // 🔥 BARRA DE ESCRITURA PRINCIPAL (Sin Stack, pura UI de texto)
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, -4))],
-      ),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 20),
+      decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
       child: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // BOTÓN DEL CLIP (Muestra/Oculta el Menú)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: IconButton(
-                icon: AnimatedRotation(
-                  turns: _showAttachmentMenu ? 0.125 : 0, // Gira 45° al abrir (efecto X)
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(Icons.attach_file_rounded, color: colorScheme.primary, size: 28),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // BOTÓN DEL CLIP
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4, left: 4),
+                child: IconButton(
+                  icon: AnimatedRotation(
+                    turns: _showAttachmentMenu ? 0.125 : 0, 
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(Icons.attach_file_rounded, color: onSurface.withOpacity(0.6), size: 24),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _showAttachmentMenu = !_showAttachmentMenu;
+                      _showMicTutorial = false; 
+                    });
+                  },
                 ),
-                onPressed: () {
-                  setState(() {
-                    _showAttachmentMenu = !_showAttachmentMenu;
-                    _showMicTutorial = false; // Ocultar tooltip si interactúa
-                  });
-                },
               ),
-            ),
 
-            // TEXTFIELD LIMPIO (GIGANTE)
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: theme.cardColor,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: _isEphemeral ? Colors.redAccent.withOpacity(0.5) : colorScheme.onSurface.withOpacity(0.1)),
-                ),
+              // TEXTFIELD
+              Expanded(
                 child: TextField(
                   controller: _msgController,
                   focusNode: _focusNode,
                   maxLines: 5,
                   minLines: 1,
                   textCapitalization: TextCapitalization.sentences,
-                  style: TextStyle(color: colorScheme.onSurface),
+                  style: TextStyle(color: onSurface),
                   onChanged: (val) {
                     if (val.isNotEmpty && !_hasText) setState(() => _hasText = true);
                     else if (val.isEmpty && _hasText) setState(() => _hasText = false);
-                    if (_showMicTutorial) setState(() => _showMicTutorial = false); // Ocultar tooltip al teclear
+                    if (_showMicTutorial) setState(() => _showMicTutorial = false);
                   },
                   decoration: InputDecoration(
-                    hintText: _isEphemeral ? "Mensaje efímero..." : "Escribe un mensaje...",
-                    hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
+                    hintText: _isEphemeral ? "Mensaje efímero..." : "Mensaje",
+                    hintStyle: TextStyle(color: onSurface.withOpacity(0.5), fontSize: 16),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 8),
 
-            // 🚀 BOTÓN MÁGICO 3 EN 1: Enviar / Grabar / IA (Swipe Left)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: GestureDetector(
-                onTap: _hasText ? () {
-                  _enviarMensajeTexto();
-                  setState(() => _showAttachmentMenu = false);
-                } : null,
-                
-                onLongPress: () async {
-                  setState(() => _showMicTutorial = false);
-                  if (!_hasText) {
-                    HapticFeedback.heavyImpact();
-                    await _iniciarGrabacion();
-                  }
-                },
-                
-                onLongPressMoveUpdate: _hasText ? (details) {
-                  if (details.offsetFromOrigin.dx < -40 && !_isSwipingLeftForAi) {
-                    setState(() => _isSwipingLeftForAi = true);
-                    HapticFeedback.mediumImpact(); 
-                  } else if (details.offsetFromOrigin.dx >= -40 && _isSwipingLeftForAi) {
-                    setState(() => _isSwipingLeftForAi = false);
-                  }
-                } : null,
-                
-                onLongPressEnd: (details) async {
-                  if (!_hasText) {
-                    await _detenerYEnviarAudio();
-                  } else {
-                    if (_isSwipingLeftForAi) {
-                      setState(() => _isSwipingLeftForAi = false);
+              // BOTÓN MAGICO DE ENVIAR/GRABAR (Integrado en la píldora)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6, right: 6),
+                child: GestureDetector(
+                  onTap: _hasText ? () {
+                    _enviarMensajeTexto();
+                    setState(() => _showAttachmentMenu = false);
+                  } : null,
+                  onLongPress: () async {
+                    setState(() => _showMicTutorial = false);
+                    if (!_hasText) {
                       HapticFeedback.heavyImpact();
-                      _crearTareaConIA(); 
-                    } else {
-                      _enviarMensajeTexto();
+                      await _iniciarGrabacion();
                     }
-                  }
-                },
-                
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: EdgeInsets.all(_isRecording ? 16 : 14),
-                  decoration: BoxDecoration(
-                    color: _isSwipingLeftForAi 
-                      ? Colors.deepPurpleAccent 
-                      : (_hasText ? colorScheme.primary : (_isRecording ? Colors.redAccent : colorScheme.primary)),
-                    shape: BoxShape.circle,
-                    boxShadow: _isSwipingLeftForAi ? [const BoxShadow(color: Colors.deepPurpleAccent, blurRadius: 12)] : [],
-                  ),
-                  child: Icon(
-                    _isSwipingLeftForAi
-                        ? Icons.auto_awesome_rounded 
-                        : (_hasText ? Icons.send_rounded : (_isRecording ? Icons.mic_rounded : Icons.mic_none_rounded)),
-                    color: Colors.white,
-                    size: _isRecording || _isSwipingLeftForAi ? 26 : 22,
+                  },
+                  onLongPressMoveUpdate: _hasText ? (details) {
+                    if (details.offsetFromOrigin.dx < -40 && !_isSwipingLeftForAi) {
+                      setState(() => _isSwipingLeftForAi = true);
+                      HapticFeedback.mediumImpact(); 
+                    } else if (details.offsetFromOrigin.dx >= -40 && _isSwipingLeftForAi) {
+                      setState(() => _isSwipingLeftForAi = false);
+                    }
+                  } : null,
+                  onLongPressEnd: (details) async {
+                    if (!_hasText) {
+                      await _detenerYEnviarAudio();
+                    } else {
+                      if (_isSwipingLeftForAi) {
+                        setState(() => _isSwipingLeftForAi = false);
+                        HapticFeedback.heavyImpact();
+                        _crearTareaConIA(); 
+                      } else {
+                        _enviarMensajeTexto();
+                      }
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: EdgeInsets.all(_isRecording ? 12 : 10),
+                    decoration: BoxDecoration(
+                      color: _isSwipingLeftForAi ? Colors.deepPurpleAccent : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _isSwipingLeftForAi
+                          ? Icons.auto_awesome_rounded 
+                          : (_hasText ? Icons.send_rounded : (_isRecording ? Icons.mic_rounded : Icons.mic_none_rounded)),
+                      color: _hasText || _isRecording || _isSwipingLeftForAi ? colorScheme.primary : onSurface.withOpacity(0.6),
+                      size: _isRecording || _isSwipingLeftForAi ? 26 : 24,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _GridPainter extends CustomPainter {
+  final Color color;
+
+  _GridPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.0;
+
+    const double spacing = 30.0; // Espaciado de los cuadros
+
+    // Líneas verticales
+    for (double i = 0; i < size.width; i += spacing) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
+    }
+    // Líneas horizontales
+    for (double i = 0; i < size.height; i += spacing) {
+      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

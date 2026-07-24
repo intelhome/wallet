@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dapp_movil/core/services/local_cache_service.dart';
+import 'package:dapp_movil/core/services/smart_avatar.dart';
 import 'package:dapp_movil/core/services/user_card.dart';
 import 'package:dapp_movil/modules/admin/screens/admin_subscription_analytics_screen.dart';
 import 'package:dapp_movil/modules/admin/screens/pending_businesses_screen.dart';
@@ -164,7 +165,161 @@ Future<void> _cargarPlanes() async {
     );
   }
 
-  @override
+//   @override
+//   Widget build(BuildContext context) {
+//     final theme = Theme.of(context);
+//     final authCore = Provider.of<AuthCoreService>(context, listen: false);
+
+//     return Scaffold(
+//       backgroundColor: theme.scaffoldBackgroundColor,
+//       appBar: AppBar(
+//         backgroundColor: Colors.transparent,
+//         elevation: 0,
+//         title: const Row(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             Icon(Icons.admin_panel_settings_rounded, color: Colors.purpleAccent, size: 28),
+//             SizedBox(width: 8),
+//             Text("Centro de Control", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purpleAccent)),
+//           ],
+//         ),
+//         centerTitle: true,
+//         actions: [
+//           IconButton(
+//             icon: const Icon(Icons.power_settings_new_rounded, color: Colors.redAccent),
+//             onPressed: () {
+//               authCore.deleteWallet();
+//               Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const InitialRouter()));
+//             },
+//           )
+//         ],
+//       ),
+//       body: _isLoading
+//           ? const Center(child: CircularProgressIndicator(color: Colors.purpleAccent))
+//           : RefreshIndicator(
+//               onRefresh: _cargarPlanes,
+//               color: Colors.purpleAccent,
+//               child: SingleChildScrollView(
+//                 physics: const AlwaysScrollableScrollPhysics(),
+//                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     const SizedBox(height: 16),
+//                     UserCard(
+//                       address: authCore.publicAddress, balanceTTC: "ADMIN", stakedTTC: "N/A",
+//                       currentTier: "ADMIN", isDiscreet: false, useAvatarColors: true,
+//                       onToggleDiscreet: () {},
+//                     ),
+//                     const SizedBox(height: 40),
+
+//                     Text("Auditoría y Negocios", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
+//                     const SizedBox(height: 16),
+                    
+//                     ListTile(
+//                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PendingBusinessesScreen())),
+//                       tileColor: theme.cardColor,
+//                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.purpleAccent.withOpacity(0.2))),
+//                       leading: Container(
+//                         padding: const EdgeInsets.all(10),
+//                         decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
+//                         child: const Icon(Icons.storefront_rounded, color: Colors.orange),
+//                       ),
+//                       title: const Text("Solicitudes de Empresa", style: TextStyle(fontWeight: FontWeight.bold)),
+//                       subtitle: const Text("Revisa y aprueba nuevas cuentas RUC"),
+//                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.purpleAccent),
+//                     ),
+                    
+//                     const SizedBox(height: 12), // Espacio entre los botones
+
+//                     ListTile(
+//                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminSubscriptionAnalyticsScreen())),
+//                       tileColor: theme.cardColor,
+//                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.purpleAccent.withOpacity(0.2))),
+//                       leading: Container(
+//                         padding: const EdgeInsets.all(10),
+//                         decoration: BoxDecoration(color: Colors.purpleAccent.withOpacity(0.1), shape: BoxShape.circle),
+//                         child: const Icon(Icons.pie_chart_rounded, color: Colors.purpleAccent),
+//                       ),
+//                       title: const Text("Analíticas de Suscripciones", style: TextStyle(fontWeight: FontWeight.bold)),
+//                       subtitle: const Text("Ingresos y control de planes de usuarios"),
+//                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.purpleAccent),
+//                     ),
+                    
+//                     const SizedBox(height: 40),
+
+//                     // SECCIÓN DE PLANES
+//                     Text("Gestión de Membresías", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
+//                     const SizedBox(height: 16),
+//                     _planes.isEmpty
+//                         ? Padding(
+//                             padding: const EdgeInsets.symmetric(vertical: 20),
+//                             child: Center(
+//                               child: Text(
+//                                 "No se encontraron planes registrados en la Base de Datos.",
+//                                 style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5), fontSize: 14),
+//                               ),
+//                             ),
+//                           )
+//                         : Wrap(
+//                             spacing: 16,
+//                             runSpacing: 16,
+//                             children: _planes.map((plan) {
+//                               // Asegurar casteo correcto de tipos numéricos de MongoDB (int vs double)
+//                               final String tierName = plan['tier'] ?? 'Desconocido';
+//                               final double rawPrice = (plan['price'] is int) 
+//                                   ? (plan['price'] as int).toDouble() 
+//                                   : (plan['price'] ?? 0.0);
+//                               final List allowedFeat = plan['allowedFeatures'] ?? [];
+
+//                               return GestureDetector(
+//                                 onTap: () => _abrirModalGestionPlan(plan),
+//                                 child: Container(
+//                                   width: (MediaQuery.of(context).size.width / 2) - 32,
+//                                   padding: const EdgeInsets.all(20),
+//                                   decoration: BoxDecoration(
+//                                     color: theme.cardColor,
+//                                     borderRadius: BorderRadius.circular(24),
+//                                     border: Border.all(color: Colors.purpleAccent.withOpacity(0.1)),
+//                                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 5))],
+//                                   ),
+//                                   child: Column(
+//                                     crossAxisAlignment: CrossAxisAlignment.start,
+//                                     children: [
+//                                       Container(
+//                                         padding: const EdgeInsets.all(12),
+//                                         decoration: BoxDecoration(color: Colors.purpleAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+//                                         child: const Icon(Icons.workspace_premium_rounded, color: Colors.purpleAccent, size: 28),
+//                                       ),
+//                                       const SizedBox(height: 16),
+//                                       Text(tierName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
+//                                       const SizedBox(height: 4),
+//                                       Text("\$$rawPrice / mes", style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface.withOpacity(0.5))),
+//                                       const SizedBox(height: 12),
+//                                       Container(
+//                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+//                                         decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+//                                         child: Text("${allowedFeat.length} módulos", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green)),
+//                                       ),
+                                      
+//                                     ],
+                                    
+//                                   ),
+                                  
+//                                 ),
+                                
+//                               );
+//                             }).toList(),
+//                           ),
+//                     const SizedBox(height: 40),
+//                   ],
+//                 ),
+//               ),
+//             ),
+//     );
+//   }
+// }
+@override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final authCore = Provider.of<AuthCoreService>(context, listen: false);
@@ -177,12 +332,14 @@ Future<void> _cargarPlanes() async {
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.admin_panel_settings_rounded, color: Colors.purpleAccent, size: 28),
-            SizedBox(width: 8),
             Text("Centro de Control", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purpleAccent)),
           ],
         ),
         centerTitle: true,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SmartAvatar(address: authCore.publicAddress, size: 40),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.power_settings_new_rounded, color: Colors.redAccent),
@@ -218,31 +375,31 @@ Future<void> _cargarPlanes() async {
                     ListTile(
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PendingBusinessesScreen())),
                       tileColor: theme.cardColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.purpleAccent.withOpacity(0.2))),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       leading: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.storefront_rounded, color: Colors.orange),
                       ),
                       title: const Text("Solicitudes de Empresa", style: TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: const Text("Revisa y aprueba nuevas cuentas RUC"),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.purpleAccent),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
                     ),
                     
-                    const SizedBox(height: 12), // Espacio entre los botones
+                    const SizedBox(height: 12),
 
                     ListTile(
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminSubscriptionAnalyticsScreen())),
                       tileColor: theme.cardColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.purpleAccent.withOpacity(0.2))),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       leading: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.purpleAccent.withOpacity(0.1), shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: Colors.purpleAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.pie_chart_rounded, color: Colors.purpleAccent),
                       ),
                       title: const Text("Analíticas de Suscripciones", style: TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: const Text("Ingresos y control de planes de usuarios"),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.purpleAccent),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
                     ),
                     
                     const SizedBox(height: 40),
@@ -264,12 +421,16 @@ Future<void> _cargarPlanes() async {
                             spacing: 16,
                             runSpacing: 16,
                             children: _planes.map((plan) {
-                              // Asegurar casteo correcto de tipos numéricos de MongoDB (int vs double)
                               final String tierName = plan['tier'] ?? 'Desconocido';
                               final double rawPrice = (plan['price'] is int) 
                                   ? (plan['price'] as int).toDouble() 
                                   : (plan['price'] ?? 0.0);
                               final List allowedFeat = plan['allowedFeatures'] ?? [];
+
+                              // Determinar el color según el plan
+                              Color planColor = Colors.grey; // Default para FREE
+                              if (tierName.toUpperCase() == 'BASIC') planColor = const Color(0xFF4361EE);
+                              if (tierName.toUpperCase() == 'PREMIUM') planColor = Colors.amber;
 
                               return GestureDetector(
                                 onTap: () => _abrirModalGestionPlan(plan),
@@ -279,7 +440,6 @@ Future<void> _cargarPlanes() async {
                                   decoration: BoxDecoration(
                                     color: theme.cardColor,
                                     borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(color: Colors.purpleAccent.withOpacity(0.1)),
                                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 5))],
                                   ),
                                   child: Column(
@@ -287,8 +447,8 @@ Future<void> _cargarPlanes() async {
                                     children: [
                                       Container(
                                         padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(color: Colors.purpleAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-                                        child: const Icon(Icons.workspace_premium_rounded, color: Colors.purpleAccent, size: 28),
+                                        decoration: BoxDecoration(color: planColor.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+                                        child: Icon(Icons.workspace_premium_rounded, color: planColor, size: 28),
                                       ),
                                       const SizedBox(height: 16),
                                       Text(tierName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
@@ -297,16 +457,12 @@ Future<void> _cargarPlanes() async {
                                       const SizedBox(height: 12),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                                        child: Text("${allowedFeat.length} módulos", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green)),
+                                        decoration: BoxDecoration(color: Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                                        child: Text("${allowedFeat.length} módulos", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal)),
                                       ),
-                                      
                                     ],
-                                    
                                   ),
-                                  
                                 ),
-                                
                               );
                             }).toList(),
                           ),
@@ -318,50 +474,3 @@ Future<void> _cargarPlanes() async {
     );
   }
 }
-//                     Wrap(
-//                       spacing: 16,
-//                       runSpacing: 16,
-//                       children: _planes.map((plan) {
-//                         return GestureDetector(
-//                           onTap: () => _abrirModalGestionPlan(plan),
-//                           child: Container(
-//                             width: (MediaQuery.of(context).size.width / 2) - 32, // 2 columnas
-//                             padding: const EdgeInsets.all(20),
-//                             decoration: BoxDecoration(
-//                               color: theme.cardColor,
-//                               borderRadius: BorderRadius.circular(24),
-//                               border: Border.all(color: Colors.purpleAccent.withOpacity(0.1)),
-//                               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 5))],
-//                             ),
-//                             child: Column(
-//                               crossAxisAlignment: CrossAxisAlignment.start,
-//                               children: [
-//                                 Container(
-//                                   padding: const EdgeInsets.all(12),
-//                                   decoration: BoxDecoration(color: Colors.purpleAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-//                                   child: const Icon(Icons.workspace_premium_rounded, color: Colors.purpleAccent, size: 28),
-//                                 ),
-//                                 const SizedBox(height: 16),
-//                                 Text("${plan['tier']}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
-//                                 const SizedBox(height: 4),
-//                                 Text("\$${plan['price']} / mes", style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface.withOpacity(0.5))),
-//                                 const SizedBox(height: 12),
-//                                 Container(
-//                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-//                                   decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-//                                   child: Text("${List.from(plan['allowedFeatures']).length} módulos", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green)),
-//                                 ),
-//                               ],
-//                             ),
-//                           ),
-//                         );
-//                       }).toList(),
-//                     ),
-//                     const SizedBox(height: 40),
-//                   ],
-//                 ),
-//               ),
-//             ),
-//     );
-//   }
-// }

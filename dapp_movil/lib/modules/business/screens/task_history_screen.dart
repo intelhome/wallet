@@ -129,34 +129,71 @@ Future<void> _loadData() async {
   void _seleccionarDepartamento() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).cardColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Fondo general oscuro
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Filtrar por Área", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.domain),
-              title: const Text("Todas las Áreas / Empleados"),
-              onTap: () {
-                setState(() { _selectedDeptId = null; _applyFilter(); });
-                Navigator.pop(ctx);
-              },
-            ),
-            ..._departments.map((dept) => ListTile(
-              leading: const Icon(Icons.business_center_rounded, color: Colors.blueAccent),
-              title: Text(dept['name']),
-              onTap: () {
-                setState(() { _selectedDeptId = dept['id']; _applyFilter(); });
-                Navigator.pop(ctx);
-              },
-            )).toList(),
-          ],
-        ),
-      )
+      builder: (ctx) {
+        final onSurface = Theme.of(context).colorScheme.onSurface;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16, top: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // HEADER CON TÍTULO Y BOTÓN DE CERRAR
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Filtrar por Área", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: onSurface)),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: onSurface.withOpacity(0.6)),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              Divider(color: onSurface.withOpacity(0.1), height: 16),
+              
+              // OPCIONES DE ÁREAS (EN TARJETA UNIFICADA)
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: onSurface.withOpacity(0.05)),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: Icon(Icons.business_rounded, color: onSurface.withOpacity(0.5)),
+                      title: Text("Todas las Áreas / Empleados", style: TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
+                      onTap: () {
+                        setState(() { _selectedDeptId = null; _applyFilter(); });
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                    Divider(color: onSurface.withOpacity(0.05), height: 1, indent: 56),
+                    ..._departments.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final dept = entry.value;
+                      final isLast = index == _departments.length - 1;
+                      return Column(
+                        children: [
+                          ListTile(
+                            leading: Icon(Icons.work_outline_rounded, color: onSurface.withOpacity(0.5)),
+                            title: Text(dept['name'], style: TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
+                            onTap: () {
+                              setState(() { _selectedDeptId = dept['id']; _applyFilter(); });
+                              Navigator.pop(ctx);
+                            },
+                          ),
+                          if (!isLast) Divider(color: onSurface.withOpacity(0.05), height: 1, indent: 56),
+                        ],
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
     );
   }
 
@@ -208,98 +245,248 @@ Future<void> _loadData() async {
     return grouped;
   }
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   final theme = Theme.of(context);
+  //   final colorScheme = theme.colorScheme;
+  //   final filters = ['Todas', 'Pendientes', 'En Progreso', 'Completadas', 'Atención'];
+
+  //   return Scaffold(
+  //     backgroundColor: theme.scaffoldBackgroundColor,
+  //     appBar: AppBar(
+  //       title: const Text("Historial de Actividades", style: TextStyle(fontWeight: FontWeight.bold)),
+  //     ),
+  //     body: Column(
+  //       children: [
+  //         SingleChildScrollView(
+  //           scrollDirection: Axis.horizontal,
+  //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+  //           child: Row(
+  //             children: [
+  //               // BOTÓN FECHAS
+  //               Padding(
+  //                 padding: const EdgeInsets.only(right: 8),
+  //                 child: ActionChip(
+  //                   label: Icon(
+  //                     _fechaInicio != null ? Icons.calendar_month_rounded : Icons.date_range_rounded,
+  //                     size: 20, color: _fechaInicio != null ? colorScheme.onPrimary : colorScheme.primary,
+  //                   ),
+  //                   backgroundColor: _fechaInicio != null ? colorScheme.primary : colorScheme.primary.withOpacity(0.1),
+  //                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+  //                   onPressed: _seleccionarRangoFechas,
+  //                 ),
+  //               ),
+  //               if (_fechaInicio != null)
+  //                 Padding(
+  //                   padding: const EdgeInsets.only(right: 8),
+  //                   child: ActionChip(
+  //                     label: Icon(Icons.close_rounded, size: 20, color: colorScheme.error),
+  //                     backgroundColor: colorScheme.error.withOpacity(0.1),
+  //                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+  //                     onPressed: _limpiarFiltroFechas,
+  //                   )
+  //                 ),
+
+  //               // BOTÓN DEPARTAMENTOS
+  //               Padding(
+  //                 padding: const EdgeInsets.only(right: 8),
+  //                 child: ActionChip(
+  //                   label: Row(
+  //                     children: [
+  //                       Icon(Icons.domain_rounded, size: 18, color: _selectedDeptId != null ? colorScheme.onPrimary : colorScheme.secondary),
+  //                       if (_selectedDeptId != null) ...[
+  //                         const SizedBox(width: 4),
+  //                         Text(_departments.firstWhere((d) => d['id'] == _selectedDeptId, orElse: () => {'name': ''})['name'], style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 12))
+  //                       ]
+  //                     ],
+  //                   ),
+  //                   backgroundColor: _selectedDeptId != null ? colorScheme.secondary : colorScheme.secondary.withOpacity(0.1),
+  //                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+  //                   onPressed: _seleccionarDepartamento,
+  //                 ),
+  //               ),
+  //               if (_selectedDeptId != null)
+  //                 Padding(
+  //                   padding: const EdgeInsets.only(right: 8),
+  //                   child: ActionChip(
+  //                     label: Icon(Icons.close_rounded, size: 20, color: colorScheme.error),
+  //                     backgroundColor: colorScheme.error.withOpacity(0.1),
+  //                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+  //                     onPressed: () { setState(() { _selectedDeptId = null; _applyFilter(); }); },
+  //                   )
+  //                 ),
+
+  //               // FILTROS DE ESTADO
+  //               ...filters.map((filter) {
+  //                 final isSelected = _selectedFilter == filter;
+  //                 return Padding(
+  //                   padding: const EdgeInsets.only(right: 8),
+  //                   child: ChoiceChip(
+  //                     label: Text(filter, style: TextStyle(color: isSelected ? theme.cardColor : colorScheme.onSurface.withOpacity(0.7), fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+  //                     selected: isSelected,
+  //                     selectedColor: colorScheme.primary,
+  //                     backgroundColor: colorScheme.onSurface.withOpacity(0.05),
+  //                     onSelected: (selected) {
+  //                       if (selected) setState(() { _selectedFilter = filter; _applyFilter(); });
+  //                     },
+  //                   ),
+  //                 );
+  //               }).toList(),
+  //             ]
+  //           ),
+  //         ),
+
+  //         // LISTA DE TAREAS
+  //         Expanded(
+  //           child: _isLoading
+  //               ? UIHelper.buildSkeletonList(context)
+  //               : _groupedTasks.isEmpty
+  //                 ? UIHelper.emptyState(
+  //                     context: context,
+  //                     icon: Icons.assignment_turned_in_rounded,
+  //                     title: "Historial Vacío",
+  //                     message: "No se encontraron actividades con estos filtros.",
+  //                   )
+  //                 : ListView.builder(
+  //                     padding: const EdgeInsets.all(16),
+  //                     itemCount: _groupedTasks.keys.length,
+  //                     itemBuilder: (context, index) {
+  //                       String date = _groupedTasks.keys.elementAt(index);
+  //                       List<dynamic> dayTasks = _groupedTasks[date]!;
+  //                       return Column(
+  //                         crossAxisAlignment: CrossAxisAlignment.start,
+  //                         children: [
+  //                           Padding(
+  //                             padding: const EdgeInsets.symmetric(vertical: 10),
+  //                             child: Text(date, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 14)),
+  //                           ),
+  //                          ...dayTasks.map((task) => TaskCard(
+  //                             task: task,
+  //                             isEmployer: true, 
+  //                             onRefresh: _loadData,
+  //                           )).toList(),
+  //                         ],
+  //                       );
+  //                     },
+  //                   ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final filters = ['Todas', 'Pendientes', 'En Progreso', 'Completadas', 'Atención'];
+    final onSurface = colorScheme.onSurface;
+    final filters = ['Todas', 'Pendientes', 'En Proceso', 'Completadas', 'Atención'];
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Historial de Actividades", style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // FILTROS SUPERIORES (CHIPS ESTILO PÍLDORA)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                // BOTÓN FECHAS
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ActionChip(
-                    label: Icon(
-                      _fechaInicio != null ? Icons.calendar_month_rounded : Icons.date_range_rounded,
-                      size: 20, color: _fechaInicio != null ? colorScheme.onPrimary : colorScheme.primary,
-                    ),
-                    backgroundColor: _fechaInicio != null ? colorScheme.primary : colorScheme.primary.withOpacity(0.1),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                    onPressed: _seleccionarRangoFechas,
-                  ),
-                ),
-                if (_fechaInicio != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ActionChip(
-                      label: Icon(Icons.close_rounded, size: 20, color: colorScheme.error),
-                      backgroundColor: colorScheme.error.withOpacity(0.1),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                      onPressed: _limpiarFiltroFechas,
-                    )
-                  ),
-
-                // BOTÓN DEPARTAMENTOS
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ActionChip(
-                    label: Row(
-                      children: [
-                        Icon(Icons.domain_rounded, size: 18, color: _selectedDeptId != null ? colorScheme.onPrimary : colorScheme.secondary),
-                        if (_selectedDeptId != null) ...[
-                          const SizedBox(width: 4),
-                          Text(_departments.firstWhere((d) => d['id'] == _selectedDeptId, orElse: () => {'name': ''})['name'], style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 12))
-                        ]
-                      ],
-                    ),
-                    backgroundColor: _selectedDeptId != null ? colorScheme.secondary : colorScheme.secondary.withOpacity(0.1),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                    onPressed: _seleccionarDepartamento,
-                  ),
-                ),
-                if (_selectedDeptId != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ActionChip(
-                      label: Icon(Icons.close_rounded, size: 20, color: colorScheme.error),
-                      backgroundColor: colorScheme.error.withOpacity(0.1),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                      onPressed: () { setState(() { _selectedDeptId = null; _applyFilter(); }); },
-                    )
-                  ),
-
-                // FILTROS DE ESTADO
                 ...filters.map((filter) {
                   final isSelected = _selectedFilter == filter;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(filter, style: TextStyle(color: isSelected ? theme.cardColor : colorScheme.onSurface.withOpacity(0.7), fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                      selected: isSelected,
-                      selectedColor: colorScheme.primary,
-                      backgroundColor: colorScheme.onSurface.withOpacity(0.05),
-                      onSelected: (selected) {
-                        if (selected) setState(() { _selectedFilter = filter; _applyFilter(); });
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() { _selectedFilter = filter; _applyFilter(); });
                       },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFF4361EE) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: isSelected ? Colors.transparent : onSurface.withOpacity(0.2)),
+                        ),
+                        child: Text(
+                          filter, 
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : onSurface.withOpacity(0.8), 
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13
+                          )
+                        ),
+                      ),
                     ),
                   );
                 }).toList(),
               ]
             ),
           ),
+          
+          // FILTROS AVANZADOS (FECHA Y ÁREA OPCIONAL)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                // BOTÓN FECHAS
+                ActionChip(
+                  label: Icon(
+                    _fechaInicio != null ? Icons.calendar_month_rounded : Icons.date_range_rounded,
+                    size: 20, color: _fechaInicio != null ? colorScheme.onPrimary : onSurface.withOpacity(0.6),
+                  ),
+                  backgroundColor: _fechaInicio != null ? colorScheme.primary : theme.cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: onSurface.withOpacity(0.1))),
+                  onPressed: _seleccionarRangoFechas,
+                ),
+                if (_fechaInicio != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: ActionChip(
+                      label: Icon(Icons.close_rounded, size: 18, color: colorScheme.error),
+                      backgroundColor: colorScheme.error.withOpacity(0.1),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+                      onPressed: _limpiarFiltroFechas,
+                    )
+                  ),
 
-          // LISTA DE TAREAS
+                const SizedBox(width: 8),
+                // BOTÓN DEPARTAMENTOS
+                ActionChip(
+                  label: Row(
+                    children: [
+                      Icon(Icons.domain_rounded, size: 18, color: _selectedDeptId != null ? colorScheme.onPrimary : onSurface.withOpacity(0.6)),
+                      if (_selectedDeptId != null) ...[
+                        const SizedBox(width: 4),
+                        Text(_departments.firstWhere((d) => d['id'] == _selectedDeptId, orElse: () => {'name': ''})['name'], style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 12))
+                      ]
+                    ],
+                  ),
+                  backgroundColor: _selectedDeptId != null ? colorScheme.primary : theme.cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: onSurface.withOpacity(0.1))),
+                  onPressed: _seleccionarDepartamento,
+                ),
+                if (_selectedDeptId != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: ActionChip(
+                      label: Icon(Icons.close_rounded, size: 18, color: colorScheme.error),
+                      backgroundColor: colorScheme.error.withOpacity(0.1),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+                      onPressed: () { setState(() { _selectedDeptId = null; _applyFilter(); }); },
+                    )
+                  ),
+              ],
+            ),
+          ),
+
+          // LISTA DE TAREAS AGRUPADAS
           Expanded(
             child: _isLoading
                 ? UIHelper.buildSkeletonList(context)
@@ -319,9 +506,16 @@ Future<void> _loadData() async {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // HEADER DE FECHA ESTILO MOCKUP
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: Text(date, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 14)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.calendar_today_rounded, color: const Color(0xFFBAC3FF), size: 18),
+                                  const SizedBox(width: 8),
+                                  Text(date, style: const TextStyle(color: Color(0xFFBAC3FF), fontWeight: FontWeight.bold, fontSize: 14)),
+                                ],
+                              ),
                             ),
                            ...dayTasks.map((task) => TaskCard(
                               task: task,

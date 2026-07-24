@@ -1,9 +1,14 @@
 import 'package:flutter/foundation.dart';
 class ApiConfig {
+
+  //local
    static const String baseUrl = "http://10.0.2.2:8082/api";
    static const String wsBaseUrl = "ws://10.0.2.2:8082/api";
-  //static const String baseUrl = "http://34.207.233.126:8082/api";
-//static const String wsBaseUrl = "ws://34.207.233.126:8082/api";
+//aws
+//   static const String baseUrl = "http://34.207.233.126:8082/api";
+// static const String wsBaseUrl = "ws://34.207.233.126:8082/api";
+
+
   // static const String baseUrl = "http://192.168.0.102:8082/api";
   // static const String wsBaseUrl = "ws://192.168.0.102:8082/api";
  

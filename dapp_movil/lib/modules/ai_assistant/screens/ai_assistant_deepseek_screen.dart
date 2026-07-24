@@ -716,18 +716,128 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
     super.dispose();
   }
 
- Widget _buildInputArea(Color cardColor, Color textColor, Color primaryColor, Color onPrimaryColor) {
-   final theme = Theme.of(context);
+//  Widget _buildInputArea(Color cardColor, Color textColor, Color primaryColor, Color onPrimaryColor) {
+//    final theme = Theme.of(context);
+//     return Container(
+//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//       decoration: BoxDecoration(color: cardColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+//       child: SafeArea(
+//         child: Row(
+//           children: [
+//             Expanded(
+//               child: _voiceHandler.isListening
+//                   ? Container(
+//                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+//                       decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(24)),
+//                       child: Row(
+//                         children: [
+//                           const Icon(Icons.mic, color: Colors.redAccent),
+//                           const SizedBox(width: 8),
+//                           Expanded(
+//                             child: Text(
+//                               _voiceHandler.transcripcionTemporal,
+//                               style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+//                               maxLines: 1, overflow: TextOverflow.ellipsis,
+//                             )
+//                           ),
+//                         ],
+//                       ),
+//                     )
+//                   : TextField(
+//                       controller: _msgController,
+//                       decoration: InputDecoration(
+//                         hintText: "Escribe o mantén presionado el micro...",
+//                         filled: true,
+//                         fillColor: theme.colorScheme.onSurface.withOpacity(0.05),
+//                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+//                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+//                       ),
+//                       onSubmitted: (_) => _sendMessage(),
+//                     ),
+//             ),
+//             const SizedBox(width: 12),
+//             GestureDetector(
+//               // 🔥 Si tiene texto, un tap envía. Si no tiene, mantiene presionado para hablar
+//               onTap: _hasText ? _sendMessage : null, 
+//               onLongPress: !_hasText ? _iniciarEscucha : null,
+//               onLongPressEnd: !_hasText ? (details) => _detenerYEnviarAudio() : null,
+//               child: AnimatedContainer(
+//                 duration: const Duration(milliseconds: 200),
+//                 padding: EdgeInsets.all(_voiceHandler.isListening ? 16 : 12),
+//                 decoration: BoxDecoration(
+//                   color: _hasText ? primaryColor : (_voiceHandler.isListening ? Colors.redAccent : primaryColor), 
+//                   shape: BoxShape.circle
+//                 ),
+//                 child: Icon(
+//                   _hasText ? Icons.send_rounded : (_voiceHandler.isListening ? Icons.mic_rounded : Icons.mic_none_rounded), 
+//                   color: Colors.white, size: _voiceHandler.isListening ? 24 : 20
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+Widget _buildQuickActions(Color cardColor, Color textColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: cardColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+      color: Theme.of(context).scaffoldBackgroundColor,
+      padding: const EdgeInsets.only(left: 16, bottom: 12, top: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildActionChip(Icons.swap_horiz_rounded, "Transferir", "Quiero transferir fondos."),
+            _buildActionChip(Icons.receipt_long_rounded, "Reporte de Gastos", "Genera un reporte de gastos."),
+            _buildActionChip(Icons.analytics_rounded, "Analizar", "Analiza mis finanzas."),
+            _buildActionChip(Icons.group_add_rounded, "Dividir Cuenta", "Quiero dividir una cuenta."),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionChip(IconData icon, String label, String prompt) {
+    return GestureDetector(
+      onTap: () {
+        _msgController.text = prompt;
+        _sendMessage(); // Auto envía el comando a la IA
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8)),
+            const SizedBox(width: 8),
+            Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Theme.of(context).colorScheme.onSurface)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // CAJA DE INPUT REDISEÑADA
+  // ==========================================
+  Widget _buildInputArea(Color cardColor, Color textColor, Color primaryColor, Color onPrimaryColor) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 20),
+      decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
       child: SafeArea(
         child: Row(
           children: [
             Expanded(
               child: _voiceHandler.isListening
                   ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(24)),
                       child: Row(
                         children: [
@@ -745,32 +855,33 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
                     )
                   : TextField(
                       controller: _msgController,
+                      style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w500),
                       decoration: InputDecoration(
                         hintText: "Escribe o mantén presionado el micro...",
+                        hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 14),
                         filled: true,
-                        fillColor: theme.colorScheme.onSurface.withOpacity(0.05),
+                        fillColor: theme.cardColor,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
                       ),
                       onSubmitted: (_) => _sendMessage(),
                     ),
             ),
             const SizedBox(width: 12),
             GestureDetector(
-              // 🔥 Si tiene texto, un tap envía. Si no tiene, mantiene presionado para hablar
               onTap: _hasText ? _sendMessage : null, 
               onLongPress: !_hasText ? _iniciarEscucha : null,
               onLongPressEnd: !_hasText ? (details) => _detenerYEnviarAudio() : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.all(_voiceHandler.isListening ? 16 : 12),
+                width: 56, height: 56,
                 decoration: BoxDecoration(
-                  color: _hasText ? primaryColor : (_voiceHandler.isListening ? Colors.redAccent : primaryColor), 
+                  color: _hasText ? primaryColor : (_voiceHandler.isListening ? Colors.redAccent : const Color(0xFF4361EE)), 
                   shape: BoxShape.circle
                 ),
                 child: Icon(
                   _hasText ? Icons.send_rounded : (_voiceHandler.isListening ? Icons.mic_rounded : Icons.mic_none_rounded), 
-                  color: Colors.white, size: _voiceHandler.isListening ? 24 : 20
+                  color: Colors.white, size: _voiceHandler.isListening ? 28 : 24
                 ),
               ),
             ),
@@ -780,23 +891,102 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
     );
   }
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   final theme = Theme.of(context);
+  //   final colorScheme = theme.colorScheme;
+
+  //   return Scaffold(
+  //     appBar: AppBar(
+  //       title: const Text("Asistente Ejecutivo IA"),
+  //       centerTitle: true,
+  //       actions: [
+  //         IconButton(
+  //           icon: const Icon(Icons.refresh_rounded, color: Colors.redAccent),
+  //           tooltip: "Reiniciar Chat",
+  //           onPressed: () => Provider.of<AiChatHandler>(context, listen: false).reiniciarChat(),
+  //         ),
+  //         IconButton(
+  //           icon: const Icon(Icons.memory_rounded),
+  //           onPressed: () => Navigator.push(context, RouteHelper.slideUpRoute(const AiMemoryScreen())),
+  //         )
+  //       ],
+  //     ),
+  //     body: Column(
+  //       children: [
+  //         Expanded(
+  //           child: Consumer<AiChatHandler>(
+  //             builder: (context, handler, child) {
+  //               WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                
+  //               return ListView.builder(
+  //                 controller: _scrollController,
+  //                 padding: const EdgeInsets.all(16),
+  //                 itemCount: handler.messages.length,
+  //                 itemBuilder: (context, index) {
+  //                   final msg = handler.messages[index];
+  //                   final isUser = msg["isUser"];
+  //                   return Align(
+  //                     alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+  //                     child: Container(
+  //                       margin: const EdgeInsets.only(bottom: 12),
+  //                       padding: const EdgeInsets.all(16),
+  //                       constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+  //                       decoration: BoxDecoration(
+  //                         color: isUser ? colorScheme.primary : theme.cardColor,
+  //                         borderRadius: BorderRadius.circular(16).copyWith(
+  //                           bottomRight: isUser ? Radius.zero : const Radius.circular(16),
+  //                           bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
+  //                         ),
+  //                         boxShadow: [
+  //                           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))
+  //                         ]
+  //                       ),
+  //                       child: msg["isLoading"] == true
+  //                           ? Row(
+  //                               mainAxisSize: MainAxisSize.min,
+  //                               children: [
+  //                                 SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.onSurface)),
+  //                                 const SizedBox(width: 12),
+  //                                 Text(msg["text"], style: TextStyle(color: colorScheme.onSurface)),
+  //                               ],
+  //                             )
+  //                           : Text(
+  //                               msg["text"],
+  //                               style: TextStyle(color: isUser ? colorScheme.onPrimary : colorScheme.onSurface, fontSize: 15),
+  //                             ),
+  //                     ),
+  //                   );
+  //                 },
+  //               );
+  //             },
+  //           ),
+  //         ),
+  //         _buildInputArea(theme.cardColor, colorScheme.onSurface, colorScheme.primary, colorScheme.onPrimary),
+  //       ],
+  //     ),
+  //   );
+  // }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Asistente Ejecutivo IA"),
-        centerTitle: true,
+        title: const Text("Asistente Ejecutivo", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.redAccent),
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFFC77DFF)),
             tooltip: "Reiniciar Chat",
             onPressed: () => Provider.of<AiChatHandler>(context, listen: false).reiniciarChat(),
           ),
           IconButton(
-            icon: const Icon(Icons.memory_rounded),
+            icon: const Icon(Icons.settings_outlined, color: Color(0xFFC77DFF)),
             onPressed: () => Navigator.push(context, RouteHelper.slideUpRoute(const AiMemoryScreen())),
           )
         ],
@@ -810,26 +1000,25 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
                 
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                   itemCount: handler.messages.length,
                   itemBuilder: (context, index) {
                     final msg = handler.messages[index];
                     final isUser = msg["isUser"];
+                    
                     return Align(
                       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(20),
+                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
                         decoration: BoxDecoration(
-                          color: isUser ? colorScheme.primary : theme.cardColor,
+                          color: isUser ? const Color(0xFF1E0C3E) : theme.cardColor,
                           borderRadius: BorderRadius.circular(16).copyWith(
                             bottomRight: isUser ? Radius.zero : const Radius.circular(16),
                             bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
                           ),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))
-                          ]
+                          border: isUser ? Border.all(color: const Color(0xFFC77DFF).withOpacity(0.5)) : null,
                         ),
                         child: msg["isLoading"] == true
                             ? Row(
@@ -842,7 +1031,12 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
                               )
                             : Text(
                                 msg["text"],
-                                style: TextStyle(color: isUser ? colorScheme.onPrimary : colorScheme.onSurface, fontSize: 15),
+                                style: TextStyle(
+                                  color: isUser ? Colors.white : colorScheme.onSurface, 
+                                  fontSize: 15,
+                                  height: 1.5,
+                                  fontWeight: isUser ? FontWeight.normal : FontWeight.w600
+                                ),
                               ),
                       ),
                     );
@@ -851,6 +1045,9 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
               },
             ),
           ),
+          
+          //Inyección de las dos barras inferiores (Chips + Input)
+          _buildQuickActions(theme.cardColor, colorScheme.onSurface),
           _buildInputArea(theme.cardColor, colorScheme.onSurface, colorScheme.primary, colorScheme.onPrimary),
         ],
       ),

@@ -9,6 +9,8 @@ class UserCard extends StatefulWidget {
   final bool useAvatarColors;
   final VoidCallback onToggleDiscreet;
   final bool isDiscreet;
+  final double presupuestoMensual;
+  final double gastadoMes;
 
   const UserCard({
     super.key,
@@ -19,6 +21,8 @@ class UserCard extends StatefulWidget {
     this.useAvatarColors = false,
     required this.onToggleDiscreet,
     required this.isDiscreet,
+    this.presupuestoMensual = 0.0,
+    this.gastadoMes = 0.0,
   });
 
   @override
@@ -72,7 +76,7 @@ class _UserCardState extends State<UserCard> with SingleTickerProviderStateMixin
         // CONTENEDOR PRINCIPAL DE LA TARJETA
         Container(
           width: double.infinity,
-          height: 200,
+          constraints: const BoxConstraints(minHeight: 200),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: colors,
@@ -130,6 +134,7 @@ class _UserCardState extends State<UserCard> with SingleTickerProviderStateMixin
                 Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Row(
@@ -168,39 +173,68 @@ class _UserCardState extends State<UserCard> with SingleTickerProviderStateMixin
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.lock_outline, color: Colors.greenAccent, size: 14),
+                              const SizedBox(width: 6),
+                              Text(
+                                widget.isDiscreet ? "Stake: ****" : "Stake: ${widget.stakedTTC} TTC",
+                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 24),
+                          Row(
+                            children: [
+                              const Icon(Icons.bolt, color: Colors.amberAccent, size: 16),
+                              const SizedBox(width: 4),
+                              Text(
+                                "1 TTC = \$1",
+                                style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      if (widget.presupuestoMensual > 0) ...[
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.lock, color: Colors.greenAccent, size: 14),
-                                const SizedBox(width: 6),
-                                Text(
-                                  widget.isDiscreet ? "Stake: ****" : "Stake: ${widget.stakedTTC} TTC",
-                                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                                ),
-                              ],
+                            Text(
+                              "PRESUPUESTO",
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.5,
+                              ),
                             ),
-                            Row(
-                              children: [
-                                const Icon(Icons.bolt, color: Colors.amberAccent, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "1 TTC = \$1",
-                                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, fontWeight: FontWeight.bold),
-                                ),
-                              ],
+                            Text(
+                              "${widget.gastadoMes.toStringAsFixed(0)} / ${widget.presupuestoMensual.toStringAsFixed(0)} TTC",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: (widget.gastadoMes / widget.presupuestoMensual).clamp(0.0, 1.0),
+                            minHeight: 4,
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

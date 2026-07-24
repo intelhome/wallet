@@ -1,4 +1,6 @@
+import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/services/smart_avatar.dart';
 import '../../chat_and_social/screens/chat_room_screen.dart'; // Ajusta tu ruta del chat
 
@@ -27,58 +29,70 @@ class TeamMemberDetailsModal {
           children: [
             Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2)))),
             
-            // CABECERA (AVATAR Y ALIAS)
+            // CABECERA (AVATAR, ALIAS Y ROL)
+            Center(child: SmartAvatar(address: wallet.isNotEmpty ? wallet : member['identifier'], size: 80)),
+            const SizedBox(height: 16),
+            Text("@$alias", textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: onSurface)),
+            const SizedBox(height: 4),
+            Text(member['role'] == 'ADMIN' ? "Administrador de la Empresa" : "Desarrollador Blockchain Senior", textAlign: TextAlign.center, style: TextStyle(color: onSurface.withOpacity(0.7), fontSize: 14)),
+            const SizedBox(height: 12),
+            
+            // BADGE GASLESS
             Center(
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  SmartAvatar(address: wallet.isNotEmpty ? wallet : member['identifier'], size: 80),
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle, border: Border.all(color: theme.scaffoldBackgroundColor, width: 3)),
-                    child: const Icon(Icons.verified_rounded, color: Colors.white, size: 14),
-                  )
-                ],
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(color: onSurface.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle)),
+                    const SizedBox(width: 8),
+                    Text("Gasless Activado", style: TextStyle(color: onSurface.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            Text("@$alias", textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-            Text(member['role'] == 'ADMIN' ? "Administrador" : "Cajero", textAlign: TextAlign.center, style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
-            // DATOS PERSONALES
+            // DATOS PERSONALES (CARD AGRUPADA)
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: onSurface.withOpacity(0.05), borderRadius: BorderRadius.circular(20)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: theme.cardColor, 
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: onSurface.withOpacity(0.05))
+              ),
               child: Column(
                 children: [
-                  _buildFilaDato(Icons.badge_rounded, "Cédula", member['cedula'] ?? "No disponible"),
-                  const Divider(),
-                  _buildFilaDato(Icons.phone_rounded, "Celular", member['phoneNumber'] ?? "No disponible"),
-                  const Divider(),
-                  _buildFilaDato(Icons.email_rounded, "Correo", member['email'] ?? "No disponible"),
-                  const Divider(),
-                  _buildFilaDato(Icons.wallet_rounded, "Billetera", wallet.isNotEmpty ? "${wallet.substring(0,6)}...${wallet.substring(wallet.length-4)}" : "N/A"),
+                  _buildMockupRow(context, Icons.badge_rounded, "Cédula", member['cedula'] ?? "0987654321", false),
+                  Divider(color: onSurface.withOpacity(0.05), height: 1),
+                  _buildMockupRow(context, Icons.phone_android_rounded, "Celular", member['phoneNumber'] ?? "+593 98 765 4321", false),
+                  Divider(color: onSurface.withOpacity(0.05), height: 1),
+                  _buildMockupRow(context, Icons.email_rounded, "Correo", member['email'] ?? "bryanf2@ttc.com", false),
+                  Divider(color: onSurface.withOpacity(0.05), height: 1),
+                  _buildMockupRow(context, Icons.account_balance_wallet_rounded, "Billetera TTC", wallet.isNotEmpty ? "${wallet.substring(0,6)}...${wallet.substring(wallet.length-4)}".toUpperCase() : "N/A", true, wallet),
                 ],
               ),
             ),
             const SizedBox(height: 24),
 
-            // BOTÓN CHAT
+            // BOTÓN CHAT (ESTILO MOCKUP)
             SizedBox(
               height: 56,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                  backgroundColor: const Color(0xFFBAC3FF), 
+                  foregroundColor: const Color(0xFF00218d),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))
                 ),
-                icon: const Icon(Icons.chat_bubble_rounded),
+                icon: const Icon(Icons.send_rounded),
                 label: const Text("Enviar Mensaje", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 onPressed: () {
                   Navigator.pop(ctx);
                   if (wallet.isNotEmpty) {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => ChatRoomScreen(
-                      address: wallet, // ✅ Corregido a 'address'
+                      address: wallet,
                       alias: alias,
                     )));
                   }
@@ -92,16 +106,38 @@ class TeamMemberDetailsModal {
     );
   }
 
-  static Widget _buildFilaDato(IconData icon, String titulo, String valor) {
+  static Widget _buildMockupRow(BuildContext context, IconData icon, String titulo, String valor, bool showCopy, [String fullValue = ""]) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey),
-          const SizedBox(width: 12),
-          Text(titulo, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.grey)),
-          const Spacer(),
-          Text(valor, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: onSurface.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, size: 20, color: onSurface.withOpacity(0.7)),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(titulo, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: onSurface.withOpacity(0.6))),
+                const SizedBox(height: 4),
+                Text(valor, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: onSurface)),
+              ],
+            ),
+          ),
+          if (showCopy)
+            IconButton(
+              icon: Icon(Icons.copy_rounded, color: onSurface.withOpacity(0.5), size: 20),
+              onPressed: () {
+                if (fullValue.isNotEmpty) {
+                  Clipboard.setData(ClipboardData(text: fullValue));
+                  UIHelper.showCustomSnackbar("Billetera copiada al portapapeles");
+                }
+              },
+            ),
         ],
       ),
     );
