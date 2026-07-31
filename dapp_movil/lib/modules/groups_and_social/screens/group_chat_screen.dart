@@ -339,7 +339,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   }
 
   // ==========================================================
-  // 🔥 CONSTRUCCIÓN DE UI
+  // CONSTRUCCIÓN DE UI
   // ==========================================================
 
   @override
@@ -347,28 +347,35 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final miWallet = Provider.of<AuthCoreService>(context, listen: false).publicAddress.toLowerCase();
+    final onSurface = colorScheme.onSurface;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: theme.cardColor,
-        elevation: 1,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
         titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded), 
+          onPressed: () => Navigator.pop(context)
+        ),
         title: GestureDetector(
           onTap: () => GroupChatProfileModal.show(context, widget.groupId, widget.groupName, widget.totalMembers),
           child: Row(
             children: [
-              SmartAvatar(address: widget.groupId, size: 36),
+              SmartAvatar(address: widget.groupId, size: 40),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.groupName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  if (_typingUserAlias != null)
-                    Text("$_typingUserAlias está escribiendo...", style: TextStyle(color: colorScheme.primary, fontSize: 12, fontStyle: FontStyle.italic))
-                  else
-                    Text("Toca para info del grupo", style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.5))),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.groupName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18), overflow: TextOverflow.ellipsis),
+                    if (_typingUserAlias != null)
+                      Text("$_typingUserAlias está escribiendo...", style: TextStyle(color: colorScheme.primary, fontSize: 12, fontStyle: FontStyle.italic))
+                    else
+                      Text("Toca para info del grupo", style: TextStyle(fontSize: 12, color: onSurface.withOpacity(0.6))),
                 ],
+                ),
               ),
             ],
           ),
@@ -378,12 +385,20 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         ? const Center(child: CircularProgressIndicator())
         : Stack(
             children: [
+              // 🔥 FONDO DE CUADRÍCULA ESTILO MOCKUP
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _GridPainter(color: onSurface.withOpacity(0.04)),
+                ),
+              ),
+
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
                       reverse: true,
                       itemCount: _messages.length,
                       itemBuilder: (context, index) {
@@ -417,34 +432,27 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                     ),
                   ),
 
-                  if (_typingUserAlias != null)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24.0, bottom: 8.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text("$_typingUserAlias está escribiendo", style: TextStyle(color: colorScheme.primary, fontSize: 13, fontStyle: FontStyle.italic, fontWeight: FontWeight.bold)),
-                          Text("...", style: TextStyle(color: colorScheme.primary, fontSize: 13, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-
+                  // BARRA DE ENTRADA DE CHAT TIPO PÍLDORA
                   _buildInputArea(),
                 ],
               ),
 
               if (_showAttachmentMenu)
-                Positioned(bottom: 75, left: 5, child: _buildAttachmentMenu()),
+                Positioned(
+                  bottom: 80, 
+                  left: 16, 
+                  child: _buildAttachmentMenu()
+                ),
 
               if (_showMicTutorial)
                 Positioned(
-                  bottom: 80, right: 15,
+                  bottom: 90, right: 16,
                   child: Material(
                     color: Colors.transparent,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(color: colorScheme.primary, borderRadius: BorderRadius.circular(16)),
-                      child: const Text("Mantén presionado para Audio 🎤", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      decoration: BoxDecoration(color: colorScheme.primary, borderRadius: BorderRadius.circular(16), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)]),
+                      child: const Text("Mantén presionado para Audio 🎤", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                     ),
                   ),
                 ),
@@ -453,7 +461,226 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     );
   }
 
-  // 🔥 TARJETA INTELIGENTE MEJORADA PARA ACEPTAR DEUDAS 
+  Widget _buildInputArea() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final onSurface = colorScheme.onSurface;
+
+    return Container(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 20),
+      decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
+      child: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4, left: 4),
+                child: IconButton(
+                  icon: AnimatedRotation(
+                    turns: _showAttachmentMenu ? 0.125 : 0, 
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(Icons.attach_file_rounded, color: onSurface.withOpacity(0.6), size: 24),
+                  ),
+                  onPressed: () => setState(() { _showAttachmentMenu = !_showAttachmentMenu; _showMicTutorial = false; }),
+                ),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _msgController, focusNode: _focusNode, maxLines: 5, minLines: 1,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: TextStyle(color: onSurface),
+                  onChanged: (val) {
+                    _enviarEventoTyping(); 
+                    if (val.isNotEmpty && !_hasText) setState(() => _hasText = true);
+                    else if (val.isEmpty && _hasText) setState(() => _hasText = false);
+                    if (_showMicTutorial) setState(() => _showMicTutorial = false);
+                  },
+                  decoration: InputDecoration(
+                    hintText: "Mensaje al grupo...", 
+                    hintStyle: TextStyle(color: onSurface.withOpacity(0.5), fontSize: 16),
+                    border: InputBorder.none, 
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16)
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6, right: 6),
+                child: GestureDetector(
+                  onTap: _hasText ? () { _enviarMensajeTexto(); setState(() => _showAttachmentMenu = false); } : null,
+                  onLongPress: () async {
+                    setState(() => _showMicTutorial = false);
+                    if (!_hasText) { HapticFeedback.heavyImpact(); await _iniciarGrabacion(); }
+                  },
+                  onLongPressEnd: (details) async {
+                    if (!_hasText) await _detenerYEnviarAudio();
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: EdgeInsets.all(_isRecording ? 12 : 10),
+                    decoration: const BoxDecoration(color: Colors.transparent, shape: BoxShape.circle),
+                    child: Icon(
+                      _hasText ? Icons.send_rounded : (_isRecording ? Icons.mic_rounded : Icons.mic_none_rounded), 
+                      color: _hasText || _isRecording ? colorScheme.primary : onSurface.withOpacity(0.6), 
+                      size: _isRecording ? 26 : 24
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentMenu() {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, spreadRadius: 5)]
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.call_split_rounded, color: Colors.green),
+              tooltip: "Dividir Pago",
+              onPressed: _abrirSplitBillScreen, 
+            ),
+            IconButton(
+              icon: const Icon(Icons.image_rounded, color: Colors.blueAccent),
+              tooltip: "Enviar Imagen",
+              onPressed: () { setState(() => _showAttachmentMenu = false); _enviarImagen(); },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // @override
+  // Widget build(BuildContext context) {
+  //   final theme = Theme.of(context);
+  //   final colorScheme = theme.colorScheme;
+  //   final miWallet = Provider.of<AuthCoreService>(context, listen: false).publicAddress.toLowerCase();
+
+  //   return Scaffold(
+  //     backgroundColor: theme.scaffoldBackgroundColor,
+  //     appBar: AppBar(
+  //       backgroundColor: theme.cardColor,
+  //       elevation: 1,
+  //       titleSpacing: 0,
+  //       title: GestureDetector(
+  //         onTap: () => GroupChatProfileModal.show(context, widget.groupId, widget.groupName, widget.totalMembers),
+  //         child: Row(
+  //           children: [
+  //             SmartAvatar(address: widget.groupId, size: 36),
+  //             const SizedBox(width: 12),
+  //             Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Text(widget.groupName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+  //                 if (_typingUserAlias != null)
+  //                   Text("$_typingUserAlias está escribiendo...", style: TextStyle(color: colorScheme.primary, fontSize: 12, fontStyle: FontStyle.italic))
+  //                 else
+  //                   Text("Toca para info del grupo", style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.5))),
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //     body: _isLoading 
+  //       ? const Center(child: CircularProgressIndicator())
+  //       : Stack(
+  //           children: [
+  //             Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Expanded(
+  //                   child: ListView.builder(
+  //                     padding: const EdgeInsets.symmetric(vertical: 20),
+  //                     reverse: true,
+  //                     itemCount: _messages.length,
+  //                     itemBuilder: (context, index) {
+  //                       final msg = _messages[(_messages.length - 1) - index];
+  //                       final isMe = msg['senderWallet']?.toString().toLowerCase() == miWallet;
+                        
+  //                       if (msg['messageType'] == 'SPLIT_BILL_CARD') {
+  //                         return _buildSplitBillCard(jsonDecode(msg['content']), isMe);
+  //                       }
+
+  //                       Map<String, dynamic> parsedMap;
+  //                       try {
+  //                         parsedMap = jsonDecode(msg['content']);
+  //                         parsedMap['type'] = msg['messageType'];
+  //                       } catch (_) {
+  //                         parsedMap = {"type": msg['messageType'], "text": msg['content'], "content": msg['content']};
+  //                       }
+
+  //                       return Column(
+  //                         crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+  //                         children: [
+  //                           if (!isMe && msg['senderAlias'] != null)
+  //                             Padding(
+  //                               padding: const EdgeInsets.only(left: 20, bottom: 2, top: 8),
+  //                               child: Text("@${msg['senderAlias']}", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colorScheme.primary.withOpacity(0.8))),
+  //                             ),
+  //                           MessageBubble(message: parsedMap, isMe: isMe, peerAddress: msg['senderWallet'] ?? ''),
+  //                         ],
+  //                       );
+  //                     },
+  //                   ),
+  //                 ),
+
+  //                 if (_typingUserAlias != null)
+  //                   Padding(
+  //                     padding: const EdgeInsets.only(left: 24.0, bottom: 8.0),
+  //                     child: Row(
+  //                       mainAxisSize: MainAxisSize.min,
+  //                       children: [
+  //                         Text("$_typingUserAlias está escribiendo", style: TextStyle(color: colorScheme.primary, fontSize: 13, fontStyle: FontStyle.italic, fontWeight: FontWeight.bold)),
+  //                         Text("...", style: TextStyle(color: colorScheme.primary, fontSize: 13, fontWeight: FontWeight.bold)),
+  //                       ],
+  //                     ),
+  //                   ),
+
+  //                 _buildInputArea(),
+  //               ],
+  //             ),
+
+  //             if (_showAttachmentMenu)
+  //               Positioned(bottom: 75, left: 5, child: _buildAttachmentMenu()),
+
+  //             if (_showMicTutorial)
+  //               Positioned(
+  //                 bottom: 80, right: 15,
+  //                 child: Material(
+  //                   color: Colors.transparent,
+  //                   child: Container(
+  //                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+  //                     decoration: BoxDecoration(color: colorScheme.primary, borderRadius: BorderRadius.circular(16)),
+  //                     child: const Text("Mantén presionado para Audio 🎤", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+  //                   ),
+  //                 ),
+  //               ),
+  //           ],
+  //         ),
+  //   );
+  // }
+
+  // // 🔥 TARJETA INTELIGENTE MEJORADA PARA ACEPTAR DEUDAS 
   Widget _buildSplitBillCard(Map<String, dynamic> cardData, bool isMe) {
     bool isMyDebt = cardData['creatorWallet'] == Provider.of<AuthCoreService>(context, listen: false).publicAddress.toLowerCase();
     return Container(
@@ -482,94 +709,121 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     );
   }
 
-  Widget _buildInputArea() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  // Widget _buildInputArea() {
+  //   final theme = Theme.of(context);
+  //   final colorScheme = theme.colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(color: theme.scaffoldBackgroundColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, -4))]),
-      child: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: IconButton(
-                icon: AnimatedRotation(
-                  turns: _showAttachmentMenu ? 0.125 : 0, 
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(Icons.attach_file_rounded, color: colorScheme.primary, size: 28),
-                ),
-                onPressed: () => setState(() { _showAttachmentMenu = !_showAttachmentMenu; _showMicTutorial = false; }),
-              ),
-            ),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(24), border: Border.all(color: colorScheme.onSurface.withOpacity(0.1))),
-                child: TextField(
-                  controller: _msgController, focusNode: _focusNode, maxLines: 5, minLines: 1,
-                  textCapitalization: TextCapitalization.sentences,
-                  onChanged: (val) {
-                    _enviarEventoTyping(); 
-                    if (val.isNotEmpty && !_hasText) setState(() => _hasText = true);
-                    else if (val.isEmpty && _hasText) setState(() => _hasText = false);
-                    if (_showMicTutorial) setState(() => _showMicTutorial = false);
-                  },
-                  decoration: InputDecoration(hintText: "Mensaje al grupo...", border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: GestureDetector(
-                onTap: _hasText ? () { _enviarMensajeTexto(); setState(() => _showAttachmentMenu = false); } : null,
-                onLongPress: () async {
-                  setState(() => _showMicTutorial = false);
-                  if (!_hasText) { HapticFeedback.heavyImpact(); await _iniciarGrabacion(); }
-                },
-                onLongPressEnd: (details) async {
-                  if (!_hasText) await _detenerYEnviarAudio();
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: EdgeInsets.all(_isRecording ? 16 : 14),
-                  decoration: BoxDecoration(color: _hasText ? colorScheme.primary : (_isRecording ? Colors.redAccent : colorScheme.primary), shape: BoxShape.circle),
-                  child: Icon(_hasText ? Icons.send_rounded : (_isRecording ? Icons.mic_rounded : Icons.mic_none_rounded), color: Colors.white, size: _isRecording ? 26 : 22),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+  //     decoration: BoxDecoration(color: theme.scaffoldBackgroundColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, -4))]),
+  //     child: SafeArea(
+  //       child: Row(
+  //         crossAxisAlignment: CrossAxisAlignment.end,
+  //         children: [
+  //           Padding(
+  //             padding: const EdgeInsets.only(bottom: 2),
+  //             child: IconButton(
+  //               icon: AnimatedRotation(
+  //                 turns: _showAttachmentMenu ? 0.125 : 0, 
+  //                 duration: const Duration(milliseconds: 200),
+  //                 child: Icon(Icons.attach_file_rounded, color: colorScheme.primary, size: 28),
+  //               ),
+  //               onPressed: () => setState(() { _showAttachmentMenu = !_showAttachmentMenu; _showMicTutorial = false; }),
+  //             ),
+  //           ),
+  //           Expanded(
+  //             child: Container(
+  //               decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(24), border: Border.all(color: colorScheme.onSurface.withOpacity(0.1))),
+  //               child: TextField(
+  //                 controller: _msgController, focusNode: _focusNode, maxLines: 5, minLines: 1,
+  //                 textCapitalization: TextCapitalization.sentences,
+  //                 onChanged: (val) {
+  //                   _enviarEventoTyping(); 
+  //                   if (val.isNotEmpty && !_hasText) setState(() => _hasText = true);
+  //                   else if (val.isEmpty && _hasText) setState(() => _hasText = false);
+  //                   if (_showMicTutorial) setState(() => _showMicTutorial = false);
+  //                 },
+  //                 decoration: InputDecoration(hintText: "Mensaje al grupo...", border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+  //               ),
+  //             ),
+  //           ),
+  //           const SizedBox(width: 8),
+  //           Padding(
+  //             padding: const EdgeInsets.only(bottom: 2),
+  //             child: GestureDetector(
+  //               onTap: _hasText ? () { _enviarMensajeTexto(); setState(() => _showAttachmentMenu = false); } : null,
+  //               onLongPress: () async {
+  //                 setState(() => _showMicTutorial = false);
+  //                 if (!_hasText) { HapticFeedback.heavyImpact(); await _iniciarGrabacion(); }
+  //               },
+  //               onLongPressEnd: (details) async {
+  //                 if (!_hasText) await _detenerYEnviarAudio();
+  //               },
+  //               child: AnimatedContainer(
+  //                 duration: const Duration(milliseconds: 200),
+  //                 padding: EdgeInsets.all(_isRecording ? 16 : 14),
+  //                 decoration: BoxDecoration(color: _hasText ? colorScheme.primary : (_isRecording ? Colors.redAccent : colorScheme.primary), shape: BoxShape.circle),
+  //                 child: Icon(_hasText ? Icons.send_rounded : (_isRecording ? Icons.mic_rounded : Icons.mic_none_rounded), color: Colors.white, size: _isRecording ? 26 : 22),
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildAttachmentMenu() {
+  //   final theme = Theme.of(context);
+  //   return Material(
+  //     color: Colors.transparent,
+  //     child: Container(
+  //       margin: const EdgeInsets.only(bottom: 10, left: 10),
+  //       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+  //       decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(24), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, spreadRadius: 2)]),
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           IconButton(
+  //             icon: const Icon(Icons.call_split_rounded, color: Colors.green),
+  //             tooltip: "Dividir Pago",
+  //             onPressed: _abrirSplitBillScreen, // 🔥 AHORA ABRE LA PANTALLA OFICIAL
+  //           ),
+  //           IconButton(
+  //             icon: const Icon(Icons.image_rounded, color: Colors.blueAccent),
+  //             tooltip: "Enviar Imagen",
+  //             onPressed: () { setState(() => _showAttachmentMenu = false); _enviarImagen(); },
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+}
+
+class _GridPainter extends CustomPainter {
+  final Color color;
+
+  _GridPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.0;
+
+    const double spacing = 30.0; // Espaciado de los cuadros
+
+    // Líneas verticales
+    for (double i = 0; i < size.width; i += spacing) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
+    }
+    // Líneas horizontales
+    for (double i = 0; i < size.height; i += spacing) {
+      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+    }
   }
 
-  Widget _buildAttachmentMenu() {
-    final theme = Theme.of(context);
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10, left: 10),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(24), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, spreadRadius: 2)]),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.call_split_rounded, color: Colors.green),
-              tooltip: "Dividir Pago",
-              onPressed: _abrirSplitBillScreen, // 🔥 AHORA ABRE LA PANTALLA OFICIAL
-            ),
-            IconButton(
-              icon: const Icon(Icons.image_rounded, color: Colors.blueAccent),
-              tooltip: "Enviar Imagen",
-              onPressed: () { setState(() => _showAttachmentMenu = false); _enviarImagen(); },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

@@ -1,6 +1,7 @@
 import 'package:dapp_movil/core/helpers/route_helper.dart';
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:dapp_movil/modules/admin/screens/admin_panel_screen.dart';
+import 'package:dapp_movil/modules/admin/screens/main_menu_admin.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -257,7 +258,7 @@ Future<void> _unlockConHuella() async {
     if (authCore.role == "ROLE_ADMIN") {
       Navigator.pushReplacement(
         context,
-        RouteHelper.fadeRoute(const AdminPanelScreen()),
+        RouteHelper.fadeRoute(const MainMenuAdmin()), 
       );
     } else {
       Navigator.pushReplacement(

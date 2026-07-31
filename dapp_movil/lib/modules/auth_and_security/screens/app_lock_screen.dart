@@ -40,7 +40,6 @@ class _AppLockScreenState extends State<AppLockScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return PopScope(
       canPop: false, 
@@ -49,48 +48,65 @@ class _AppLockScreenState extends State<AppLockScreen> {
       },
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
-        body: Center(
+        body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Ícono premium con fondo tonal
+                const Spacer(),
+                // Ícono central estilo "FINANCE LOCK"
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  width: 120, height: 120,
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.1),
+                    color: Colors.white.withOpacity(0.05),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.lock_person_rounded, size: 80, color: colorScheme.primary),
+                  child: Center(
+                    child: Container(
+                      width: 70, height: 70,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E2336),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.security_rounded, color: Color(0xFF4361EE), size: 28),
+                          SizedBox(height: 4),
+                          Text("FINANCE\nLOCK", textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF4361EE), fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 40),
+                
+                // Textos
+                const Text("Bóveda Segura", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
                 Text(
-                  "Bóveda Segura",
-                  style: TextStyle(color: colorScheme.onSurface, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Tu sesión ha sido suspendida por inactividad. Desbloquea para continuar.",
+                  "Tu sesión ha sido suspendida por\ninactividad.\nDesbloquea para continuar.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 15, height: 1.4),
+                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 16, height: 1.5),
                 ),
-                const SizedBox(height: 48),
+                
+                const Spacer(),
+                
+                // Botón
                 SizedBox(
-                  width: double.infinity,
-                  height: 56,
+                  width: double.infinity, height: 60,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
+                      backgroundColor: const Color(0xFF4361EE),
+                      foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // M3 Button
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     ),
                     onPressed: _isAuthenticating ? null : _desbloquearApp,
                     icon: _isAuthenticating 
-                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colorScheme.onPrimary, strokeWidth: 2))
-                      : const Icon(Icons.fingerprint, size: 28),
-                    label: const Text("Desbloquear con Biometría", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.fingerprint_rounded, size: 24),
+                    label: const Text("Desbloquear con Biometría", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -100,4 +116,68 @@ class _AppLockScreenState extends State<AppLockScreen> {
       ),
     );
   }
+
+  // @override
+  // Widget build(BuildContext context) {
+  //   final theme = Theme.of(context);
+  //   final colorScheme = theme.colorScheme;
+
+  //   return PopScope(
+  //     canPop: false, 
+  //     onPopInvoked: (didPop) {
+  //       if (!didPop) SystemNavigator.pop(); 
+  //     },
+  //     child: Scaffold(
+  //       backgroundColor: theme.scaffoldBackgroundColor,
+  //       body: Center(
+  //         child: Padding(
+  //           padding: const EdgeInsets.symmetric(horizontal: 32.0),
+  //           child: Column(
+  //             mainAxisAlignment: MainAxisAlignment.center,
+  //             children: [
+  //               // Ícono premium con fondo tonal
+  //               Container(
+  //                 padding: const EdgeInsets.all(24),
+  //                 decoration: BoxDecoration(
+  //                   color: colorScheme.primary.withOpacity(0.1),
+  //                   shape: BoxShape.circle,
+  //                 ),
+  //                 child: Icon(Icons.lock_person_rounded, size: 80, color: colorScheme.primary),
+  //               ),
+  //               const SizedBox(height: 32),
+  //               Text(
+  //                 "Bóveda Segura",
+  //                 style: TextStyle(color: colorScheme.onSurface, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+  //               ),
+  //               const SizedBox(height: 12),
+  //               Text(
+  //                 "Tu sesión ha sido suspendida por inactividad. Desbloquea para continuar.",
+  //                 textAlign: TextAlign.center,
+  //                 style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 15, height: 1.4),
+  //               ),
+  //               const SizedBox(height: 48),
+  //               SizedBox(
+  //                 width: double.infinity,
+  //                 height: 56,
+  //                 child: ElevatedButton.icon(
+  //                   style: ElevatedButton.styleFrom(
+  //                     backgroundColor: colorScheme.primary,
+  //                     foregroundColor: colorScheme.onPrimary,
+  //                     elevation: 0,
+  //                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // M3 Button
+  //                   ),
+  //                   onPressed: _isAuthenticating ? null : _desbloquearApp,
+  //                   icon: _isAuthenticating 
+  //                     ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colorScheme.onPrimary, strokeWidth: 2))
+  //                     : const Icon(Icons.fingerprint, size: 28),
+  //                   label: const Text("Desbloquear con Biometría", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 }

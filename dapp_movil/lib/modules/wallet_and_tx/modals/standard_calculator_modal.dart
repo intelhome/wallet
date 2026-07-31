@@ -70,86 +70,100 @@ class _StandardCalculatorModalState extends State<StandardCalculatorModal> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final btnColor = const Color(0xFF2A2E3D); // Fondo de botones y pantalla
+    final purpleText = const Color(0xFFE0B0FF); // Operadores
+    final orangeText = const Color(0xFFFFB74D); // Letra C
+    final blueBtn = const Color(0xFF4361EE); // Botón igual
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: theme.scaffoldBackgroundColor, 
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20, 
-        top: 20, left: 24, right: 24
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24, 
+        top: 16, left: 24, right: 24
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(10))),
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10))),
           const SizedBox(height: 20),
-          const Text("CALCULADORA DE PRODUCTOS", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1)),
-          const SizedBox(height: 20),
+          Text("CALCULADORA DE PRODUCTOS", style: TextStyle(color: Colors.white.withOpacity(0.8), fontWeight: FontWeight.w600, fontSize: 12, letterSpacing: 1.5)),
+          const SizedBox(height: 24),
           
+          // PANTALLA
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             decoration: BoxDecoration(
-              color: colorScheme.onSurface.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(24),
+              color: btnColor,
+              borderRadius: BorderRadius.circular(20),
             ),
             alignment: Alignment.centerRight,
-            child: Text(_display, style: const TextStyle(fontSize: 45, fontWeight: FontWeight.bold)),
+            child: Text(_display, style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.w600)),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           
           GridView.count(
             crossAxisCount: 4,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.2,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
+            childAspectRatio: 1.1,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
             children: [
-              _buildCalcBtn("7"), _buildCalcBtn("8"), _buildCalcBtn("9"), _buildCalcBtn("÷", isOp: true),
-              _buildCalcBtn("4"), _buildCalcBtn("5"), _buildCalcBtn("6"), _buildCalcBtn("x", isOp: true),
-              _buildCalcBtn("1"), _buildCalcBtn("2"), _buildCalcBtn("3"), _buildCalcBtn("-", isOp: true),
-              _buildCalcBtn("C", isClear: true), _buildCalcBtn("0"), _buildCalcBtn("."), _buildCalcBtn("+", isOp: true),
+              _buildCalcBtn("7", btnColor, Colors.white), _buildCalcBtn("8", btnColor, Colors.white), _buildCalcBtn("9", btnColor, Colors.white), _buildCalcBtn("÷", btnColor, purpleText, isOp: true),
+              _buildCalcBtn("4", btnColor, Colors.white), _buildCalcBtn("5", btnColor, Colors.white), _buildCalcBtn("6", btnColor, Colors.white), _buildCalcBtn("x", btnColor, purpleText, isOp: true),
+              _buildCalcBtn("1", btnColor, Colors.white), _buildCalcBtn("2", btnColor, Colors.white), _buildCalcBtn("3", btnColor, Colors.white), _buildCalcBtn("-", btnColor, purpleText, isOp: true),
+              _buildCalcBtn("C", btnColor, orangeText, isClear: true), _buildCalcBtn("0", btnColor, Colors.white), _buildCalcBtn(".", btnColor, Colors.white), _buildCalcBtn("+", btnColor, purpleText, isOp: true),
             ],
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 24),
           
-          Row(
+         // Reemplaza el Row final del método build:
+       Row(
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 60,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purpleAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    ),
-                    icon: const Icon(Icons.check_circle_outline),
-                    label: const Text("Aplicar a la Caja", style: TextStyle(fontWeight: FontWeight.bold)),
-                    onPressed: () {
-                      HapticFeedback.mediumImpact(); // 🔥 Vibración más fuerte al confirmar
+                  height: 64,
+                  child: _BotonFisico(
+                    onTap: () {
+                      HapticFeedback.mediumImpact(); 
                       if (_operator.isNotEmpty) _onButtonPressed("=");
                       Navigator.pop(context, double.tryParse(_display) ?? 0.0);
                     },
+                    borderRadius: BorderRadius.circular(20),
+                    bgColor: purpleText,
+                    child: Container(
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.check_circle_outline_rounded, color: Color(0xFF1E0C3E)),
+                          SizedBox(width: 8),
+                          Text("Aplicar a la Caja", style: TextStyle(color: Color(0xFF1E0C3E), fontWeight: FontWeight.bold, fontSize: 16)),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               SizedBox(
-                height: 60,
-                width: 70,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                height: 64,
+                width: 80,
+                child: _BotonFisico(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    _onButtonPressed("=");
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  bgColor: blueBtn,
+                  child: Container(
+                    alignment: Alignment.center,
+                    child: const Text("=", style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w500)),
                   ),
-                  onPressed: () => _onButtonPressed("="),
-                  child: const Text("=", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
                 ),
               )
             ],
@@ -159,20 +173,168 @@ class _StandardCalculatorModalState extends State<StandardCalculatorModal> {
     );
   }
 
-  Widget _buildCalcBtn(String label, {bool isOp = false, bool isClear = false}) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _onButtonPressed(label),
-        borderRadius: BorderRadius.circular(20),
-        splashColor: isOp ? Colors.purpleAccent.withOpacity(0.3) : Colors.white.withOpacity(0.1),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isOp ? Colors.purpleAccent.withOpacity(0.1) : (isClear ? Colors.orange.withOpacity(0.1) : Colors.white.withOpacity(0.05)),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          alignment: Alignment.center,
-          child: Text(label, style: TextStyle(color: isOp ? Colors.purpleAccent : (isClear ? Colors.orange : Colors.white), fontSize: 26, fontWeight: FontWeight.bold)),
+ // Reemplaza el constructor de las teclas numéricas
+Widget _buildCalcBtn(String label, Color bgColor, Color textColor, {bool isOp = false, bool isClear = false}) {
+    return _BotonFisico(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _onButtonPressed(label);
+      },
+      borderRadius: BorderRadius.circular(20),
+      bgColor: bgColor, // 🔥 Pasamos el color al Material
+      child: Container(
+        alignment: Alignment.center,
+        child: Text(label, style: TextStyle(color: textColor, fontSize: 26, fontWeight: FontWeight.w500)),
+      ),
+    );
+  }
+  // @override
+  // Widget build(BuildContext context) {
+  //   final theme = Theme.of(context);
+  //   final colorScheme = theme.colorScheme;
+
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       color: theme.cardColor,
+  //       borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+  //     ),
+  //     padding: EdgeInsets.only(
+  //       bottom: MediaQuery.of(context).viewInsets.bottom + 20, 
+  //       top: 20, left: 24, right: 24
+  //     ),
+  //     child: Column(
+  //       mainAxisSize: MainAxisSize.min,
+  //       children: [
+  //         Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(10))),
+  //         const SizedBox(height: 20),
+  //         const Text("CALCULADORA DE PRODUCTOS", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1)),
+  //         const SizedBox(height: 20),
+          
+  //         Container(
+  //           width: double.infinity,
+  //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+  //           decoration: BoxDecoration(
+  //             color: colorScheme.onSurface.withOpacity(0.05),
+  //             borderRadius: BorderRadius.circular(24),
+  //           ),
+  //           alignment: Alignment.centerRight,
+  //           child: Text(_display, style: const TextStyle(fontSize: 45, fontWeight: FontWeight.bold)),
+  //         ),
+  //         const SizedBox(height: 20),
+          
+  //         GridView.count(
+  //           crossAxisCount: 4,
+  //           shrinkWrap: true,
+  //           physics: const NeverScrollableScrollPhysics(),
+  //           childAspectRatio: 1.2,
+  //           mainAxisSpacing: 10,
+  //           crossAxisSpacing: 10,
+  //           children: [
+  //             _buildCalcBtn("7"), _buildCalcBtn("8"), _buildCalcBtn("9"), _buildCalcBtn("÷", isOp: true),
+  //             _buildCalcBtn("4"), _buildCalcBtn("5"), _buildCalcBtn("6"), _buildCalcBtn("x", isOp: true),
+  //             _buildCalcBtn("1"), _buildCalcBtn("2"), _buildCalcBtn("3"), _buildCalcBtn("-", isOp: true),
+  //             _buildCalcBtn("C", isClear: true), _buildCalcBtn("0"), _buildCalcBtn("."), _buildCalcBtn("+", isOp: true),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 15),
+          
+  //         Row(
+  //           children: [
+  //             Expanded(
+  //               child: SizedBox(
+  //                 height: 60,
+  //                 child: ElevatedButton.icon(
+  //                   style: ElevatedButton.styleFrom(
+  //                     backgroundColor: Colors.purpleAccent,
+  //                     foregroundColor: Colors.white,
+  //                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  //                   ),
+  //                   icon: const Icon(Icons.check_circle_outline),
+  //                   label: const Text("Aplicar a la Caja", style: TextStyle(fontWeight: FontWeight.bold)),
+  //                   onPressed: () {
+  //                     HapticFeedback.mediumImpact(); // 🔥 Vibración más fuerte al confirmar
+  //                     if (_operator.isNotEmpty) _onButtonPressed("=");
+  //                     Navigator.pop(context, double.tryParse(_display) ?? 0.0);
+  //                   },
+  //                 ),
+  //               ),
+  //             ),
+  //             const SizedBox(width: 10),
+  //             SizedBox(
+  //               height: 60,
+  //               width: 70,
+  //               child: ElevatedButton(
+  //                 style: ElevatedButton.styleFrom(
+  //                   backgroundColor: Colors.blueAccent,
+  //                   foregroundColor: Colors.white,
+  //                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  //                 ),
+  //                 onPressed: () => _onButtonPressed("="),
+  //                 child: const Text("=", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+  //               ),
+  //             )
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildCalcBtn(String label, {bool isOp = false, bool isClear = false}) {
+  //   return Material(
+  //     color: Colors.transparent,
+  //     child: InkWell(
+  //       onTap: () => _onButtonPressed(label),
+  //       borderRadius: BorderRadius.circular(20),
+  //       splashColor: isOp ? Colors.purpleAccent.withOpacity(0.3) : Colors.white.withOpacity(0.1),
+  //       child: Container(
+  //         decoration: BoxDecoration(
+  //           color: isOp ? Colors.purpleAccent.withOpacity(0.1) : (isClear ? Colors.orange.withOpacity(0.1) : Colors.white.withOpacity(0.05)),
+  //           borderRadius: BorderRadius.circular(20),
+  //         ),
+  //         alignment: Alignment.center,
+  //         child: Text(label, style: TextStyle(color: isOp ? Colors.purpleAccent : (isClear ? Colors.orange : Colors.white), fontSize: 26, fontWeight: FontWeight.bold)),
+  //       ),
+  //     ),
+  //   );
+  // }
+}
+class _BotonFisico extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  final BorderRadius borderRadius;
+  final Color bgColor; // 🔥 Ahora pedimos el color de fondo aquí
+
+  const _BotonFisico({
+    required this.child,
+    required this.onTap,
+    required this.borderRadius,
+    required this.bgColor,
+  });
+
+  @override
+  State<_BotonFisico> createState() => _BotonFisicoState();
+}
+
+class _BotonFisicoState extends State<_BotonFisico> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _isPressed ? 0.90 : 1.0, 
+      duration: const Duration(milliseconds: 100), 
+      curve: Curves.easeOutCubic,
+      child: Material(
+        color: widget.bgColor, // 🔥 EL COLOR VA EN EL MATERIAL PARA QUE SE VEA EL DESTELLO
+        borderRadius: widget.borderRadius,
+        child: InkWell(
+          onHighlightChanged: (isHighlighted) => setState(() => _isPressed = isHighlighted),
+          onTap: widget.onTap,
+          borderRadius: widget.borderRadius,
+          splashColor: Colors.white.withOpacity(0.4), // Destello blanco
+          highlightColor: Colors.black.withOpacity(0.1), // Oscurecimiento al hundir
+          child: widget.child, // El child (Container interno) ahora será transparente
         ),
       ),
     );

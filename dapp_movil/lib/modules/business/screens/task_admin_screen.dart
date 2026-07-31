@@ -6,6 +6,7 @@ import 'package:dapp_movil/core/notifications/push_notification_service.dart';
 import 'package:dapp_movil/core/services/local_cache_service.dart';
 import 'package:dapp_movil/core/services/smart_avatar.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
+import 'package:dapp_movil/modules/business/modals/report_pdf_task_modal.dart';
 import 'package:dapp_movil/modules/business/screens/ai_task_report_screen.dart';
 import 'package:dapp_movil/modules/business/screens/task_details_screen.dart';
 import 'package:flutter/material.dart';
@@ -407,11 +408,22 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
         title: const Text("Panel de actividades", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
+        // actions: [
+        //   IconButton(
+        //     icon: Icon(Icons.picture_as_pdf_outlined, color: onSurface.withOpacity(0.7)),
+        //     tooltip: "Exportar Reporte PDF",
+        //     onPressed: () => _mostrarModalConfiguracionPDF(context),
+        //   ),
         actions: [
           IconButton(
             icon: Icon(Icons.picture_as_pdf_outlined, color: onSurface.withOpacity(0.7)),
             tooltip: "Exportar Reporte PDF",
-            onPressed: () => _mostrarModalConfiguracionPDF(context),
+            onPressed: () => ReportPdfTaskModal.show(
+              context: context,
+              allTasks: _allTasks,
+              teamMembers: _teamMembers,
+              departments: _departments,
+            ),
           ),
           IconButton(
             icon: Icon(Icons.filter_list_off_rounded, color: onSurface.withOpacity(0.7)),
@@ -760,191 +772,191 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
 
 
   // 🔥 MODAL FLOTANTE CON FILTROS EXCLUSIVOS PARA LA GENERACIÓN DEL REPORTE PDF
-  void _mostrarModalConfiguracionPDF(BuildContext context) {
-    // Variables locales para aislar los filtros del PDF de la UI trasera
-    String? pdfWallet;
-    String? pdfDepartmentId;
-    String? pdfStatus;
-    DateTime? pdfDate;
+  // void _mostrarModalConfiguracionPDF(BuildContext context) {
+  //   // Variables locales para aislar los filtros del PDF de la UI trasera
+  //   String? pdfWallet;
+  //   String? pdfDepartmentId;
+  //   String? pdfStatus;
+  //   DateTime? pdfDate;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).cardColor,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 20, right: 20, top: 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.analytics_rounded, color: Colors.redAccent),
-                      const SizedBox(width: 8),
-                      Text("Configurar Reporte PDF", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: pw.FontWeight.bold)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text("Selecciona los criterios específicos que se incluirán en el documento final corporativo.", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                  const Divider(height: 24),
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     backgroundColor: Theme.of(context).cardColor,
+  //     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+  //     builder: (ctx) {
+  //       return StatefulBuilder(
+  //         builder: (BuildContext context, StateSetter setModalState) {
+  //           return Padding(
+  //             padding: EdgeInsets.only(
+  //               bottom: MediaQuery.of(context).viewInsets.bottom,
+  //               left: 20, right: 20, top: 20,
+  //             ),
+  //             child: Column(
+  //               mainAxisSize: MainAxisSize.min,
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Row(
+  //                   children: [
+  //                     const Icon(Icons.analytics_rounded, color: Colors.redAccent),
+  //                     const SizedBox(width: 8),
+  //                     Text("Configurar Reporte PDF", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: pw.FontWeight.bold)),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 4),
+  //                 Text("Selecciona los criterios específicos que se incluirán en el documento final corporativo.", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+  //                 const Divider(height: 24),
 
-                  // 👥 SELECTOR DE EMPLEADO
-                  const Text("Filtrar por Empleado", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: BorderRadius.circular(12)),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: const Text("Todos los empleados", style: TextStyle(fontSize: 13)),
-                        value: pdfWallet,
-                        items: _teamMembers.map((m) {
-                          String name = m['alias'] ?? m['name'] ?? 'Usuario';
-                          String wallet = m['walletAddress'] ?? m['wallet'] ?? '';
-                          return DropdownMenuItem<String>(value: wallet.toLowerCase(), child: Text("@$name"));
-                        }).toList(),
-                        onChanged: (val) => setModalState(() => pdfWallet = val),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+  //                 // 👥 SELECTOR DE EMPLEADO
+  //                 const Text("Filtrar por Empleado", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+  //                 const SizedBox(height: 6),
+  //                 Container(
+  //                   padding: const EdgeInsets.symmetric(horizontal: 12),
+  //                   decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: BorderRadius.circular(12)),
+  //                   child: DropdownButtonHideUnderline(
+  //                     child: DropdownButton<String>(
+  //                       isExpanded: true,
+  //                       hint: const Text("Todos los empleados", style: TextStyle(fontSize: 13)),
+  //                       value: pdfWallet,
+  //                       items: _teamMembers.map((m) {
+  //                         String name = m['alias'] ?? m['name'] ?? 'Usuario';
+  //                         String wallet = m['walletAddress'] ?? m['wallet'] ?? '';
+  //                         return DropdownMenuItem<String>(value: wallet.toLowerCase(), child: Text("@$name"));
+  //                       }).toList(),
+  //                       onChanged: (val) => setModalState(() => pdfWallet = val),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 16),
 
-                  // 🏢 SELECTOR DE ÁREA / DEPARTAMENTO
-                  const Text("Filtrar por Departamento", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: BorderRadius.circular(12)),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: const Text("Todas las áreas", style: TextStyle(fontSize: 13)),
-                        value: pdfDepartmentId,
-                        items: _departments.map((d) {
-                          return DropdownMenuItem<String>(value: d['id'].toString(), child: Text(d['name'] ?? ''));
-                        }).toList(),
-                        onChanged: (val) => setModalState(() => pdfDepartmentId = val),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+  //                 // 🏢 SELECTOR DE ÁREA / DEPARTAMENTO
+  //                 const Text("Filtrar por Departamento", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+  //                 const SizedBox(height: 6),
+  //                 Container(
+  //                   padding: const EdgeInsets.symmetric(horizontal: 12),
+  //                   decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: BorderRadius.circular(12)),
+  //                   child: DropdownButtonHideUnderline(
+  //                     child: DropdownButton<String>(
+  //                       isExpanded: true,
+  //                       hint: const Text("Todas las áreas", style: TextStyle(fontSize: 13)),
+  //                       value: pdfDepartmentId,
+  //                       items: _departments.map((d) {
+  //                         return DropdownMenuItem<String>(value: d['id'].toString(), child: Text(d['name'] ?? ''));
+  //                       }).toList(),
+  //                       onChanged: (val) => setModalState(() => pdfDepartmentId = val),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 16),
 
-                  // 📊 SELECTOR DE ESTADO operacional
-                  const Text("Filtrar por Estado", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: BorderRadius.circular(12)),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: const Text("Todos los estados", style: TextStyle(fontSize: 13)),
-                        value: pdfStatus,
-                        items: const [
-                          DropdownMenuItem(value: "PENDING", child: Text("Pendientes")),
-                          DropdownMenuItem(value: "IN_PROGRESS", child: Text("En Progreso")),
-                          DropdownMenuItem(value: "COMPLETED", child: Text("En Revisión")),
-                          DropdownMenuItem(value: "REWORK_REQUESTED", child: Text("En Corrección")),
-                          DropdownMenuItem(value: "APPROVED", child: Text("Aprobadas")),
-                        ],
-                        onChanged: (val) => setModalState(() => pdfStatus = val),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+  //                 // 📊 SELECTOR DE ESTADO operacional
+  //                 const Text("Filtrar por Estado", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+  //                 const SizedBox(height: 6),
+  //                 Container(
+  //                   padding: const EdgeInsets.symmetric(horizontal: 12),
+  //                   decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: BorderRadius.circular(12)),
+  //                   child: DropdownButtonHideUnderline(
+  //                     child: DropdownButton<String>(
+  //                       isExpanded: true,
+  //                       hint: const Text("Todos los estados", style: TextStyle(fontSize: 13)),
+  //                       value: pdfStatus,
+  //                       items: const [
+  //                         DropdownMenuItem(value: "PENDING", child: Text("Pendientes")),
+  //                         DropdownMenuItem(value: "IN_PROGRESS", child: Text("En Progreso")),
+  //                         DropdownMenuItem(value: "COMPLETED", child: Text("En Revisión")),
+  //                         DropdownMenuItem(value: "REWORK_REQUESTED", child: Text("En Corrección")),
+  //                         DropdownMenuItem(value: "APPROVED", child: Text("Aprobadas")),
+  //                       ],
+  //                       onChanged: (val) => setModalState(() => pdfStatus = val),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 16),
 
-                  // 📅 SELECCIÓN DE CRITERIO CRONOLÓGICO
-                  const Text("Filtrar por Fecha de Entrega", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          pdfDate == null 
-                              ? "Cualquier fecha asignada" 
-                              : "Fecha seleccionada: ${pdfDate!.day}/${pdfDate!.month}/${pdfDate!.year}",
-                          style: TextStyle(fontSize: 13, color: pdfDate == null ? Colors.grey : Theme.of(context).colorScheme.onSurface),
-                        ),
-                      ),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(backgroundColor: Theme.of(context).scaffoldBackgroundColor),
-                        icon: const Icon(Icons.calendar_month_rounded, size: 16, color: Colors.redAccent),
-                        label: Text(pdfDate == null ? "Elegir" : "Cambiar", style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
-                        onPressed: () async {
-                          DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2030),
-                          );
-                          if (picked != null) {
-                            setModalState(() => pdfDate = picked);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
+  //                 // 📅 SELECCIÓN DE CRITERIO CRONOLÓGICO
+  //                 const Text("Filtrar por Fecha de Entrega", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+  //                 const SizedBox(height: 6),
+  //                 Row(
+  //                   children: [
+  //                     Expanded(
+  //                       child: Text(
+  //                         pdfDate == null 
+  //                             ? "Cualquier fecha asignada" 
+  //                             : "Fecha seleccionada: ${pdfDate!.day}/${pdfDate!.month}/${pdfDate!.year}",
+  //                         style: TextStyle(fontSize: 13, color: pdfDate == null ? Colors.grey : Theme.of(context).colorScheme.onSurface),
+  //                       ),
+  //                     ),
+  //                     TextButton.icon(
+  //                       style: TextButton.styleFrom(backgroundColor: Theme.of(context).scaffoldBackgroundColor),
+  //                       icon: const Icon(Icons.calendar_month_rounded, size: 16, color: Colors.redAccent),
+  //                       label: Text(pdfDate == null ? "Elegir" : "Cambiar", style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+  //                       onPressed: () async {
+  //                         DateTime? picked = await showDatePicker(
+  //                           context: context,
+  //                           initialDate: DateTime.now(),
+  //                           firstDate: DateTime(2020),
+  //                           lastDate: DateTime(2030),
+  //                         );
+  //                         if (picked != null) {
+  //                           setModalState(() => pdfDate = picked);
+  //                         }
+  //                       },
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 30),
 
-                  // 📄 BOTÓN MAESTRO DE ACCIÓN Y PROCESAMIENTO MATRICIAL
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 0,
-                      ),
-                      icon: const Icon(Icons.picture_as_pdf_rounded),
-                      label: const Text("Generar Reporte PDF", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                      onPressed: () {
-                        // Filtrar la lista total en base a los parámetros locales escogidos en el modal
-                        final pdfFilteredList = _allTasks.where((task) {
-                          if (pdfWallet != null && task['assignedWallet'] != pdfWallet) return false;
-                          if (pdfDepartmentId != null && task['departmentId'] != pdfDepartmentId) return false;
-                          if (pdfStatus != null && task['status'] != pdfStatus) return false;
-                          if (pdfDate != null) {
-                            if (task['deadline'] == null) return false;
-                            DateTime? taskDeadline = DateTime.tryParse(task['deadline'].toString());
-                            if (taskDeadline == null) return false;
-                            if (taskDeadline.year != pdfDate!.year || taskDeadline.month != pdfDate!.month || taskDeadline.day != pdfDate!.day) return false;
-                          }
-                          return true;
-                        }).toList();
+  //                 // 📄 BOTÓN MAESTRO DE ACCIÓN Y PROCESAMIENTO MATRICIAL
+  //                 SizedBox(
+  //                   width: double.infinity,
+  //                   height: 52,
+  //                   child: ElevatedButton.icon(
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor: Colors.redAccent,
+  //                       foregroundColor: Colors.white,
+  //                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //                       elevation: 0,
+  //                     ),
+  //                     icon: const Icon(Icons.picture_as_pdf_rounded),
+  //                     label: const Text("Generar Reporte PDF", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+  //                     onPressed: () {
+  //                       // Filtrar la lista total en base a los parámetros locales escogidos en el modal
+  //                       final pdfFilteredList = _allTasks.where((task) {
+  //                         if (pdfWallet != null && task['assignedWallet'] != pdfWallet) return false;
+  //                         if (pdfDepartmentId != null && task['departmentId'] != pdfDepartmentId) return false;
+  //                         if (pdfStatus != null && task['status'] != pdfStatus) return false;
+  //                         if (pdfDate != null) {
+  //                           if (task['deadline'] == null) return false;
+  //                           DateTime? taskDeadline = DateTime.tryParse(task['deadline'].toString());
+  //                           if (taskDeadline == null) return false;
+  //                           if (taskDeadline.year != pdfDate!.year || taskDeadline.month != pdfDate!.month || taskDeadline.day != pdfDate!.day) return false;
+  //                         }
+  //                         return true;
+  //                       }).toList();
 
-                        if (pdfFilteredList.isEmpty) {
-                          UIHelper.showCustomSnackbar("No se encontraron registros que coincidan con estos filtros específicos para el PDF.", isError: true);
-                          return;
-                        }
+  //                       if (pdfFilteredList.isEmpty) {
+  //                         UIHelper.showCustomSnackbar("No se encontraron registros que coincidan con estos filtros específicos para el PDF.", isError: true);
+  //                         return;
+  //                       }
 
-                        // Cerrar modal
-                        Navigator.pop(ctx);
+  //                       // Cerrar modal
+  //                       Navigator.pop(ctx);
 
-                        // Disparar renderizador de PDF
-                        String subTituloReporte = "Criterio - Estado: ${pdfStatus ?? 'Todos'} | Área: ${pdfDepartmentId ?? 'Todas'}";
-                        ShareHelper.exportarReporteTareasPDF(context, pdfFilteredList, subTituloReporte);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  //                       // Disparar renderizador de PDF
+  //                       String subTituloReporte = "Criterio - Estado: ${pdfStatus ?? 'Todos'} | Área: ${pdfDepartmentId ?? 'Todas'}";
+  //                       ShareHelper.exportarReporteTareasPDF(context, pdfFilteredList, subTituloReporte);
+  //                     },
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 24),
+  //               ],
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 
   // HELPER PARA CONSTRUIR LOS DROPDOWNS COMPACTOS EN LA BARRA DE HERRAMIENTAS
   // Widget _buildFilterDropdown<T>({

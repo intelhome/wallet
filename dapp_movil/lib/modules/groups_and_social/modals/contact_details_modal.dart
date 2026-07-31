@@ -1,5 +1,6 @@
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
+import 'package:dapp_movil/modules/settings_and_profile/screens/user_more_details_screen.dart';
 import 'package:dapp_movil/modules/settings_and_profile/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -150,19 +151,44 @@ final userService = Provider.of<UserService>(context, listen: false);
             const SizedBox(height: 20),
             
             // --- BOTÓN CERRAR ---
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary.withOpacity(0.1),
-                  foregroundColor: colorScheme.primary,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+           // --- BOTONES DE ACCIÓN ---
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: onSurface.withOpacity(0.8),
+                      side: BorderSide(color: onSurface.withOpacity(0.2)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text("Cerrar", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
                 ),
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text("Cerrar Detalles", style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4361EE), // Azul profesional
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx); // Cierra el modal actual
+                      // Navega a la nueva pantalla pasando los datos
+                      Navigator.push(
+                        context, 
+                        MaterialPageRoute(builder: (_) => UserMoreDetailsScreen(wallet: address, alias: alias))
+                      );
+                    },
+                    icon: const Icon(Icons.account_tree_rounded, size: 18),
+                    label: const Text("Más Detalles", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -32,7 +32,7 @@ bool _isLoadingInbox = true;
       
       if (!chatService.isConnected && !chatService.isConnecting) {
         print("🔧 [MOCK CHAT] El servicio está apagado. Forzando inicio...");
-        chatService.initClient(); // 🔥 EL CAMBIO ESTÁ AQUÍ
+        chatService.initClient(); //  EL CAMBIO ESTÁ AQUÍ
       }
     });
   }
