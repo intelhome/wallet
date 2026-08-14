@@ -72,12 +72,11 @@ class AiMemoryService {
     }
   }
 
-  // 🔥 Enviar mensaje al chat inyectado con RAG
-  // 🔥 Enviar mensaje al chat inyectado con RAG y el System Prompt de Acciones
-  Future<Map<String, dynamic>?> sendMessageWithMemory(String message, String systemPrompt) async {
+ 
+ Future<Map<String, dynamic>?> sendMessageWithMemory(String message, String systemPrompt) async {
     try {
       final res = await http.post(
-        Uri.parse(ApiConfig.aiChat), // Asegúrate de que esto apunta a /ai/chat-memory en api_config.dart
+        Uri.parse(ApiConfig.aiChat), 
         headers: _headers,
         body: jsonEncode({
           "walletAddress": authCore.publicAddress.toLowerCase(),
@@ -86,10 +85,7 @@ class AiMemoryService {
         }),
       ).timeout(const Duration(seconds: 30));
 
-      print("📥 [SPRING -> FLUTTER] Status Code: ${res.statusCode}");
-      print("📥 [SPRING -> FLUTTER] Response Body: ${res.body}");
-
-      if (res.statusCode == 200) {
+      if (res.statusCode == 200 || res.statusCode == 402) {
         return jsonDecode(res.body);
       }
     } catch (e) {
@@ -117,5 +113,19 @@ class AiMemoryService {
       print("Error en extracción federada: $e");
       return false;
     }
+  }
+
+  Future<Map<String, dynamic>?> getQuotaStatus() async {
+    if (authCore.publicAddress.isEmpty) return null;
+    try {
+      final url = Uri.parse("${ApiConfig.baseUrl}/ai/quota/${authCore.publicAddress.toLowerCase()}");
+      final res = await http.get(url, headers: _headers).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (e) {
+      print("❌ Error getQuotaStatus: $e");
+    }
+    return null;
   }
 }

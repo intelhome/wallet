@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dapp_movil/core/services/local_cache_service.dart';
+import 'package:dapp_movil/modules/settings_and_profile/modals/notifications_details_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -271,7 +272,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   ),
                                   child: ListTile(
                                     contentPadding: const EdgeInsets.all(16),
-                                    onTap: () => _markAsRead(notif['id'], originalIndex),
+                                  onTap: () {
+                                      _markAsRead(notif['id'], originalIndex);
+                                      NotificationsDetailsModal.show(context, notif);
+                                    },
                                     leading: Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(14)),

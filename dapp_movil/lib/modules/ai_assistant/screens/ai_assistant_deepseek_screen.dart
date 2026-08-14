@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:dapp_movil/core/helpers/PremiumBlockerModal.dart';
 import 'package:dapp_movil/core/helpers/route_helper.dart';
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:dapp_movil/modules/ai_assistant/screens/ai_memory_screen.dart';
@@ -634,6 +635,8 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
   bool _hasText = false;
   String _transcripcionTemporal = "";
 
+  Map<String, dynamic>? _quotaStatus;
+
   @override
   void initState() {
     super.initState();
@@ -644,6 +647,7 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
     // Cargamos balances en el Handler persistente al entrar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AiChatHandler>(context, listen: false).cargarContextoFinanciero(context);
+      _cargarCuota();
     });
 
     _msgController.addListener(() {
@@ -685,15 +689,40 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
     String userText = _msgController.text.trim();
     if (userText.isEmpty) return;
     
+    // 🔥 BLOQUEO FRONTAL DE LÍMITES
+    if (_quotaStatus != null) {
+      int dailyUsed = _quotaStatus!['dailyUsed'] ?? 0;
+      int dailyLimit = _quotaStatus!['dailyLimit'] ?? 5;
+      int weeklyUsed = _quotaStatus!['weeklyUsed'] ?? 0;
+      int weeklyLimit = _quotaStatus!['weeklyLimit'] ?? 25;
+
+      if (dailyUsed >= dailyLimit) {
+        UIHelper.showCustomSnackbar("Límite diario alcanzado. Tus tokens se renuevan mañana.", isError: true);
+        if (_quotaStatus!['tier'] != 'PREMIUM') {
+          PremiumBlockerModal.show(context, planRequerido: "BASIC", featureName: "Más consultas IA");
+        }
+        return; // Detiene la ejecución
+      }
+      
+      if (weeklyUsed >= weeklyLimit) {
+        UIHelper.showCustomSnackbar("Límite semanal alcanzado. Tus tokens se renovarán pronto.", isError: true);
+        if (_quotaStatus!['tier'] != 'PREMIUM') {
+          PremiumBlockerModal.show(context, planRequerido: "BASIC", featureName: "Más consultas IA");
+        }
+        return; // Detiene la ejecución
+      }
+    }
+
     _msgController.clear();
     setState(() => _hasText = false);
     
     final handler = Provider.of<AiChatHandler>(context, listen: false);
     await handler.procesarMensaje(
       context: context,
-      userText: userText, // 🔥 Ahora este text puede venir del teclado O de la transcripción de voz
+      userText: userText, 
     );
     _scrollToBottom();
+    await _cargarCuota();
   }
 
   void _scrollToBottom() {
@@ -706,6 +735,26 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
         );
       }
     });
+  }
+
+  Future<void> _cargarCuota() async {
+    final aiService = Provider.of<AiMemoryService>(context, listen: false);
+    final status = await aiService.getQuotaStatus();
+    if (mounted && status != null) {
+      setState(() => _quotaStatus = status);
+    }
+  }
+
+String _formatDate(String? isoDate, bool isDaily) {
+    if (isoDate == null) return "";
+    try {
+      DateTime dt = DateTime.parse(isoDate).toLocal();
+      if (isDaily) {
+        return "Mañana a las ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}";
+      } else {
+        return "${dt.day.toString().padLeft(2,'0')}/${dt.month.toString().padLeft(2,'0')} a las ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}";
+      }
+    } catch (e) { return ""; }
   }
 
  @override
@@ -991,8 +1040,50 @@ Widget _buildQuickActions(Color cardColor, Color textColor) {
           )
         ],
       ),
-      body: Column(
+   body: Column(
         children: [
+          // 🔥 BARRA DE CUOTAS DE IA
+        if (_quotaStatus != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: colorScheme.primary.withOpacity(0.05),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Diario: ${_quotaStatus!['dailyUsed']}/${_quotaStatus!['dailyLimit']} (Renueva ${_formatDate(_quotaStatus!['nextDailyReset'], true)})", 
+                        style: TextStyle(
+                          fontSize: 11, 
+                          color: (_quotaStatus!['dailyUsed'] >= _quotaStatus!['dailyLimit']) ? Colors.redAccent : colorScheme.onSurface, 
+                          fontWeight: FontWeight.bold
+                        )
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "Semanal: ${_quotaStatus!['weeklyUsed']}/${_quotaStatus!['weeklyLimit']} (Renueva ${_formatDate(_quotaStatus!['nextWeeklyReset'], false)})", 
+                        style: TextStyle(
+                          fontSize: 11, 
+                          color: (_quotaStatus!['weeklyUsed'] >= _quotaStatus!['weeklyLimit']) ? Colors.redAccent : colorScheme.onSurface.withOpacity(0.6)
+                        )
+                      ),
+                    ],
+                  ),
+                  if (_quotaStatus!['tier'] != 'PREMIUM')
+                    GestureDetector(
+                      onTap: () => PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Consultas IA VIP"),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: const Color(0xFFFFB86B), borderRadius: BorderRadius.circular(8)),
+                        child: const Text("MEJORAR", style: TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                    )
+                ],
+              ),
+            ),
+            
           Expanded(
             child: Consumer<AiChatHandler>(
               builder: (context, handler, child) {

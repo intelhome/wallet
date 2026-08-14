@@ -411,9 +411,28 @@ class AddFamilyModal {
                     ),
                     const SizedBox(height: 32),
 
-                    _buildInfoCard(Icons.badge_outlined, "Cédula de Identidad", usuarioEncontrado!['cedula'] ?? "1728394012", theme, onSurface),
-                    _buildInfoCard(Icons.phone_android_rounded, "Número Celular", usuarioEncontrado!['phoneNumber'] ?? "+593 98 765 4321", theme, onSurface),
-                    _buildInfoCard(Icons.email_outlined, "Correo Electrónico", usuarioEncontrado!['email'] ?? "correo@example.com", theme, onSurface),
+                   FutureBuilder<Map<String, dynamic>?>(
+                      future: Provider.of<UserService>(ctx, listen: false).getUserByWallet(usuarioEncontrado!['walletAddress']),
+                      builder: (context, snapshot) {
+                        String cedula = "No registrada";
+                        String phone = "No registrado";
+                        String email = "No registrado";
+
+                        if (snapshot.hasData && snapshot.data != null) {
+                          cedula = snapshot.data!['cedula'] ?? cedula;
+                          phone = snapshot.data!['phoneNumber'] ?? phone;
+                          email = snapshot.data!['email'] ?? email;
+                        }
+
+                        return Column(
+                          children: [
+                            _buildInfoCard(Icons.badge_outlined, "Cédula de Identidad", cedula, theme, onSurface),
+                            _buildInfoCard(Icons.phone_android_rounded, "Número Celular", phone, theme, onSurface),
+                            _buildInfoCard(Icons.email_outlined, "Correo Electrónico", email, theme, onSurface),
+                          ],
+                        );
+                      }
+                    ),
                     
                     const SizedBox(height: 24),
                     SizedBox(

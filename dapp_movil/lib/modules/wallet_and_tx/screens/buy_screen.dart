@@ -110,20 +110,30 @@ class _BuyScreenState extends State<BuyScreen> {
           note: "Gracias por confiar en TTC Wallet.",
           onSuccess: (Map params) {
             Future.delayed(const Duration(milliseconds: 500), () async {
-              // 🔥 FIX 1: Usamos 'push' normal para no destruir la pantalla de fondo
+              
+              bool txSuccess = false;
+
               Navigator.push(rootContext, MaterialPageRoute(builder: (_) => TransactionPendingScreen(
                 customTitle: "Compra Exitosa", 
                 customMessage: "Acreditando tus fondos en la Blockchain...", 
                 isGroupPayment: widget.isGroupPayment, 
                 onUpdateBalance: widget.onUpdateBalance 
-              )));
+              ))).then((_) {
+                // 🔥 FIX: Cierra BuyScreen si la transacción fue exitosa
+                if (txSuccess && mounted) {
+                  Navigator.pop(context);
+                }
+              });
 
               String orderId = params['paymentId'] ?? "PAYPAL-ORDER"; 
               final res = await txService.buyTokensFiat(orderId, _montoIngresado);
 
               if (res.startsWith("Error")) {
-                if (mounted) Navigator.pop(rootContext); // 🔥 FIX 2: Cierra el PendingScreen si hay error
+                txSuccess = false;
+                if (mounted) Navigator.pop(rootContext); // Cierra el PendingScreen si hay error
                 widget.mostrarMensaje(res, esError: true);
+              } else {
+                txSuccess = true;
               }
             });
           },
@@ -140,7 +150,7 @@ class _BuyScreenState extends State<BuyScreen> {
     );
   }
 
-  void _comprarGooglePay() async {
+ void _comprarGooglePay() async {
     if (_montoIngresado <= 0 || _isProcessing) return;
     setState(() => _isProcessing = true);
 
@@ -194,21 +204,30 @@ class _BuyScreenState extends State<BuyScreen> {
    if (mounted) Navigator.pop(rootContext); // Cerramos el dialogo de Google
     if (!mounted) return;
 
-    // 🔥 FIX 3: Usamos 'push' normal
+    // 🔥 FIX: Controlamos el éxito para cerrar ambas pantallas
+    bool txSuccess = false;
+
     Navigator.push(rootContext, MaterialPageRoute(builder: (_) => TransactionPendingScreen(
       customTitle: "Minando Tokens", 
       customMessage: "Acreditando tus fondos en la Blockchain...", 
       isGroupPayment: widget.isGroupPayment, 
       onUpdateBalance: widget.onUpdateBalance 
-    )));
+    ))).then((_) {
+      // Cuando PendingScreen se cierra (solo o por el usuario), verificamos:
+      if (txSuccess && mounted) {
+        Navigator.pop(context); // Cerramos también BuyScreen
+      }
+    });
 
-    // 🔥 FIX 4: Quitamos la barra invertida (\) que causaba el bloqueo por "Atentado Detectado"
     String orderId = "GPAY-${DateTime.now().millisecondsSinceEpoch}"; 
     final res = await txService.buyTokensFiat(orderId, _montoIngresado);
 
     if (res.startsWith("Error")) {
-      Navigator.pop(rootContext); // 🔥 FIX 5: Cierra la pantalla de carga si falla
+      txSuccess = false;
+      Navigator.pop(rootContext); // Cierra la pantalla de carga si falla
       widget.mostrarMensaje(res, esError: true);
+    } else {
+      txSuccess = true;
     }
   }
 
@@ -338,11 +357,11 @@ class _BuyScreenState extends State<BuyScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           child: Divider(color: onSurfaceColor.withOpacity(0.1), height: 1),
                         ),
-                        Row(
+                     Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text("Total a recibir", style: TextStyle(color: onSurfaceColor.withOpacity(0.8), fontSize: 16, fontWeight: FontWeight.bold)),
-                            Text("${_montoIngresado.toStringAsFixed(2)} TTC", style: TextStyle(color: const Color(0xFF9EAEFF), fontSize: 20, fontWeight: FontWeight.w900)),
+                            Text("${_montoIngresado.toStringAsFixed(2)} TTC", style: TextStyle(color: colorScheme.primary, fontSize: 20, fontWeight: FontWeight.w900)),
                           ],
                         ),
                       ],
@@ -354,14 +373,14 @@ class _BuyScreenState extends State<BuyScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF9EAEFF).withOpacity(0.1),
+                      color: colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF9EAEFF).withOpacity(0.3)),
+                      border: Border.all(color: colorScheme.primary.withOpacity(0.3)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.card_giftcard, color: Color(0xFF9EAEFF), size: 20),
+                        Icon(Icons.card_giftcard, color: colorScheme.primary, size: 20),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -369,9 +388,9 @@ class _BuyScreenState extends State<BuyScreen> {
                             children: [
                               Row(
                                 children: [
-                                  const Text("Estimated Reward", style: TextStyle(color: Color(0xFF9EAEFF), fontWeight: FontWeight.bold, fontSize: 14)),
+                                  Text("Estimated Reward", style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 14)),
                                   const SizedBox(width: 4),
-                                  Icon(Icons.info_outline, size: 14, color: const Color(0xFF9EAEFF).withOpacity(0.6)),
+                                  Icon(Icons.info_outline, size: 14, color: colorScheme.primary.withOpacity(0.6)),
                                 ],
                               ),
                               const SizedBox(height: 4),
@@ -392,8 +411,8 @@ class _BuyScreenState extends State<BuyScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _selectedMethod == "Google Pay" ? const Color(0xFF0079C1) : onSurfaceColor.withOpacity(0.1),
-                            foregroundColor: _selectedMethod == "Google Pay" ? Colors.white : onSurfaceColor,
+                            backgroundColor: _selectedMethod == "Google Pay" ? colorScheme.primary : onSurfaceColor.withOpacity(0.1),
+                            foregroundColor: _selectedMethod == "Google Pay" ? colorScheme.onPrimary : onSurfaceColor,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -401,7 +420,7 @@ class _BuyScreenState extends State<BuyScreen> {
                           onPressed: () {
                             setState(() => _selectedMethod = "Google Pay");
                           },
-                          icon: Icon(Icons.g_mobiledata, size: 28, color: _selectedMethod == "Google Pay" ? Colors.white : onSurfaceColor),
+                          icon: Icon(Icons.g_mobiledata, size: 28, color: _selectedMethod == "Google Pay" ? colorScheme.onPrimary : onSurfaceColor),
                           label: const Text("Google Pay", style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
@@ -409,8 +428,8 @@ class _BuyScreenState extends State<BuyScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _selectedMethod == "PayPal" ? const Color(0xFF0079C1) : onSurfaceColor.withOpacity(0.1),
-                            foregroundColor: _selectedMethod == "PayPal" ? Colors.white : onSurfaceColor,
+                            backgroundColor: _selectedMethod == "PayPal" ? colorScheme.primary : onSurfaceColor.withOpacity(0.1),
+                            foregroundColor: _selectedMethod == "PayPal" ? colorScheme.onPrimary : onSurfaceColor,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -418,7 +437,7 @@ class _BuyScreenState extends State<BuyScreen> {
                           onPressed: () {
                             setState(() => _selectedMethod = "PayPal");
                           },
-                          icon: Icon(Icons.paypal, size: 20, color: _selectedMethod == "PayPal" ? Colors.white : onSurfaceColor),
+                          icon: Icon(Icons.paypal, size: 20, color: _selectedMethod == "PayPal" ? colorScheme.onPrimary : onSurfaceColor),
                           label: const Text("PayPal", style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
@@ -432,19 +451,19 @@ class _BuyScreenState extends State<BuyScreen> {
                     height: 56,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFB5C0FF),
-                        foregroundColor: Colors.black87,
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        disabledBackgroundColor: const Color(0xFFB5C0FF).withOpacity(0.3),
+                        disabledBackgroundColor: colorScheme.primary.withOpacity(0.3),
                       ),
                       onPressed: (_montoIngresado <= 0 || _isProcessing) ? null : () => _handleComprar(),
                       icon: _isProcessing 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2))
-                        : const Icon(Icons.shopping_cart_outlined, size: 22),
+                        ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: colorScheme.onPrimary, strokeWidth: 2))
+                        : Icon(Icons.shopping_cart_outlined, size: 22, color: colorScheme.onPrimary),
                       label: Text(
                         _isProcessing ? "Procesando..." : "Comprar",
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: colorScheme.onPrimary)
                       ),
                     ),
                   ),

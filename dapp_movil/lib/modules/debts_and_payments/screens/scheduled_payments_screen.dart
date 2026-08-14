@@ -1,6 +1,7 @@
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:dapp_movil/core/services/local_cache_service.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
+import 'package:dapp_movil/modules/debts_and_payments/modals/scheduled_details_modal.dart';
 import 'package:dapp_movil/modules/debts_and_payments/services/scheduled_payment_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -350,88 +351,101 @@ class _ScheduledPaymentsScreenState extends State<ScheduledPaymentsScreen> with 
 
           return Card(
             margin: const EdgeInsets.only(bottom: 16),
+            clipBehavior: Clip.antiAlias, // 🔥 Permite que el efecto ripple de InkWell no se salga de los bordes
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: isFailed ? BorderSide(color: colorScheme.error.withOpacity(0.5), width: 1.0) : BorderSide(color: onSurface.withOpacity(0.05)),
             ),
             elevation: 0,
             color: Theme.of(context).cardColor,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: colorScheme.primary, borderRadius: BorderRadius.circular(10)),
-                        child: Icon(isSubscription ? Icons.ondemand_video_rounded : Icons.calendar_today_rounded, color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(p['paymentReason'] ?? "Pago Programado", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(12)),
-                        child: Text(statusText, style: TextStyle(color: statusTextCol, fontSize: 10, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: onSurface.withOpacity(0.03), borderRadius: BorderRadius.circular(12)),
-                    child: Row(
+            child: InkWell(
+              onTap: () {
+                // 🔥 Abrir Modal y adaptar las llaves del JSON
+                ScheduledDetailsModal.show(context, {
+                  ...p,
+                  'amount': p['amountPerPayment'],
+                  'executionDate': p['nextExecutionDate'],
+                  'receiverAlias': p['aliasDestino'],
+                  'receiverAddress': p['toAddress'],
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("DESTINATARIO", style: TextStyle(color: onSurface.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                              const SizedBox(height: 4),
-                              Text(
-                                p['aliasDestino'] != null ? '@${p['aliasDestino']}' : '0x${p['toAddress'].toString().substring(2, 6)}...${p['toAddress'].toString().substring(p['toAddress'].toString().length - 4)}',
-                                style: TextStyle(color: onSurface, fontWeight: FontWeight.w600, fontSize: 14),
-                              ),
-                            ],
-                          ),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: colorScheme.primary, borderRadius: BorderRadius.circular(10)),
+                          child: Icon(isSubscription ? Icons.ondemand_video_rounded : Icons.calendar_today_rounded, color: Colors.white, size: 20),
                         ),
-                        Icon(Icons.content_copy_rounded, size: 16, color: onSurface.withOpacity(0.6)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(p['paymentReason'] ?? "Pago Programado", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(12)),
+                          child: Text(statusText, style: TextStyle(color: statusTextCol, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: onSurface.withOpacity(0.03), borderRadius: BorderRadius.circular(12)),
+                      child: Row(
                         children: [
-                          Icon(Icons.payments_outlined, size: 18, color: onSurface.withOpacity(0.7)),
-                          const SizedBox(width: 8),
-                          Text("${p['amountPerPayment']} TTC • ${p['frequency']}", style: TextStyle(color: onSurface, fontWeight: FontWeight.bold, fontSize: 14)),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("DESTINATARIO", style: TextStyle(color: onSurface.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  p['aliasDestino'] != null ? '@${p['aliasDestino']}' : '0x${p['toAddress'].toString().substring(2, 6)}...${p['toAddress'].toString().substring(p['toAddress'].toString().length - 4)}',
+                                  style: TextStyle(color: onSurface, fontWeight: FontWeight.w600, fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.content_copy_rounded, size: 16, color: onSurface.withOpacity(0.6)),
                         ],
                       ),
-                      if (!isCompleted)
-                        PopupMenuButton<String>(
-                          icon: Icon(Icons.more_vert_rounded, color: onSurface.withOpacity(0.5)),
-                          onSelected: (val) { if (val == 'eliminar') _confirmarCancelacion(p['id'], false); },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(value: 'eliminar', child: Text('Cancelar Plan', style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.bold))),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.payments_outlined, size: 18, color: onSurface.withOpacity(0.7)),
+                            const SizedBox(width: 8),
+                            Text("${p['amountPerPayment']} TTC • ${p['frequency']}", style: TextStyle(color: onSurface, fontWeight: FontWeight.bold, fontSize: 14)),
                           ],
                         ),
+                        if (!isCompleted)
+                          PopupMenuButton<String>(
+                            icon: Icon(Icons.more_vert_rounded, color: onSurface.withOpacity(0.5)),
+                            onSelected: (val) { if (val == 'eliminar') _confirmarCancelacion(p['id'], false); },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(value: 'eliminar', child: Text('Cancelar Plan', style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.bold))),
+                            ],
+                          ),
+                      ],
+                    ),
+                    if (!isCompleted && !isFailed) ...[
+                      const SizedBox(height: 8),
+                      _buildDateText(p['nextExecutionDate'], false, false, colorScheme, onSurface),
                     ],
-                  ),
-                  if (!isCompleted && !isFailed) ...[
-                    const SizedBox(height: 8),
-                    _buildDateText(p['nextExecutionDate'], false, false, colorScheme, onSurface),
+                    if (isFailed) ...[
+                      const SizedBox(height: 8),
+                      _buildDateText(p['nextExecutionDate'], false, true, colorScheme, onSurface),
+                    ]
                   ],
-                  if (isFailed) ...[
-                    const SizedBox(height: 8),
-                    _buildDateText(p['nextExecutionDate'], false, true, colorScheme, onSurface),
-                  ]
-                ],
+                ),
               ),
             ),
           );

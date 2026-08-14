@@ -3,7 +3,13 @@ import 'dart:async';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/debts_and_payments/services/debt_service.dart';
 import 'package:dapp_movil/modules/groups_and_social/screens/group_chat_screen.dart';
+import 'package:dapp_movil/modules/groups_and_social/screens/group_helps_tab.dart';
+import 'package:dapp_movil/modules/groups_and_social/screens/group_history_tab.dart';
+import 'package:dapp_movil/modules/groups_and_social/screens/group_members_tab.DART';
+import 'package:dapp_movil/modules/groups_and_social/screens/group_payments_tab.dart';
+import 'package:dapp_movil/modules/groups_and_social/screens/group_proposals_tab.dart';
 import 'package:dapp_movil/modules/groups_and_social/services/group_social_service.dart';
+import 'package:dapp_movil/modules/settings_and_profile/services/user_service.dart';
 import 'package:dapp_movil/modules/vaults_and_savings/screens/stake_screen.dart';
 import 'package:dapp_movil/modules/vaults_and_savings/services/smart_vault_service.dart';
 import 'package:dapp_movil/modules/wallet_and_tx/modals/buy_modal.dart';
@@ -780,14 +786,54 @@ final colorScheme = theme.colorScheme;
   }
 
   // 🔥 LÓGICA DE TRANSFORMACIÓN DEL BOTÓN
+// Widget? _construirFABGrupo() {
+//     // Pestaña 0: Miembros
+//     if (_tabController.index == 0) {
+//       return FloatingActionButton.extended(
+//         key: const ValueKey('fab_invitar'),
+//         heroTag: 'fab_principal',
+//         backgroundColor: const Color(0xFFBAC3FF), // Color M3 del mockup
+//         foregroundColor: const Color(0xFF00218d),
+//         elevation: 0,
+//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//         onPressed: () async {
+//           final groupService = Provider.of<GroupSocialService>(context, listen: false);
+//           await groupService.openContactSearchModal(
+//             context, _group['id'], _actualizarGrupoLocal, (bool loading) {
+//               if (mounted) setState(() => _isLoading = loading);
+//             }
+//           );
+//         },
+//         icon: const Icon(Icons.person_add_alt_1_rounded),
+//         label: const Text("Invitar miembro", style: TextStyle(fontWeight: FontWeight.bold)),
+//       );
+//     }
+//     // Pestaña 2: Cobros
+//     else if (_tabController.index == 2) {
+//       return FloatingActionButton.extended(
+//         key: const ValueKey('fab_cobro'),
+//         heroTag: 'fab_principal',
+//         backgroundColor: const Color(0xFFBAC3FF),
+//         foregroundColor: const Color(0xFF00218d),
+//         elevation: 0,
+//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//         onPressed: () {
+//           RequestGroupPaymentModal.show(context: context, groupId: _group['id'], isCreator: true, saldoGrupo: _saldoGrupo, onSuccess: () => _cargarCobros());
+//         },
+//         icon: const Icon(Icons.request_quote_rounded),
+//         label: const Text("Nuevo Pago / Cobro", style: TextStyle(fontWeight: FontWeight.bold)),
+//       );
+//     }
+//     return null; 
+//   }
+
 Widget? _construirFABGrupo() {
-    // Pestaña 0: Miembros
+    final colorScheme = Theme.of(context).colorScheme;
     if (_tabController.index == 0) {
       return FloatingActionButton.extended(
-        key: const ValueKey('fab_invitar'),
         heroTag: 'fab_principal',
-        backgroundColor: const Color(0xFFBAC3FF), // Color M3 del mockup
-        foregroundColor: const Color(0xFF00218d),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         onPressed: () async {
@@ -801,18 +847,17 @@ Widget? _construirFABGrupo() {
         icon: const Icon(Icons.person_add_alt_1_rounded),
         label: const Text("Invitar miembro", style: TextStyle(fontWeight: FontWeight.bold)),
       );
-    }
-    // Pestaña 2: Cobros
-    else if (_tabController.index == 2) {
+    } else if (_tabController.index == 2) {
       return FloatingActionButton.extended(
-        key: const ValueKey('fab_cobro'),
         heroTag: 'fab_principal',
-        backgroundColor: const Color(0xFFBAC3FF),
-        foregroundColor: const Color(0xFF00218d),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         onPressed: () {
-          RequestGroupPaymentModal.show(context: context, groupId: _group['id'], isCreator: true, saldoGrupo: _saldoGrupo, onSuccess: () => _cargarCobros());
+          RequestGroupPaymentModal.show(
+            context: context, groupId: _group['id'], isCreator: true, saldoGrupo: _saldoGrupo, onSuccess: () => _cargarCobros()
+          );
         },
         icon: const Icon(Icons.request_quote_rounded),
         label: const Text("Nuevo Pago / Cobro", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -933,58 +978,55 @@ Widget? _construirFABGrupo() {
                             children: [
                               Icon(Icons.people_alt_rounded, size: 14, color: onSurface.withOpacity(0.6)),
                               const SizedBox(width: 8),
-                              Text("Administrador: @${_group['creatorAlias'] ?? 'Desconocido'}", style: TextStyle(color: onSurface.withOpacity(0.8), fontWeight: FontWeight.bold, fontSize: 12)),
+                           FutureBuilder<Map<String, dynamic>?>(
+                                future: Provider.of<UserService>(context, listen: false).getUserByWallet(_group['creatorAddress'] ?? ""),
+                                builder: (context, snapshot) {
+                                  String adminAlias = _group['creatorAlias'] ?? "Desconocido";
+                                  if (snapshot.hasData && snapshot.data != null) {
+                                    adminAlias = snapshot.data!['alias'] ?? adminAlias;
+                                  }
+                                  return Text("Administrador: @$adminAlias", style: TextStyle(color: onSurface.withOpacity(0.8), fontWeight: FontWeight.bold, fontSize: 12));
+                                }
+                              ),
                             ]
                           ),
                         ),
                         const SizedBox(height: 16),
                         Text("Bóveda: ${_saldoGrupo.toStringAsFixed(2)} TTC", style: TextStyle(color: onSurface, fontSize: 28, fontWeight: FontWeight.w900)),
                         const SizedBox(height: 16),
+
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             _BotonAccion(
-                              icono: Icons.account_balance_wallet_outlined, texto: "Aportar", color: const Color(0xFFC77DFF),
+                              icono: Icons.account_balance_wallet_outlined, texto: "Aportar", color: colorScheme.primary,
                               onTap: () async {
                                 String groupWallet = widget.groupData['walletAddress'] ?? "";
                                 if (groupWallet.isEmpty) return;
                                 String miSaldoReal = await txService.getBalance();
                                 if (!context.mounted) return;
                                 SendModal.show(context: context, balanceTTC: miSaldoReal, initialAddress: groupWallet, isGroupPayment: true, onUpdateBalance: _cargarSaldoGrupo, mostrarMensaje: (msg, {bool esError = false}) {
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: esError ? colorScheme.error : Colors.green));
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: esError ? colorScheme.error : colorScheme.primary));
                                 });
                               },
                             ),
                             const SizedBox(width: 16),
-                           _BotonAccion(
-                              icono: Icons.auto_graph_rounded, 
-                              texto: "Minar PoS", 
-                              color: const Color(0xFF10B981),
+                            _BotonAccion(
+                              icono: Icons.auto_graph_rounded, texto: "Minar PoS", color: colorScheme.secondary,
                               onTap: () async {
                                 String groupWallet = widget.groupData['walletAddress'] ?? "";
                                 if (groupWallet.isEmpty) return;
-
                                 showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
                                 String stakedBalance = await vaultService.getAnyStakedBalance(groupWallet);
                                 if (mounted) Navigator.pop(context);
                                 
-                                // Navegamos directamente a la pantalla completa de Stake
                                 Navigator.push(
                                   context, 
                                   MaterialPageRoute(
                                     builder: (_) => StakeScreen(
-                                      balanceTTC: _saldoGrupo.toString(),
-                                      stakedTTC: stakedBalance,
-                                      isGroupMode: true,
-                                      groupId: _group['id'],
-                                      vaultAddress: groupWallet,
-                                      onUpdateBalance: () async { 
-                                        await _cargarSaldoGrupo(); 
-                                        _cargarCobros(); 
-                                      },
-                                      mostrarMensaje: (msg, {bool esError = false}) { 
-                                        UIHelper.showCustomSnackbar(msg, isError: esError); 
-                                      },
+                                      balanceTTC: _saldoGrupo.toString(), stakedTTC: stakedBalance, isGroupMode: true, groupId: _group['id'], vaultAddress: groupWallet,
+                                      onUpdateBalance: () async { await _cargarSaldoGrupo(); _cargarCobros(); },
+                                      mostrarMensaje: (msg, {bool esError = false}) { UIHelper.showCustomSnackbar(msg, isError: esError); },
                                     ),
                                   ),
                                 );
@@ -1001,9 +1043,9 @@ Widget? _construirFABGrupo() {
                         TabBar(
                           controller: _tabController,
                           isScrollable: true,
-                          indicatorColor: const Color(0xFF4361EE),
+                          indicatorColor: colorScheme.primary,
                           indicatorWeight: 3,
-                          labelColor: const Color(0xFF4361EE),
+                          labelColor: colorScheme.primary,
                           unselectedLabelColor: onSurface.withOpacity(0.5),
                           labelStyle: const TextStyle(fontWeight: FontWeight.bold),
                           tabs: const [
@@ -1018,653 +1060,44 @@ Widget? _construirFABGrupo() {
                           child: TabBarView(
                             controller: _tabController,
                             children: [
-                              // ==============================================
-                              // TAB 1: MIEMBROS (IMAGEN: dashboard grupos)
-                              // ==============================================
-                              Column(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-                                    child: TextField(
-                                      controller: _searchController,
-                                      style: TextStyle(color: onSurface),
-                                      decoration: InputDecoration(
-                                        hintText: "Buscar alias o wallet...",
-                                        hintStyle: TextStyle(color: onSurface.withOpacity(0.4)),
-                                        prefixIcon: Icon(Icons.search_rounded, color: onSurface.withOpacity(0.5)),
-                                        filled: true,
-                                        fillColor: cardColor,
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-                                      ),
-                                      onChanged: (val) => setState(() => _searchQuery = val),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Builder(
-                                      builder: (context) {
-                                        final filteredMembers = members.where((m) {
-                                          final alias = m['alias'].toString().toLowerCase();
-                                          final wallet = m['walletAddress'].toString().toLowerCase();
-                                          final query = _searchQuery.toLowerCase();
-                                          return alias.contains(query) || wallet.contains(query);
-                                        }).toList();
-
-                                        if (filteredMembers.isEmpty) return UIHelper.emptyState(context: context, icon: Icons.group_off_rounded, title: "Sin resultados", message: "No se encontraron miembros.");
-                                        return ListView.builder(
-                                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
-                                          itemCount: filteredMembers.length,
-                                          itemBuilder: (ctx, i) {
-                                            var m = filteredMembers[i];
-                                            bool isPending = m['status'] == "PENDING";
-                                            return Container(
-                                              margin: const EdgeInsets.only(bottom: 12),
-                                              padding: const EdgeInsets.all(16),
-                                              decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(20)),
-                                              child: Column(
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      SmartAvatar(address: m['walletAddress'] ?? '', size: 48),
-                                                      const SizedBox(width: 12),
-                                                      Expanded(
-                                                        child: Column(
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                          children: [
-                                                            Text("@${m['alias']}", style: TextStyle(color: onSurface, fontWeight: FontWeight.bold, fontSize: 18)),
-                                                            const SizedBox(height: 4),
-                                                            Container(
-                                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                              decoration: BoxDecoration(color: isPending ? Colors.orange.withOpacity(0.2) : const Color(0xFF4361EE).withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
-                                                              child: Text(m['status'], style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isPending ? Colors.orange : const Color(0xFFBAC3FF))),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      if (_miEstado == "CREATOR") ...[
-                                                        Icon(Icons.settings_outlined, color: onSurface.withOpacity(0.5), size: 20),
-                                                        const SizedBox(width: 12),
-                                                        if (m['walletAddress'].toString().toLowerCase() != authCore.publicAddress.toLowerCase())
-                                                          GestureDetector(
-                                                            onTap: () async {
-                                                              setState(() => _isLoading = true);
-                                                              String res = await groupService.removeGroupMember(_group['id'], m['walletAddress']);
-                                                              if (res == "SUCCESS") { await _actualizarGrupoLocal(); setState(() => _isLoading = false); } else { UIHelper.showCustomSnackbar(res, isError: true); setState(() => _isLoading = false); }
-                                                            },
-                                                            child: Icon(Icons.person_remove_outlined, color: onSurface.withOpacity(0.5), size: 20),
-                                                          ),
-                                                      ]
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 16),
-                                                  Divider(color: onSurface.withOpacity(0.05), height: 1),
-                                                  const SizedBox(height: 12),
-                                                  _buildMemberInfoRow("Cédula:", m['cedula'] ?? "0102030405", onSurface),
-                                                  _buildMemberInfoRow("Wallet:", "${m['walletAddress'].toString().substring(0,6)}...${m['walletAddress'].toString().substring(m['walletAddress'].toString().length-3)}", onSurface),
-                                                  _buildMemberInfoRow("Celular:", m['phoneNumber'] ?? "0998765432", onSurface),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
+                              GroupMembersTab(
+                                group: _group,
+                                miEstado: _miEstado,
+                                searchQuery: _searchQuery,
+                                onSearchChanged: (val) => setState(() => _searchQuery = val),
+                                onActualizarGrupo: _actualizarGrupoLocal,
                               ),
-
-                              // --- TAB 2: PROPUESTAS ---
-                              FutureBuilder<List<dynamic>>(
-                                future: _paymentsFuture,
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: colorScheme.primary));
-                                  List<dynamic> propuestas = (snapshot.data ?? []).where((r) => r['status'] == "PENDING_APPROVAL").toList();
-                                  if (propuestas.isEmpty) return UIHelper.emptyState(context: context, icon: Icons.how_to_vote_rounded, title: "Sin Propuestas", message: "No hay votaciones pendientes en este momento en la DAO.");
-                                  return ListView.builder(
-                                    padding: const EdgeInsets.all(16),
-                                    itemCount: propuestas.length,
-                                    itemBuilder: (ctx, i) {
-                                      var req = propuestas[i];
-                                      List<dynamic> approvals = req['approvals'] ?? [];
-                                      bool yaVote = approvals.contains(authCore.publicAddress.toLowerCase());
-                                      return Card(
-                                        margin: const EdgeInsets.only(bottom: 12),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                        child: ListTile(
-                                          leading: CircleAvatar(backgroundColor: Colors.deepPurpleAccent.withOpacity(0.1), child: const Icon(Icons.how_to_vote_rounded, color: Colors.deepPurpleAccent)),
-                                          title: Text(req['description'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                                          subtitle: Text(req['requestType'] == 'CONFIG_CHANGE' ? "Ajuste de DAO" : "DeFi o Multisig", style: TextStyle(color: colorScheme.primary, fontSize: 12)),
-                                          trailing: !yaVote 
-                                            ? ElevatedButton.icon(
-                                                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurpleAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                                                icon: const Icon(Icons.thumb_up_alt_rounded, size: 16),
-                                                label: const Text("Aprobar"),
-                                                onPressed: () async {
-                                                  bool auth = await authCore.authenticateUser();
-                                                  if (!auth) return;
-                                                  showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
-                                                  String res = await groupService.approveMultisigPayment(req['id']);
-                                                  if (mounted) Navigator.pop(context);
-                                                  if (res == "SUCCESS") { UIHelper.showCustomSnackbar("Voto registrado exitosamente", isError: false); _cargarCobros(); } else { UIHelper.showCustomSnackbar(res, isError: true); }
-                                                },
-                                              )
-                                            : Chip(label: const Text("Aprobado", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)), backgroundColor: Colors.deepPurpleAccent.withOpacity(0.1), labelStyle: const TextStyle(color: Colors.deepPurpleAccent), side: BorderSide.none),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
+                              GroupProposalsTab(
+                                paymentsFuture: _paymentsFuture,
+                                onRecargar: _cargarCobros,
                               ),
-
-                              // ==============================================
-                              // TAB 3: COBROS 
-                              // ==============================================
-                              FutureBuilder<List<dynamic>>(
-                                future: _paymentsFuture,
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: colorScheme.primary));
-                                  List<dynamic> cobros = (snapshot.data ?? []).where((r) => r['status'] != "PENDING_APPROVAL").toList();
-                                  List<dynamic> cobrosFiltrados = cobros.where((req) {
-                                    String status = (req['status'] ?? '').toString().toUpperCase();
-                                    bool pasaEstado = true;
-                                    if (_filtroCobros == 'Pendientes') pasaEstado = status == 'OPEN' || status == 'PENDING_APPROVAL';
-                                    else if (_filtroCobros == 'Completadas') pasaEstado = status == 'COMPLETED'; // Ajuste 'Completadas' para coincidir con la imagen
-                                    else if (_filtroCobros == 'Fallidas') pasaEstado = status == 'FAILED' || status == 'REJECTED';
-                                    if (!pasaEstado) return false;
-
-                                    bool isVaultPayment = (req['debts'] as List?)?.isEmpty ?? false;
-                                    if (_filtroTipoCobro == 'Divididos' && isVaultPayment) return false;
-                                    if (_filtroTipoCobro == 'Bóveda' && !isVaultPayment) return false;
-                                    return true;
-                                  }).toList();
-
-                                  return Column(
-                                    children: [
-                                      SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                        child: Row(
-                                          children: [
-                                            PopupMenuButton<String>(
-                                              initialValue: _filtroTipoCobro,
-                                              color: cardColor,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                              onSelected: (String newValue) => setState(() => _filtroTipoCobro = newValue),
-                                              itemBuilder: (BuildContext context) => const [
-                                                PopupMenuItem<String>(value: 'Todos', child: Text('Todos los tipos')),
-                                                PopupMenuItem<String>(value: 'Divididos', child: Text('Pagos Divididos')),
-                                                PopupMenuItem<String>(value: 'Bóveda', child: Text('Pagos de Bóveda')),
-                                              ],
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: onSurface.withOpacity(0.1))),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(Icons.filter_list_rounded, size: 16, color: onSurface.withOpacity(0.7)),
-                                                    const SizedBox(width: 6),
-                                                    Text("Tipo", style: TextStyle(color: onSurface.withOpacity(0.8))),
-                                                    const SizedBox(width: 4),
-                                                    Icon(Icons.arrow_drop_down_rounded, size: 16, color: onSurface.withOpacity(0.7)),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            ...['Todos', 'Pendientes', 'Completadas', 'Fallidas'].map((opcion) {
-                                              bool isSelected = _filtroCobros == opcion;
-                                              return Padding(
-                                                padding: const EdgeInsets.only(right: 8),
-                                                child: GestureDetector(
-                                                  onTap: () => setState(() => _filtroCobros = opcion),
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                    decoration: BoxDecoration(
-                                                      color: isSelected ? const Color(0xFFBAC3FF) : Colors.transparent,
-                                                      borderRadius: BorderRadius.circular(20),
-                                                      border: Border.all(color: isSelected ? Colors.transparent : onSurface.withOpacity(0.2))
-                                                    ),
-                                                    child: Text(opcion, style: TextStyle(color: isSelected ? const Color(0xFF00218d) : onSurface.withOpacity(0.7), fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, fontSize: 13)),
-                                                  ),
-                                                ),
-                                              );
-                                            }).toList(),
-                                          ],
-                                        ),
-                                      ),
-
-                                      Expanded(
-                                        child: cobrosFiltrados.isEmpty 
-                                          ? SingleChildScrollView(
-                                                physics: const BouncingScrollPhysics(),
-                                                child: Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: UIHelper.emptyState(context: context, icon: Icons.receipt_long_rounded, title: "Sin Cobros", message: "No hay cobros o pagos grupales que coincidan con este filtro.")),
-                                              )
-                                            : ListView.builder(
-                                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
-                                          itemCount: cobrosFiltrados.length,
-                                          itemBuilder: (ctx, i) {
-                                            var req = cobrosFiltrados[i];
-                                            bool isVaultPayment = (req['debts'] as List?)?.isEmpty ?? false;
-                                            var miDeuda = (req['debts'] as List?)?.firstWhere((d) => d['walletAddress'].toString().toLowerCase() == authCore.publicAddress.toLowerCase(), orElse: () => null);
-                                            
-                                            if (!isVaultPayment && miDeuda == null) return const SizedBox(); 
-
-                                            bool pendiente = miDeuda != null && miDeuda['status'] == "PENDING";
-                                            bool completado = req['status'] == "COMPLETED";
-                                            bool fallida = req['status'] == "FAILED" || req['status'] == "REJECTED";
-
-                                            Color statusColor = completado ? Colors.green : (fallida ? colorScheme.error : const Color(0xFFC77DFF));
-                                            IconData statusIcon = completado ? Icons.check_rounded : (fallida ? Icons.priority_high_rounded : Icons.schedule_rounded);
-                                            String montoStr = isVaultPayment ? req['totalAmount'].toString() : miDeuda!['amountOwed'].toString();
-
-                                            return Card(
-                                              margin: const EdgeInsets.only(bottom: 12),
-                                              color: cardColor,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: statusColor.withOpacity(0.2))),
-                                              child: InkWell(
-                                                onTap: () => GroupPaymentDetailsModal.show(context: context, req: req, groupName: _group['name']),
-                                                borderRadius: BorderRadius.circular(16),
-                                                child: Padding(
-                                                  padding: const EdgeInsets.all(16),
-                                                  child: Row(
-                                                    children: [
-                                                      Container(
-                                                        padding: const EdgeInsets.all(8),
-                                                        decoration: BoxDecoration(color: statusColor.withOpacity(0.1), shape: BoxShape.circle),
-                                                        child: Icon(statusIcon, color: statusColor, size: 20),
-                                                      ),
-                                                      const SizedBox(width: 16),
-                                                      Expanded(
-                                                        child: Column(
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                          children: [
-                                                            Text(req['description'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                                            const SizedBox(height: 4),
-                                                            Row(
-                                                              children: [
-                                                                Container(width: 6, height: 6, decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle)),
-                                                                const SizedBox(width: 6),
-                                                                Text(completado ? "Completada" : (fallida ? "Fallida" : "Pendiente"), style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 13)),
-                                                                Text(" • 12:00", style: TextStyle(color: onSurface.withOpacity(0.4), fontSize: 13)), // placeholder
-                                                              ],
-                                                            )
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                                        children: [
-                                                          Text(completado ? "+ $montoStr TTC" : "$montoStr TTC", style: TextStyle(color: completado ? Colors.green : onSurface, fontWeight: FontWeight.bold, fontSize: 16)),
-                                                          if (pendiente && !fallida) ...[
-                                                            const SizedBox(height: 8),
-                                                            ElevatedButton(
-                                                              style: ElevatedButton.styleFrom(
-                                                                backgroundColor: Colors.green, foregroundColor: Colors.white,
-                                                                minimumSize: const Size(60, 30),
-                                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
-                                                              ),
-                                                              onPressed: () => _pagarMiParte(req['id'], double.parse(miDeuda!['amountOwed'].toString()), req['destinationAddress']),
-                                                              child: const Text("Pagar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                                            )
-                                                          ]
-                                                        ],
-                                                      )
-                                                    ],
-                                                  )
-                                                )
-                                              )
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
+                              GroupPaymentsTab(
+                                paymentsFuture: _paymentsFuture,
+                                group: _group,
+                                filtroTipoCobro: _filtroTipoCobro,
+                                filtroCobros: _filtroCobros,
+                                onFiltroTipoChanged: (val) => setState(() => _filtroTipoCobro = val),
+                                onFiltroCobroChanged: (val) => setState(() => _filtroCobros = val),
+                                onRecargar: () { _cargarSaldoGrupo(); _cargarCobros(); },
                               ),
-
-                              // --- TAB 4: LA AYUDA ---
-                          FutureBuilder<List<dynamic>>(
-                                future: _ayudaFuture,
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: colorScheme.primary));
-                                  if (!snapshot.hasData || snapshot.data!.isEmpty) return Center(child: Text("No hay nadie pidiendo ayuda.", style: TextStyle(color: onSurface.withOpacity(0.5))));
-                                  
-                                  // LÓGICA DE FILTRADO COMPLETA
-                                  List<dynamic> ayudasFiltradas = snapshot.data!.where((ayuda) {
-                                    String status = (ayuda['status'] ?? '').toString().toUpperCase();
-                                    if (_filtroAyudas == 'Todos') return true;
-                                    if (_filtroAyudas == 'Pendientes de aprobar') return status == 'PENDING_VOTE';
-                                    if (_filtroAyudas == 'Aprobados') return status == 'APPROVED';
-                                    if (_filtroAyudas == 'Pendientes') return status == 'FUNDING';
-                                    if (_filtroAyudas == 'Completados') return status == 'COMPLETED';
-                                    if (_filtroAyudas == 'Fallidos') return status == 'FAILED' || status == 'REJECTED';
-                                    return true;
-                                  }).toList();
-
-                                  return Column(
-                                    children: [
-                                      // 1. FILTROS ESTILO MOCKUP CON TODAS LAS OPCIONES
-                                      SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                        child: Row(
-                                          children: ['Todos', 'Pendientes de aprobar', 'Aprobados', 'Pendientes', 'Completados', 'Fallidos'].map((opcion) {
-                                            bool isSelected = _filtroAyudas == opcion;
-                                            return Padding(
-                                              padding: const EdgeInsets.only(right: 8),
-                                              child: GestureDetector(
-                                                onTap: () => setState(() => _filtroAyudas = opcion),
-                                                child: Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                                  decoration: BoxDecoration(
-                                                    color: isSelected ? const Color(0xFFBAC3FF) : Colors.transparent,
-                                                    borderRadius: BorderRadius.circular(24),
-                                                    border: Border.all(color: isSelected ? Colors.transparent : onSurface.withOpacity(0.1)),
-                                                  ),
-                                                  child: Text(
-                                                    opcion, 
-                                                    style: TextStyle(
-                                                      color: isSelected ? const Color(0xFF00218d) : onSurface.withOpacity(0.8), 
-                                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600, 
-                                                      fontSize: 13
-                                                    )
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ),
-
-                                      // 2. LISTA DE AYUDAS REDISEÑADA
-                                      Expanded(
-                                        child: ayudasFiltradas.isEmpty 
-                                            ? SingleChildScrollView(physics: const BouncingScrollPhysics(), child: Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: UIHelper.emptyState(context: context, icon: Icons.volunteer_activism_rounded, title: "Sin Ayudas", message: "No hay solicitudes de ayuda con este estado.")))
-                                            : ListView.builder(
-                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                physics: const BouncingScrollPhysics(),
-                                                itemCount: ayudasFiltradas.length,
-                                                itemBuilder: (ctx, i) {
-                                                  var ayuda = ayudasFiltradas[i];
-                                                  double meta = double.tryParse(ayuda['requestedAmount'].toString()) ?? 0;
-                                                  double recaudado = double.tryParse(ayuda['raisedAmount'].toString()) ?? 0;
-                                                  double progreso = meta > 0 ? (recaudado / meta) : 0;
-                                                  
-                                                  bool isPendingVote = ayuda['status'] == "PENDING_VOTE";
-                                                  bool isFunding = ayuda['status'] == "FUNDING";
-                                                  bool isCompleted = ayuda['status'] == "COMPLETED";
-                                                  
-                                                  List<dynamic> votos = ayuda['groupApprovals'] ?? [];
-                                                  bool yaVote = votos.contains(authCore.publicAddress.toLowerCase());
-
-                                                  // Variables visuales dinámicas
-                                                  String shortAddress = ayuda['debtorAddress'].toString();
-                                                  shortAddress = shortAddress.length > 10 ? "${shortAddress.substring(0,8)}...${shortAddress.substring(shortAddress.length-4)}" : shortAddress;
-                                                  
-                                                  Color statusColor = isCompleted ? const Color(0xFF10B981) : const Color(0xFFBAC3FF);
-                                                  String statusText = isCompleted ? "COMPLETADO" : (isPendingVote ? "VOTACIÓN" : "PENDIENTE");
-                                                  Color progressColor = isCompleted ? Colors.orangeAccent : const Color(0xFFBAC3FF);
-
-                                                  return Container(
-                                                    margin: const EdgeInsets.only(bottom: 16),
-                                                    decoration: BoxDecoration(
-                                                      color: theme.cardColor,
-                                                      borderRadius: BorderRadius.circular(16),
-                                                      border: Border.all(color: onSurface.withOpacity(0.08)),
-                                                    ),
-                                                    child: InkWell(
-                                                      borderRadius: BorderRadius.circular(16),
-                                                      onTap: isFunding ? () => _mostrarOpcionesAporteAyuda(ayuda) : null,
-                                                      child: Padding(
-                                                        padding: const EdgeInsets.all(20),
-                                                        child: Column(
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                          children: [
-                                                            // CABECERA (Icono, Título y Badge)
-                                                            Row(
-                                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                                              children: [
-                                                                Container(
-                                                                  padding: const EdgeInsets.all(12),
-                                                                  decoration: BoxDecoration(
-                                                                    color: onSurface.withOpacity(0.05),
-                                                                    borderRadius: BorderRadius.circular(12),
-                                                                    border: Border.all(color: const Color(0xFFBAC3FF).withOpacity(0.3))
-                                                                  ),
-                                                                  child: const Icon(Icons.campaign_rounded, color: Colors.orangeAccent, size: 24),
-                                                                ),
-                                                                const SizedBox(width: 12),
-                                                                Expanded(
-                                                                  child: Column(
-                                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                                    children: [
-                                                                      Text(ayuda['reason'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: onSurface), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                                                      const SizedBox(height: 4),
-                                                                      Text("Solicitado por $shortAddress", style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 12)),
-                                                                    ],
-                                                                  ),
-                                                                ),
-                                                                Container(
-                                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                                  decoration: BoxDecoration(
-                                                                    color: statusColor.withOpacity(0.1),
-                                                                    borderRadius: BorderRadius.circular(8),
-                                                                  ),
-                                                                  child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                            const SizedBox(height: 20),
-
-                                                            // BARRA DE PROGRESO
-                                                            ClipRRect(
-                                                              borderRadius: BorderRadius.circular(10),
-                                                              child: LinearProgressIndicator(
-                                                                value: progreso,
-                                                                backgroundColor: onSurface.withOpacity(0.05),
-                                                                color: progressColor,
-                                                                minHeight: 6,
-                                                              ),
-                                                            ),
-                                                            const SizedBox(height: 10),
-
-                                                            // MONTOS
-                                                            Row(
-                                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                              children: [
-                                                                Text("${recaudado.toStringAsFixed(1)} TTC", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: onSurface)),
-                                                                Text("Meta: ${meta.toStringAsFixed(1)} TTC", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: onSurface.withOpacity(0.7))),
-                                                              ],
-                                                            ),
-
-                                                            const SizedBox(height: 16),
-
-                                                            // ÁREA DE ACCIÓN INFERIOR
-                                                            if (isCompleted)
-                                                              const Center(child: Text("¡Meta alcanzada! El grupo salvó el día.", style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w600, fontStyle: FontStyle.italic, fontSize: 13)))
-                                                            else if (isFunding)
-                                                              Align(
-                                                                alignment: Alignment.centerRight,
-                                                                child: Text(
-                                                                  "Aportar ahora", 
-                                                                  style: TextStyle(color: const Color(0xFFBAC3FF), fontWeight: FontWeight.bold, fontSize: 14)
-                                                                ),
-                                                              )
-                                                            else if (isPendingVote)
-                                                              SizedBox(
-                                                                width: double.infinity,
-                                                                child: ElevatedButton.icon(
-                                                                  style: ElevatedButton.styleFrom(
-                                                                    backgroundColor: yaVote ? onSurface.withOpacity(0.1) : const Color(0xFF4361EE),
-                                                                    foregroundColor: yaVote ? onSurface.withOpacity(0.5) : Colors.white,
-                                                                    elevation: 0,
-                                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                                                    padding: const EdgeInsets.symmetric(vertical: 12)
-                                                                  ),
-                                                                  onPressed: yaVote ? null : () async {
-                                                                    showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Firma Requerida", message: "Autoriza tu voto para ayudar."));
-                                                                    bool auth = await authCore.authenticateUser();
-                                                                    if (mounted) Navigator.pop(context);
-                                                                    if (!auth) return;
-                                                                    showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Procesando Voto", message: "Registrando en la DAO..."));
-                                                                    String res = await debtService.voteToHelpSharedDebt(ayuda['id']);
-                                                                    if (mounted) Navigator.pop(context); 
-                                                                    if (res == "Exito") { _cargarCobros(); } else { UIHelper.showCustomSnackbar("Error al votar: $res", isError: true); }
-                                                                  },
-                                                                  icon: const Icon(Icons.how_to_vote_rounded, size: 18), 
-                                                                  label: Text(yaVote ? "Voto registrado" : "Aprobar ayuda", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                                                ),
-                                                              )
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                      ),
-                                    ],
-                                  );
-                                },
+                              GroupHelpsTab(
+                                ayudaFuture: _ayudaFuture,
+                                group: _group,
+                                miEstado: _miEstado,
+                                saldoGrupo: _saldoGrupo,
+                                filtroAyudas: _filtroAyudas,
+                                onFiltroAyudasChanged: (val) => setState(() => _filtroAyudas = val),
+                                onRecargar: () { _cargarSaldoGrupo(); _cargarCobros(); },
                               ),
-                              // --- TAB 5: HISTORIAL ---
-                             FutureBuilder<List<dynamic>>(
-                                future: _historialFuture,
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: colorScheme.primary));
-                                  if (!snapshot.hasData || snapshot.data!.isEmpty) return Center(child: Text("La bóveda no tiene movimientos.", style: TextStyle(color: onSurface.withOpacity(0.5))));
-                                  
-                                  String vaultAddress = _group['walletAddress']?.toString().toLowerCase() ?? "";
-                                  
-                                  List<dynamic> historialFiltrado = snapshot.data!.where((tx) {
-                                    if (_fechaInicioHistorial != null && _fechaFinHistorial != null && tx['timestamp'] != null) {
-                                      try {
-                                        DateTime txDate = DateTime.parse(tx['timestamp'].toString());
-                                        DateTime justDate = DateTime(txDate.year, txDate.month, txDate.day);
-                                        DateTime start = DateTime(_fechaInicioHistorial!.year, _fechaInicioHistorial!.month, _fechaInicioHistorial!.day);
-                                        DateTime end = DateTime(_fechaFinHistorial!.year, _fechaFinHistorial!.month, _fechaFinHistorial!.day);
-                                        if (justDate.isBefore(start) || justDate.isAfter(end)) return false;
-                                      } catch (e) { return false; }
-                                    }
-                                    String tipo = (tx['txType'] ?? '').toString().toUpperCase();
-                                    bool esIngreso = tx['receiverAddress'].toString().toLowerCase() == vaultAddress;
-                                    if (_filtroHistorial == 'Todos') return true;
-                                    if (_filtroHistorial == 'Aportes') return esIngreso;
-                                    if (_filtroHistorial == 'Pagos de ayudas') return tipo == 'SHARED_DEBT_PAYMENT';
-                                    if (_filtroHistorial == 'Pagos') return !esIngreso && tipo != 'SHARED_DEBT_PAYMENT';
-                                    return true;
-                                  }).toList();
-                                  
-                                  Map<String, List<dynamic>> historialAgrupado = _groupTransactionsByDate(historialFiltrado);
-
-                                  return Column(
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text("Movimientos (${snapshot.data!.length})", style: TextStyle(fontWeight: FontWeight.bold, color: onSurface.withOpacity(0.7))),
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  margin: const EdgeInsets.only(right: 8),
-                                                  decoration: BoxDecoration(color: Colors.deepOrangeAccent.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-                                                  child: IconButton(
-                                                    tooltip: "Exportar PDF",
-                                                    icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.deepOrangeAccent, size: 20),
-                                                    onPressed: () => ShareHelper.generarYCompartirPDFHistory(context, snapshot.data!, vaultAddress),
-                                                  ),
-                                                ),
-                                                Container(
-                                                  decoration: BoxDecoration(color: const Color(0xFFB5C0FF).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-                                                  child: IconButton(
-                                                    tooltip: "Exportar Excel",
-                                                    icon: const Icon(Icons.download_rounded, color: Color(0xFFB5C0FF), size: 20),
-                                                    onPressed: () => ShareHelper.exportarHistorialCSV(context, snapshot.data!, vaultAddress),
-                                                  ),
-                                                ),
-                                              ],
-                                            )
-                                          ],
-                                        ),
-                                      ),
-                                      
-                                      SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                                        child: Row(
-                                          children: [
-                                            GestureDetector(
-                                              onTap: _seleccionarRangoFechasHistorial,
-                                              child: Container(
-                                                margin: const EdgeInsets.only(right: 12),
-                                                padding: const EdgeInsets.all(10),
-                                                decoration: BoxDecoration(
-                                                  color: _fechaInicioHistorial != null ? const Color(0xFFB5C0FF) : colorScheme.onSurface.withOpacity(0.08),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Icon(Icons.calendar_today_rounded, size: 20, color: _fechaInicioHistorial != null ? Colors.black87 : colorScheme.onSurface.withOpacity(0.8)),
-                                              ),
-                                            ),
-                                            if (_fechaInicioHistorial != null)
-                                              GestureDetector(
-                                                onTap: _limpiarFiltroFechasHistorial,
-                                                child: Container(
-                                                  margin: const EdgeInsets.only(right: 12),
-                                                  padding: const EdgeInsets.all(10),
-                                                  decoration: BoxDecoration(color: colorScheme.error.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-                                                  child: Icon(Icons.close_rounded, size: 20, color: colorScheme.error),
-                                                ),
-                                              ),
-                                            ...['Todos', 'Aportes', 'Pagos', 'Pagos de ayudas'].map((opcion) {
-                                              bool isSelected = _filtroHistorial == opcion;
-                                              return GestureDetector(
-                                                onTap: () => setState(() => _filtroHistorial = opcion),
-                                                child: Container(
-                                                  margin: const EdgeInsets.only(right: 12),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                                  decoration: BoxDecoration(
-                                                    color: isSelected ? const Color(0xFFB5C0FF) : colorScheme.onSurface.withOpacity(0.08),
-                                                    borderRadius: BorderRadius.circular(12),
-                                                  ),
-                                                  child: Text(
-                                                    opcion,
-                                                    style: TextStyle(color: isSelected ? Colors.black87 : colorScheme.onSurface.withOpacity(0.8), fontWeight: isSelected ? FontWeight.bold : FontWeight.w600, fontSize: 14),
-                                                  ),
-                                                ),
-                                              );
-                                            }).toList(),
-                                          ],
-                                        ),
-                                      ),
-                                      
-                                      Expanded(
-                                        child: historialAgrupado.isEmpty
-                                            ? SingleChildScrollView(physics: const BouncingScrollPhysics(), child: Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: UIHelper.emptyState(context: context, icon: Icons.history_rounded, title: "Historial Vacío", message: "La bóveda no registra transacciones bajo este filtro.")))
-                                            : ListView.builder(
-                                                padding: const EdgeInsets.all(16),
-                                                itemCount: historialAgrupado.keys.length,
-                                                itemBuilder: (context, index) {
-                                                  String date = historialAgrupado.keys.elementAt(index);
-                                                  List<dynamic> txs = historialAgrupado[date]!;
-                                                  return Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Padding(
-                                                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8), 
-                                                        child: Text(date.toUpperCase(), style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2))
-                                                      ),
-                                                      ...txs.map((tx) => _buildGroupTransactionCard(tx, colorScheme.onSurface, context, vaultAddress)).toList(),
-                                                    ],
-                                                  );
-                                                },
-                                              ),
-                                      ),
-                                    ],
-                                  );
-                                },
+                              GroupHistoryTab(
+                                historialFuture: _historialFuture,
+                                group: _group,
+                                filtroHistorial: _filtroHistorial,
+                                fechaInicio: _fechaInicioHistorial,
+                                fechaFin: _fechaFinHistorial,
+                                onSeleccionarRango: _seleccionarRangoFechasHistorial,
+                                onLimpiarRango: _limpiarFiltroFechasHistorial,
+                                onFiltroChanged: (val) => setState(() => _filtroHistorial = val),
                               ),
                             ],
                           ),
@@ -1672,6 +1105,757 @@ Widget? _construirFABGrupo() {
                       ],
                     ),
                   ),
+
+                        // Row(
+                        //   mainAxisAlignment: MainAxisAlignment.center,
+                        //   children: [
+                        //     _BotonAccion(
+                        //       icono: Icons.account_balance_wallet_outlined, texto: "Aportar", color: const Color(0xFFC77DFF),
+                        //       onTap: () async {
+                        //         String groupWallet = widget.groupData['walletAddress'] ?? "";
+                        //         if (groupWallet.isEmpty) return;
+                        //         String miSaldoReal = await txService.getBalance();
+                        //         if (!context.mounted) return;
+                        //         SendModal.show(context: context, balanceTTC: miSaldoReal, initialAddress: groupWallet, isGroupPayment: true, onUpdateBalance: _cargarSaldoGrupo, mostrarMensaje: (msg, {bool esError = false}) {
+                        //             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: esError ? colorScheme.error : Colors.green));
+                        //         });
+                        //       },
+                        //     ),
+                        //     const SizedBox(width: 16),
+                        //    _BotonAccion(
+                        //       icono: Icons.auto_graph_rounded, 
+                        //       texto: "Minar PoS", 
+                        //       color: const Color(0xFF10B981),
+                        //       onTap: () async {
+                        //         String groupWallet = widget.groupData['walletAddress'] ?? "";
+                        //         if (groupWallet.isEmpty) return;
+
+                        //         showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                        //         String stakedBalance = await vaultService.getAnyStakedBalance(groupWallet);
+                        //         if (mounted) Navigator.pop(context);
+                                
+                        //         // Navegamos directamente a la pantalla completa de Stake
+                        //         Navigator.push(
+                        //           context, 
+                        //           MaterialPageRoute(
+                        //             builder: (_) => StakeScreen(
+                        //               balanceTTC: _saldoGrupo.toString(),
+                        //               stakedTTC: stakedBalance,
+                        //               isGroupMode: true,
+                        //               groupId: _group['id'],
+                        //               vaultAddress: groupWallet,
+                        //               onUpdateBalance: () async { 
+                        //                 await _cargarSaldoGrupo(); 
+                        //                 _cargarCobros(); 
+                        //               },
+                        //               mostrarMensaje: (msg, {bool esError = false}) { 
+                        //                 UIHelper.showCustomSnackbar(msg, isError: esError); 
+                        //               },
+                        //             ),
+                        //           ),
+                        //         );
+                        //       },
+                        //     ),
+                        //   ],
+                        // ),
+                  //     ],
+                  //   ),
+                  // ),
+                  // Expanded(
+                  //   child: Column(
+                  //     children: [
+                  //       TabBar(
+                  //         controller: _tabController,
+                  //         isScrollable: true,
+                  //         indicatorColor: const Color(0xFF4361EE),
+                  //         indicatorWeight: 3,
+                  //         labelColor: const Color(0xFF4361EE),
+                  //         unselectedLabelColor: onSurface.withOpacity(0.5),
+                  //         labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  //         tabs: const [
+                  //           Tab(icon: Icon(Icons.people_alt_rounded), text: "Miembros"),
+                  //           Tab(icon: Icon(Icons.how_to_vote_rounded), text: "Propuestas"),
+                  //           Tab(icon: Icon(Icons.receipt_long_rounded), text: "Cobros"),
+                  //           Tab(icon: Icon(Icons.savings_rounded), text: "Ayudas"),
+                  //           Tab(icon: Icon(Icons.history_rounded), text: "Historial"),
+                  //         ],
+                  //       ),
+                  //       Expanded(
+                  //         child: TabBarView(
+                  //           controller: _tabController,
+                  //           children: [
+                  //             // ==============================================
+                  //             // TAB 1: MIEMBROS (IMAGEN: dashboard grupos)
+                  //             // ==============================================
+                  //             Column(
+                  //               children: [
+                  //                 Padding(
+                  //                   padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                  //                   child: TextField(
+                  //                     controller: _searchController,
+                  //                     style: TextStyle(color: onSurface),
+                  //                     decoration: InputDecoration(
+                  //                       hintText: "Buscar alias o wallet...",
+                  //                       hintStyle: TextStyle(color: onSurface.withOpacity(0.4)),
+                  //                       prefixIcon: Icon(Icons.search_rounded, color: onSurface.withOpacity(0.5)),
+                  //                       filled: true,
+                  //                       fillColor: cardColor,
+                  //                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  //                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                  //                     ),
+                  //                     onChanged: (val) => setState(() => _searchQuery = val),
+                  //                   ),
+                  //                 ),
+                  //                 Expanded(
+                  //                   child: Builder(
+                  //                     builder: (context) {
+                  //                       final filteredMembers = members.where((m) {
+                  //                         final alias = m['alias'].toString().toLowerCase();
+                  //                         final wallet = m['walletAddress'].toString().toLowerCase();
+                  //                         final query = _searchQuery.toLowerCase();
+                  //                         return alias.contains(query) || wallet.contains(query);
+                  //                       }).toList();
+
+                  //                       if (filteredMembers.isEmpty) return UIHelper.emptyState(context: context, icon: Icons.group_off_rounded, title: "Sin resultados", message: "No se encontraron miembros.");
+                  //                       return ListView.builder(
+                  //                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
+                  //                         itemCount: filteredMembers.length,
+                  //                         itemBuilder: (ctx, i) {
+                  //                           var m = filteredMembers[i];
+                  //                           bool isPending = m['status'] == "PENDING";
+                  //                           final userService = Provider.of<UserService>(context, listen: false);
+
+                  //                           return FutureBuilder<Map<String, dynamic>?>(
+                  //                             future: userService.getUserByWallet(m['walletAddress']),
+                  //                             builder: (context, snapshot) {
+                  //                               String cedulaReal = "No registrada";
+                  //                               String celularReal = "No registrado";
+                  //                               String aliasReal = m['alias'] ?? "Desconocido";
+
+                  //                               if (snapshot.hasData && snapshot.data != null) {
+                  //                                 cedulaReal = snapshot.data!['cedula'] ?? "No registrada";
+                  //                                 celularReal = snapshot.data!['phoneNumber'] ?? "No registrado";
+                  //                                 aliasReal = snapshot.data!['alias'] ?? aliasReal;
+                  //                               }
+
+                  //                             return Container(
+                  //                                 margin: const EdgeInsets.only(bottom: 12),
+                  //                                 padding: const EdgeInsets.all(16),
+                  //                                 decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(20)),
+                  //                                 child: Column(
+                  //                                   children: [
+                  //                                     Row(
+                  //                                       children: [
+                  //                                         SmartAvatar(address: m['walletAddress'] ?? '', size: 48),
+                  //                                         const SizedBox(width: 12),
+                  //                                         Expanded(
+                  //                                           child: Column(
+                  //                                             crossAxisAlignment: CrossAxisAlignment.start,
+                  //                                             children: [
+                  //                                               // 🔥 Aquí cargamos el Alias Real obtenido del backend
+                  //                                               Text("@$aliasReal", style: TextStyle(color: onSurface, fontWeight: FontWeight.bold, fontSize: 18)),
+                  //                                               const SizedBox(height: 4),
+                  //                                               Container(
+                  //                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  //                                                 decoration: BoxDecoration(color: isPending ? Colors.orange.withOpacity(0.2) : const Color(0xFF4361EE).withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
+                  //                                                 child: Text(m['status'], style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isPending ? Colors.orange : const Color(0xFFBAC3FF))),
+                  //                                               ),
+                  //                                             ],
+                  //                                           ),
+                  //                                         ),
+                  //                                         if (_miEstado == "CREATOR") ...[
+                  //                                           Icon(Icons.settings_outlined, color: onSurface.withOpacity(0.5), size: 20),
+                  //                                           const SizedBox(width: 12),
+                  //                                           if (m['walletAddress'].toString().toLowerCase() != authCore.publicAddress.toLowerCase())
+                  //                                             GestureDetector(
+                  //                                               onTap: () async {
+                  //                                                 setState(() => _isLoading = true);
+                  //                                                 String res = await groupService.removeGroupMember(_group['id'], m['walletAddress']);
+                  //                                                 if (res == "SUCCESS") { await _actualizarGrupoLocal(); setState(() => _isLoading = false); } else { UIHelper.showCustomSnackbar(res, isError: true); setState(() => _isLoading = false); }
+                  //                                               },
+                  //                                               child: Icon(Icons.person_remove_outlined, color: onSurface.withOpacity(0.5), size: 20),
+                  //                                             ),
+                  //                                         ]
+                  //                                       ],
+                  //                                     ),
+                  //                                     const SizedBox(height: 16),
+                  //                                     Divider(color: onSurface.withOpacity(0.05), height: 1),
+                  //                                     const SizedBox(height: 12),
+                  //                                     _buildMemberInfoRow("Cédula:", cedulaReal, onSurface),
+                  //                                     _buildMemberInfoRow("Wallet:", "${m['walletAddress'].toString().substring(0,6)}...${m['walletAddress'].toString().substring(m['walletAddress'].toString().length-3)}", onSurface),
+                  //                                     _buildMemberInfoRow("Celular:", celularReal, onSurface),
+                  //                                   ],
+                  //                                 ),
+                  //                               );
+                  //                             }
+                  //                           );
+                  //                         },
+                  //                       );
+                  //                     },
+                  //                   ),
+                  //                 ),
+                  //               ],
+                  //             ),
+
+                  //             // --- TAB 2: PROPUESTAS ---
+                  //             FutureBuilder<List<dynamic>>(
+                  //               future: _paymentsFuture,
+                  //               builder: (context, snapshot) {
+                  //                 if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: colorScheme.primary));
+                  //                 List<dynamic> propuestas = (snapshot.data ?? []).where((r) => r['status'] == "PENDING_APPROVAL").toList();
+                  //                 if (propuestas.isEmpty) return UIHelper.emptyState(context: context, icon: Icons.how_to_vote_rounded, title: "Sin Propuestas", message: "No hay votaciones pendientes en este momento en la DAO.");
+                  //                 return ListView.builder(
+                  //                   padding: const EdgeInsets.all(16),
+                  //                   itemCount: propuestas.length,
+                  //                   itemBuilder: (ctx, i) {
+                  //                     var req = propuestas[i];
+                  //                     List<dynamic> approvals = req['approvals'] ?? [];
+                  //                     bool yaVote = approvals.contains(authCore.publicAddress.toLowerCase());
+                  //                     return Card(
+                  //                       margin: const EdgeInsets.only(bottom: 12),
+                  //                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  //                       child: ListTile(
+                  //                         leading: CircleAvatar(backgroundColor: Colors.deepPurpleAccent.withOpacity(0.1), child: const Icon(Icons.how_to_vote_rounded, color: Colors.deepPurpleAccent)),
+                  //                         title: Text(req['description'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                  //                         subtitle: Text(req['requestType'] == 'CONFIG_CHANGE' ? "Ajuste de DAO" : "DeFi o Multisig", style: TextStyle(color: colorScheme.primary, fontSize: 12)),
+                  //                         trailing: !yaVote 
+                  //                           ? ElevatedButton.icon(
+                  //                               style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurpleAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  //                               icon: const Icon(Icons.thumb_up_alt_rounded, size: 16),
+                  //                               label: const Text("Aprobar"),
+                  //                               onPressed: () async {
+                  //                                 bool auth = await authCore.authenticateUser();
+                  //                                 if (!auth) return;
+                  //                                 showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                  //                                 String res = await groupService.approveMultisigPayment(req['id']);
+                  //                                 if (mounted) Navigator.pop(context);
+                  //                                 if (res == "SUCCESS") { UIHelper.showCustomSnackbar("Voto registrado exitosamente", isError: false); _cargarCobros(); } else { UIHelper.showCustomSnackbar(res, isError: true); }
+                  //                               },
+                  //                             )
+                  //                           : Chip(label: const Text("Aprobado", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)), backgroundColor: Colors.deepPurpleAccent.withOpacity(0.1), labelStyle: const TextStyle(color: Colors.deepPurpleAccent), side: BorderSide.none),
+                  //                       ),
+                  //                     );
+                  //                   },
+                  //                 );
+                  //               },
+                  //             ),
+
+                  //             // ==============================================
+                  //             // TAB 3: COBROS 
+                  //             // ==============================================
+                  //             FutureBuilder<List<dynamic>>(
+                  //               future: _paymentsFuture,
+                  //               builder: (context, snapshot) {
+                  //                 if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: colorScheme.primary));
+                  //                 List<dynamic> cobros = (snapshot.data ?? []).where((r) => r['status'] != "PENDING_APPROVAL").toList();
+                  //                 List<dynamic> cobrosFiltrados = cobros.where((req) {
+                  //                   String status = (req['status'] ?? '').toString().toUpperCase();
+                  //                   bool pasaEstado = true;
+                  //                   if (_filtroCobros == 'Pendientes') pasaEstado = status == 'OPEN' || status == 'PENDING_APPROVAL';
+                  //                   else if (_filtroCobros == 'Completadas') pasaEstado = status == 'COMPLETED'; // Ajuste 'Completadas' para coincidir con la imagen
+                  //                   else if (_filtroCobros == 'Fallidas') pasaEstado = status == 'FAILED' || status == 'REJECTED';
+                  //                   if (!pasaEstado) return false;
+
+                  //                   bool isVaultPayment = (req['debts'] as List?)?.isEmpty ?? false;
+                  //                   if (_filtroTipoCobro == 'Divididos' && isVaultPayment) return false;
+                  //                   if (_filtroTipoCobro == 'Bóveda' && !isVaultPayment) return false;
+                  //                   return true;
+                  //                 }).toList();
+
+                  //                 return Column(
+                  //                   children: [
+                  //                     SingleChildScrollView(
+                  //                       scrollDirection: Axis.horizontal,
+                  //                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  //                       child: Row(
+                  //                         children: [
+                  //                           PopupMenuButton<String>(
+                  //                             initialValue: _filtroTipoCobro,
+                  //                             color: cardColor,
+                  //                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  //                             onSelected: (String newValue) => setState(() => _filtroTipoCobro = newValue),
+                  //                             itemBuilder: (BuildContext context) => const [
+                  //                               PopupMenuItem<String>(value: 'Todos', child: Text('Todos los tipos')),
+                  //                               PopupMenuItem<String>(value: 'Divididos', child: Text('Pagos Divididos')),
+                  //                               PopupMenuItem<String>(value: 'Bóveda', child: Text('Pagos de Bóveda')),
+                  //                             ],
+                  //                             child: Container(
+                  //                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  //                               decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: onSurface.withOpacity(0.1))),
+                  //                               child: Row(
+                  //                                 mainAxisSize: MainAxisSize.min,
+                  //                                 children: [
+                  //                                   Icon(Icons.filter_list_rounded, size: 16, color: onSurface.withOpacity(0.7)),
+                  //                                   const SizedBox(width: 6),
+                  //                                   Text("Tipo", style: TextStyle(color: onSurface.withOpacity(0.8))),
+                  //                                   const SizedBox(width: 4),
+                  //                                   Icon(Icons.arrow_drop_down_rounded, size: 16, color: onSurface.withOpacity(0.7)),
+                  //                                 ],
+                  //                               ),
+                  //                             ),
+                  //                           ),
+                  //                           const SizedBox(width: 8),
+                  //                           ...['Todos', 'Pendientes', 'Completadas', 'Fallidas'].map((opcion) {
+                  //                             bool isSelected = _filtroCobros == opcion;
+                  //                             return Padding(
+                  //                               padding: const EdgeInsets.only(right: 8),
+                  //                               child: GestureDetector(
+                  //                                 onTap: () => setState(() => _filtroCobros = opcion),
+                  //                                 child: Container(
+                  //                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  //                                   decoration: BoxDecoration(
+                  //                                     color: isSelected ? const Color(0xFFBAC3FF) : Colors.transparent,
+                  //                                     borderRadius: BorderRadius.circular(20),
+                  //                                     border: Border.all(color: isSelected ? Colors.transparent : onSurface.withOpacity(0.2))
+                  //                                   ),
+                  //                                   child: Text(opcion, style: TextStyle(color: isSelected ? const Color(0xFF00218d) : onSurface.withOpacity(0.7), fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, fontSize: 13)),
+                  //                                 ),
+                  //                               ),
+                  //                             );
+                  //                           }).toList(),
+                  //                         ],
+                  //                       ),
+                  //                     ),
+
+                  //                     Expanded(
+                  //                       child: cobrosFiltrados.isEmpty 
+                  //                         ? SingleChildScrollView(
+                  //                               physics: const BouncingScrollPhysics(),
+                  //                               child: Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: UIHelper.emptyState(context: context, icon: Icons.receipt_long_rounded, title: "Sin Cobros", message: "No hay cobros o pagos grupales que coincidan con este filtro.")),
+                  //                             )
+                  //                           : ListView.builder(
+                  //                         padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
+                  //                         itemCount: cobrosFiltrados.length,
+                  //                         itemBuilder: (ctx, i) {
+                  //                           var req = cobrosFiltrados[i];
+                  //                           bool isVaultPayment = (req['debts'] as List?)?.isEmpty ?? false;
+                  //                           var miDeuda = (req['debts'] as List?)?.firstWhere((d) => d['walletAddress'].toString().toLowerCase() == authCore.publicAddress.toLowerCase(), orElse: () => null);
+                                            
+                  //                           if (!isVaultPayment && miDeuda == null) return const SizedBox(); 
+
+                  //                           bool pendiente = miDeuda != null && miDeuda['status'] == "PENDING";
+                  //                           bool completado = req['status'] == "COMPLETED";
+                  //                           bool fallida = req['status'] == "FAILED" || req['status'] == "REJECTED";
+
+                  //                           Color statusColor = completado ? Colors.green : (fallida ? colorScheme.error : const Color(0xFFC77DFF));
+                  //                           IconData statusIcon = completado ? Icons.check_rounded : (fallida ? Icons.priority_high_rounded : Icons.schedule_rounded);
+                  //                           String montoStr = isVaultPayment ? req['totalAmount'].toString() : miDeuda!['amountOwed'].toString();
+
+                  //                           return Card(
+                  //                             margin: const EdgeInsets.only(bottom: 12),
+                  //                             color: cardColor,
+                  //                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: statusColor.withOpacity(0.2))),
+                  //                             child: InkWell(
+                  //                               onTap: () => GroupPaymentDetailsModal.show(context: context, req: req, groupName: _group['name']),
+                  //                               borderRadius: BorderRadius.circular(16),
+                  //                               child: Padding(
+                  //                                 padding: const EdgeInsets.all(16),
+                  //                                 child: Row(
+                  //                                   children: [
+                  //                                     Container(
+                  //                                       padding: const EdgeInsets.all(8),
+                  //                                       decoration: BoxDecoration(color: statusColor.withOpacity(0.1), shape: BoxShape.circle),
+                  //                                       child: Icon(statusIcon, color: statusColor, size: 20),
+                  //                                     ),
+                  //                                     const SizedBox(width: 16),
+                  //                                     Expanded(
+                  //                                       child: Column(
+                  //                                         crossAxisAlignment: CrossAxisAlignment.start,
+                  //                                         children: [
+                  //                                           Text(req['description'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  //                                           const SizedBox(height: 4),
+                  //                                           Row(
+                  //                                             children: [
+                  //                                               Container(width: 6, height: 6, decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle)),
+                  //                                               const SizedBox(width: 6),
+                  //                                               Text(completado ? "Completada" : (fallida ? "Fallida" : "Pendiente"), style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 13)),
+                  //                                               Text(" • 12:00", style: TextStyle(color: onSurface.withOpacity(0.4), fontSize: 13)), // placeholder
+                  //                                             ],
+                  //                                           )
+                  //                                         ],
+                  //                                       ),
+                  //                                     ),
+                  //                                     Column(
+                  //                                       crossAxisAlignment: CrossAxisAlignment.end,
+                  //                                       children: [
+                  //                                         Text(completado ? "+ $montoStr TTC" : "$montoStr TTC", style: TextStyle(color: completado ? Colors.green : onSurface, fontWeight: FontWeight.bold, fontSize: 16)),
+                  //                                         if (pendiente && !fallida) ...[
+                  //                                           const SizedBox(height: 8),
+                  //                                           ElevatedButton(
+                  //                                             style: ElevatedButton.styleFrom(
+                  //                                               backgroundColor: Colors.green, foregroundColor: Colors.white,
+                  //                                               minimumSize: const Size(60, 30),
+                  //                                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                  //                                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+                  //                                             ),
+                  //                                             onPressed: () => _pagarMiParte(req['id'], double.parse(miDeuda!['amountOwed'].toString()), req['destinationAddress']),
+                  //                                             child: const Text("Pagar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  //                                           )
+                  //                                         ]
+                  //                                       ],
+                  //                                     )
+                  //                                   ],
+                  //                                 )
+                  //                               )
+                  //                             )
+                  //                           );
+                  //                         },
+                  //                       ),
+                  //                     ),
+                  //                   ],
+                  //                 );
+                  //               },
+                  //             ),
+
+                  //             // --- TAB 4: LA AYUDA ---
+                  //         FutureBuilder<List<dynamic>>(
+                  //               future: _ayudaFuture,
+                  //               builder: (context, snapshot) {
+                  //                 if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: colorScheme.primary));
+                  //                 if (!snapshot.hasData || snapshot.data!.isEmpty) return Center(child: Text("No hay nadie pidiendo ayuda.", style: TextStyle(color: onSurface.withOpacity(0.5))));
+                                  
+                  //                 // LÓGICA DE FILTRADO COMPLETA
+                  //                 List<dynamic> ayudasFiltradas = snapshot.data!.where((ayuda) {
+                  //                   String status = (ayuda['status'] ?? '').toString().toUpperCase();
+                  //                   if (_filtroAyudas == 'Todos') return true;
+                  //                   if (_filtroAyudas == 'Pendientes de aprobar') return status == 'PENDING_VOTE';
+                  //                   if (_filtroAyudas == 'Aprobados') return status == 'APPROVED';
+                  //                   if (_filtroAyudas == 'Pendientes') return status == 'FUNDING';
+                  //                   if (_filtroAyudas == 'Completados') return status == 'COMPLETED';
+                  //                   if (_filtroAyudas == 'Fallidos') return status == 'FAILED' || status == 'REJECTED';
+                  //                   return true;
+                  //                 }).toList();
+
+                  //                 return Column(
+                  //                   children: [
+                  //                     // 1. FILTROS ESTILO MOCKUP CON TODAS LAS OPCIONES
+                  //                     SingleChildScrollView(
+                  //                       scrollDirection: Axis.horizontal,
+                  //                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  //                       child: Row(
+                  //                         children: ['Todos', 'Pendientes de aprobar', 'Aprobados', 'Pendientes', 'Completados', 'Fallidos'].map((opcion) {
+                  //                           bool isSelected = _filtroAyudas == opcion;
+                  //                           return Padding(
+                  //                             padding: const EdgeInsets.only(right: 8),
+                  //                             child: GestureDetector(
+                  //                               onTap: () => setState(() => _filtroAyudas = opcion),
+                  //                               child: Container(
+                  //                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  //                                 decoration: BoxDecoration(
+                  //                                   color: isSelected ? const Color(0xFFBAC3FF) : Colors.transparent,
+                  //                                   borderRadius: BorderRadius.circular(24),
+                  //                                   border: Border.all(color: isSelected ? Colors.transparent : onSurface.withOpacity(0.1)),
+                  //                                 ),
+                  //                                 child: Text(
+                  //                                   opcion, 
+                  //                                   style: TextStyle(
+                  //                                     color: isSelected ? const Color(0xFF00218d) : onSurface.withOpacity(0.8), 
+                  //                                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w600, 
+                  //                                     fontSize: 13
+                  //                                   )
+                  //                                 ),
+                  //                               ),
+                  //                             ),
+                  //                           );
+                  //                         }).toList(),
+                  //                       ),
+                  //                     ),
+
+                  //                     // 2. LISTA DE AYUDAS REDISEÑADA
+                  //                     Expanded(
+                  //                       child: ayudasFiltradas.isEmpty 
+                  //                           ? SingleChildScrollView(physics: const BouncingScrollPhysics(), child: Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: UIHelper.emptyState(context: context, icon: Icons.volunteer_activism_rounded, title: "Sin Ayudas", message: "No hay solicitudes de ayuda con este estado.")))
+                  //                           : ListView.builder(
+                  //                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  //                               physics: const BouncingScrollPhysics(),
+                  //                               itemCount: ayudasFiltradas.length,
+                  //                               itemBuilder: (ctx, i) {
+                  //                                 var ayuda = ayudasFiltradas[i];
+                  //                                 double meta = double.tryParse(ayuda['requestedAmount'].toString()) ?? 0;
+                  //                                 double recaudado = double.tryParse(ayuda['raisedAmount'].toString()) ?? 0;
+                  //                                 double progreso = meta > 0 ? (recaudado / meta) : 0;
+                                                  
+                  //                                 bool isPendingVote = ayuda['status'] == "PENDING_VOTE";
+                  //                                 bool isFunding = ayuda['status'] == "FUNDING";
+                  //                                 bool isCompleted = ayuda['status'] == "COMPLETED";
+                                                  
+                  //                                 List<dynamic> votos = ayuda['groupApprovals'] ?? [];
+                  //                                 bool yaVote = votos.contains(authCore.publicAddress.toLowerCase());
+
+                  //                                 // Variables visuales dinámicas
+                  //                                 String shortAddress = ayuda['debtorAddress'].toString();
+                  //                                 shortAddress = shortAddress.length > 10 ? "${shortAddress.substring(0,8)}...${shortAddress.substring(shortAddress.length-4)}" : shortAddress;
+                                                  
+                  //                                 Color statusColor = isCompleted ? const Color(0xFF10B981) : const Color(0xFFBAC3FF);
+                  //                                 String statusText = isCompleted ? "COMPLETADO" : (isPendingVote ? "VOTACIÓN" : "PENDIENTE");
+                  //                                 Color progressColor = isCompleted ? Colors.orangeAccent : const Color(0xFFBAC3FF);
+
+                  //                                 return Container(
+                  //                                   margin: const EdgeInsets.only(bottom: 16),
+                  //                                   decoration: BoxDecoration(
+                  //                                     color: theme.cardColor,
+                  //                                     borderRadius: BorderRadius.circular(16),
+                  //                                     border: Border.all(color: onSurface.withOpacity(0.08)),
+                  //                                   ),
+                  //                                   child: InkWell(
+                  //                                     borderRadius: BorderRadius.circular(16),
+                  //                                     onTap: isFunding ? () => _mostrarOpcionesAporteAyuda(ayuda) : null,
+                  //                                     child: Padding(
+                  //                                       padding: const EdgeInsets.all(20),
+                  //                                       child: Column(
+                  //                                         crossAxisAlignment: CrossAxisAlignment.start,
+                  //                                         children: [
+                  //                                           // CABECERA (Icono, Título y Badge)
+                  //                                           Row(
+                  //                                             crossAxisAlignment: CrossAxisAlignment.start,
+                  //                                             children: [
+                  //                                               Container(
+                  //                                                 padding: const EdgeInsets.all(12),
+                  //                                                 decoration: BoxDecoration(
+                  //                                                   color: onSurface.withOpacity(0.05),
+                  //                                                   borderRadius: BorderRadius.circular(12),
+                  //                                                   border: Border.all(color: const Color(0xFFBAC3FF).withOpacity(0.3))
+                  //                                                 ),
+                  //                                                 child: const Icon(Icons.campaign_rounded, color: Colors.orangeAccent, size: 24),
+                  //                                               ),
+                  //                                               const SizedBox(width: 12),
+                  //                                               Expanded(
+                  //                                                 child: Column(
+                  //                                                   crossAxisAlignment: CrossAxisAlignment.start,
+                  //                                                   children: [
+                  //                                                     Text(ayuda['reason'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: onSurface), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  //                                                     const SizedBox(height: 4),
+                  //                                                     Text("Solicitado por $shortAddress", style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 12)),
+                  //                                                   ],
+                  //                                                 ),
+                  //                                               ),
+                  //                                               Container(
+                  //                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  //                                                 decoration: BoxDecoration(
+                  //                                                   color: statusColor.withOpacity(0.1),
+                  //                                                   borderRadius: BorderRadius.circular(8),
+                  //                                                 ),
+                  //                                                 child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                  //                                               ),
+                  //                                             ],
+                  //                                           ),
+                  //                                           const SizedBox(height: 20),
+
+                  //                                           // BARRA DE PROGRESO
+                  //                                           ClipRRect(
+                  //                                             borderRadius: BorderRadius.circular(10),
+                  //                                             child: LinearProgressIndicator(
+                  //                                               value: progreso,
+                  //                                               backgroundColor: onSurface.withOpacity(0.05),
+                  //                                               color: progressColor,
+                  //                                               minHeight: 6,
+                  //                                             ),
+                  //                                           ),
+                  //                                           const SizedBox(height: 10),
+
+                  //                                           // MONTOS
+                  //                                           Row(
+                  //                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  //                                             children: [
+                  //                                               Text("${recaudado.toStringAsFixed(1)} TTC", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: onSurface)),
+                  //                                               Text("Meta: ${meta.toStringAsFixed(1)} TTC", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: onSurface.withOpacity(0.7))),
+                  //                                             ],
+                  //                                           ),
+
+                  //                                           const SizedBox(height: 16),
+
+                  //                                           // ÁREA DE ACCIÓN INFERIOR
+                  //                                           if (isCompleted)
+                  //                                             const Center(child: Text("¡Meta alcanzada! El grupo salvó el día.", style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w600, fontStyle: FontStyle.italic, fontSize: 13)))
+                  //                                           else if (isFunding)
+                  //                                             Align(
+                  //                                               alignment: Alignment.centerRight,
+                  //                                               child: Text(
+                  //                                                 "Aportar ahora", 
+                  //                                                 style: TextStyle(color: const Color(0xFFBAC3FF), fontWeight: FontWeight.bold, fontSize: 14)
+                  //                                               ),
+                  //                                             )
+                  //                                           else if (isPendingVote)
+                  //                                             SizedBox(
+                  //                                               width: double.infinity,
+                  //                                               child: ElevatedButton.icon(
+                  //                                                 style: ElevatedButton.styleFrom(
+                  //                                                   backgroundColor: yaVote ? onSurface.withOpacity(0.1) : const Color(0xFF4361EE),
+                  //                                                   foregroundColor: yaVote ? onSurface.withOpacity(0.5) : Colors.white,
+                  //                                                   elevation: 0,
+                  //                                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  //                                                   padding: const EdgeInsets.symmetric(vertical: 12)
+                  //                                                 ),
+                  //                                                 onPressed: yaVote ? null : () async {
+                  //                                                   showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Firma Requerida", message: "Autoriza tu voto para ayudar."));
+                  //                                                   bool auth = await authCore.authenticateUser();
+                  //                                                   if (mounted) Navigator.pop(context);
+                  //                                                   if (!auth) return;
+                  //                                                   showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Procesando Voto", message: "Registrando en la DAO..."));
+                  //                                                   String res = await debtService.voteToHelpSharedDebt(ayuda['id']);
+                  //                                                   if (mounted) Navigator.pop(context); 
+                  //                                                   if (res == "Exito") { _cargarCobros(); } else { UIHelper.showCustomSnackbar("Error al votar: $res", isError: true); }
+                  //                                                 },
+                  //                                                 icon: const Icon(Icons.how_to_vote_rounded, size: 18), 
+                  //                                                 label: Text(yaVote ? "Voto registrado" : "Aprobar ayuda", style: const TextStyle(fontWeight: FontWeight.bold)),
+                  //                                               ),
+                  //                                             )
+                  //                                         ],
+                  //                                       ),
+                  //                                     ),
+                  //                                   ),
+                  //                                 );
+                  //                               },
+                  //                             ),
+                  //                     ),
+                  //                   ],
+                  //                 );
+                  //               },
+                  //             ),
+                  //             // --- TAB 5: HISTORIAL ---
+                  //            FutureBuilder<List<dynamic>>(
+                  //               future: _historialFuture,
+                  //               builder: (context, snapshot) {
+                  //                 if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: colorScheme.primary));
+                  //                 if (!snapshot.hasData || snapshot.data!.isEmpty) return Center(child: Text("La bóveda no tiene movimientos.", style: TextStyle(color: onSurface.withOpacity(0.5))));
+                                  
+                  //                 String vaultAddress = _group['walletAddress']?.toString().toLowerCase() ?? "";
+                                  
+                  //                 List<dynamic> historialFiltrado = snapshot.data!.where((tx) {
+                  //                   if (_fechaInicioHistorial != null && _fechaFinHistorial != null && tx['timestamp'] != null) {
+                  //                     try {
+                  //                       DateTime txDate = DateTime.parse(tx['timestamp'].toString());
+                  //                       DateTime justDate = DateTime(txDate.year, txDate.month, txDate.day);
+                  //                       DateTime start = DateTime(_fechaInicioHistorial!.year, _fechaInicioHistorial!.month, _fechaInicioHistorial!.day);
+                  //                       DateTime end = DateTime(_fechaFinHistorial!.year, _fechaFinHistorial!.month, _fechaFinHistorial!.day);
+                  //                       if (justDate.isBefore(start) || justDate.isAfter(end)) return false;
+                  //                     } catch (e) { return false; }
+                  //                   }
+                  //                   String tipo = (tx['txType'] ?? '').toString().toUpperCase();
+                  //                   bool esIngreso = tx['receiverAddress'].toString().toLowerCase() == vaultAddress;
+                  //                   if (_filtroHistorial == 'Todos') return true;
+                  //                   if (_filtroHistorial == 'Aportes') return esIngreso;
+                  //                   if (_filtroHistorial == 'Pagos de ayudas') return tipo == 'SHARED_DEBT_PAYMENT';
+                  //                   if (_filtroHistorial == 'Pagos') return !esIngreso && tipo != 'SHARED_DEBT_PAYMENT';
+                  //                   return true;
+                  //                 }).toList();
+                                  
+                  //                 Map<String, List<dynamic>> historialAgrupado = _groupTransactionsByDate(historialFiltrado);
+
+                  //                 return Column(
+                  //                   children: [
+                  //                     Padding(
+                  //                       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                  //                       child: Row(
+                  //                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  //                         children: [
+                  //                           Text("Movimientos (${snapshot.data!.length})", style: TextStyle(fontWeight: FontWeight.bold, color: onSurface.withOpacity(0.7))),
+                  //                           Row(
+                  //                             children: [
+                  //                               Container(
+                  //                                 margin: const EdgeInsets.only(right: 8),
+                  //                                 decoration: BoxDecoration(color: Colors.deepOrangeAccent.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                  //                                 child: IconButton(
+                  //                                   tooltip: "Exportar PDF",
+                  //                                   icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.deepOrangeAccent, size: 20),
+                  //                                   onPressed: () => ShareHelper.generarYCompartirPDFHistory(context, snapshot.data!, vaultAddress),
+                  //                                 ),
+                  //                               ),
+                  //                               Container(
+                  //                                 decoration: BoxDecoration(color: const Color(0xFFB5C0FF).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                  //                                 child: IconButton(
+                  //                                   tooltip: "Exportar Excel",
+                  //                                   icon: const Icon(Icons.download_rounded, color: Color(0xFFB5C0FF), size: 20),
+                  //                                   onPressed: () => ShareHelper.exportarHistorialCSV(context, snapshot.data!, vaultAddress),
+                  //                                 ),
+                  //                               ),
+                  //                             ],
+                  //                           )
+                  //                         ],
+                  //                       ),
+                  //                     ),
+                                      
+                  //                     SingleChildScrollView(
+                  //                       scrollDirection: Axis.horizontal,
+                  //                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                  //                       child: Row(
+                  //                         children: [
+                  //                           GestureDetector(
+                  //                             onTap: _seleccionarRangoFechasHistorial,
+                  //                             child: Container(
+                  //                               margin: const EdgeInsets.only(right: 12),
+                  //                               padding: const EdgeInsets.all(10),
+                  //                               decoration: BoxDecoration(
+                  //                                 color: _fechaInicioHistorial != null ? const Color(0xFFB5C0FF) : colorScheme.onSurface.withOpacity(0.08),
+                  //                                 borderRadius: BorderRadius.circular(12),
+                  //                               ),
+                  //                               child: Icon(Icons.calendar_today_rounded, size: 20, color: _fechaInicioHistorial != null ? Colors.black87 : colorScheme.onSurface.withOpacity(0.8)),
+                  //                             ),
+                  //                           ),
+                  //                           if (_fechaInicioHistorial != null)
+                  //                             GestureDetector(
+                  //                               onTap: _limpiarFiltroFechasHistorial,
+                  //                               child: Container(
+                  //                                 margin: const EdgeInsets.only(right: 12),
+                  //                                 padding: const EdgeInsets.all(10),
+                  //                                 decoration: BoxDecoration(color: colorScheme.error.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                  //                                 child: Icon(Icons.close_rounded, size: 20, color: colorScheme.error),
+                  //                               ),
+                  //                             ),
+                  //                           ...['Todos', 'Aportes', 'Pagos', 'Pagos de ayudas'].map((opcion) {
+                  //                             bool isSelected = _filtroHistorial == opcion;
+                  //                             return GestureDetector(
+                  //                               onTap: () => setState(() => _filtroHistorial = opcion),
+                  //                               child: Container(
+                  //                                 margin: const EdgeInsets.only(right: 12),
+                  //                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  //                                 decoration: BoxDecoration(
+                  //                                   color: isSelected ? const Color(0xFFB5C0FF) : colorScheme.onSurface.withOpacity(0.08),
+                  //                                   borderRadius: BorderRadius.circular(12),
+                  //                                 ),
+                  //                                 child: Text(
+                  //                                   opcion,
+                  //                                   style: TextStyle(color: isSelected ? Colors.black87 : colorScheme.onSurface.withOpacity(0.8), fontWeight: isSelected ? FontWeight.bold : FontWeight.w600, fontSize: 14),
+                  //                                 ),
+                  //                               ),
+                  //                             );
+                  //                           }).toList(),
+                  //                         ],
+                  //                       ),
+                  //                     ),
+                                      
+                  //                     Expanded(
+                  //                       child: historialAgrupado.isEmpty
+                  //                           ? SingleChildScrollView(physics: const BouncingScrollPhysics(), child: Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: UIHelper.emptyState(context: context, icon: Icons.history_rounded, title: "Historial Vacío", message: "La bóveda no registra transacciones bajo este filtro.")))
+                  //                           : ListView.builder(
+                  //                               padding: const EdgeInsets.all(16),
+                  //                               itemCount: historialAgrupado.keys.length,
+                  //                               itemBuilder: (context, index) {
+                  //                                 String date = historialAgrupado.keys.elementAt(index);
+                  //                                 List<dynamic> txs = historialAgrupado[date]!;
+                  //                                 return Column(
+                  //                                   crossAxisAlignment: CrossAxisAlignment.start,
+                  //                                   children: [
+                  //                                     Padding(
+                  //                                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8), 
+                  //                                       child: Text(date.toUpperCase(), style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2))
+                  //                                     ),
+                  //                                     ...txs.map((tx) => _buildGroupTransactionCard(tx, colorScheme.onSurface, context, vaultAddress)).toList(),
+                  //                                   ],
+                  //                                 );
+                  //                               },
+                  //                             ),
+                  //                     ),
+                  //                   ],
+                  //                 );
+                  //               },
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
                 ],
               ],
             ),

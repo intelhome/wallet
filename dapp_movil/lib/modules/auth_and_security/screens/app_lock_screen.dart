@@ -13,26 +13,34 @@ class AppLockScreen extends StatefulWidget {
 
 class _AppLockScreenState extends State<AppLockScreen> {
   bool _isAuthenticating = false;
+  bool _hasAttemptedAutoUnlock = false;
 
   @override
   void initState() {
     super.initState();
-    // Lanzar la huella automáticamente al abrir la pantalla
+    // Lanzar la huella automáticamente solo una vez
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _desbloquearApp();
+      if (!_hasAttemptedAutoUnlock) {
+        _hasAttemptedAutoUnlock = true;
+        _desbloquearApp();
+      }
     });
   }
 
   Future<void> _desbloquearApp() async {
+    if (_isAuthenticating) return;
+    
     setState(() => _isAuthenticating = true);
     
+    // Esta llamada suspende temporalmente el hilo principal de Flutter
     bool auth = await widget.authCore.authenticateUser();
     
     if (mounted) setState(() => _isAuthenticating = false);
 
     if (auth) {
       if (mounted) {
-        Navigator.of(context).pop(); // Destruimos la pantalla de bloqueo y volvemos a donde estábamos
+        // En lugar de hacer un Navigator.pop normal, devolvemos un "true" mágico
+        Navigator.of(context).pop(true); 
       }
     }
   }

@@ -972,108 +972,124 @@ return Scaffold(
                         final isBusiness = (authCore.accountType ?? '').toUpperCase() == "BUSINESS";
                         final isAdmin = (authCore.role ?? '').toUpperCase() == "ROLE_ADMIN";
 
-                        return Wrap(
+                return Wrap(
                             spacing: spacing,
                             runSpacing: 24.0, 
                             alignment: WrapAlignment.start, 
                             children: [
                               // --- FILA 1: BÁSICOS ---
-                              SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.add_shopping_cart_rounded, texto: "Comprar", onTap: _abrirModalComprar, color: colorScheme.primary)),
-                              SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.send_rounded, texto: "Enviar", onTap: _abrirModalEnviar, color: colorScheme.primary)),
-                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.qr_code_rounded, texto: "Recibir", onTap: _abrirModalRecibir, color: colorScheme.primary)),
-                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.account_balance_rounded, texto: "Retirar", onTap: _abrirPantallaRetiro, color: colorScheme.primary)),
-                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.paypal_rounded, texto: "Paypal", onTap: _abrirPantallaPaypal, color: colorScheme.primary)),
+                             SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.add_shopping_cart_rounded, texto: "Comprar", 
+                                color: (planConfig.hasFeature(currentTier, 'COMPRAR') || isBusiness) ? colorScheme.primary : Colors.grey.withOpacity(0.5),
+                                onTap: () => (planConfig.hasFeature(currentTier, 'COMPRAR') || isBusiness) ? _abrirModalComprar() : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Comprar TTC")
+                              )),
+                              SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.send_rounded, texto: "Enviar", 
+                                color: planConfig.hasFeature(currentTier, 'ENVIAR') ? colorScheme.primary : Colors.grey.withOpacity(0.5),
+                                onTap: () => planConfig.hasFeature(currentTier, 'ENVIAR') ? _abrirModalEnviar() : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Enviar Fondos")
+                              )),
+                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.qr_code_rounded, texto: "Recibir", 
+                                color: planConfig.hasFeature(currentTier, 'RECIBIR') ? colorScheme.primary : Colors.grey.withOpacity(0.5),
+                                onTap: () => planConfig.hasFeature(currentTier, 'RECIBIR') ? _abrirModalRecibir() : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Recibir Fondos")
+                              )),
+                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.account_balance_rounded, texto: "Retirar", 
+                                color: planConfig.hasFeature(currentTier, 'RETIRAR') ? colorScheme.primary : Colors.grey.withOpacity(0.5),
+                                onTap: () => planConfig.hasFeature(currentTier, 'RETIRAR') ? _abrirPantallaRetiro() : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Retirar Fondos")
+                              )),
+                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.paypal_rounded, texto: "Paypal", 
+                                color: planConfig.hasFeature(currentTier, 'PAYPAL') ? colorScheme.primary : Colors.grey.withOpacity(0.5),
+                                onTap: () => planConfig.hasFeature(currentTier, 'PAYPAL') ? _abrirPantallaPaypal() : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Pagos por PayPal")
+                              )),
                               
-                              // 🔥 NUEVO: Historial general (Para todos)
+                              // Historial general (Para todos)
                               SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.history_rounded, texto: "Historial\nActividades", onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const TaskHistoryScreen())), color: colorScheme.primary)),
 
                               // --- FILA 2: SOCIAL & PAGOS ---
-                              SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.contacts_rounded, texto: "Contactos", color: Colors.blueAccent, onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const ContactsScreen())))),
+                              SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.contacts_rounded, texto: "Contactos", 
+                                color: planConfig.hasFeature(currentTier, 'CONTACTOS') ? Colors.blueAccent : Colors.grey.withOpacity(0.5),
+                                onTap: () => planConfig.hasFeature(currentTier, 'CONTACTOS') ? Navigator.push(context, RouteHelper.slideUpRoute(const ContactsScreen())) : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Agenda de Contactos")
+                              )),
+                              // Invitaciones y Tareas de empresa son libres para aceptar trabajos/colaborar
                               SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.add_business_rounded, texto: "Invitaciones", onTap: _abrirPantallaEmpresasInvitacion, color: colorScheme.primary)),
-                               if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.task_rounded, texto: "Tareas\nEmpresa", onTap: _abrirPantallaTaskUsuario, color: colorScheme.primary)),
-                              //SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.task_rounded, texto: "Tareas\nEmpresa", onTap: _abrirPantallaTaskUsuario, color: colorScheme.primary)),
+                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.task_rounded, texto: "Tareas\nEmpresa", onTap: _abrirPantallaTaskUsuario, color: colorScheme.primary)),
 
-                              SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.add_link_rounded, texto: "Enlaces de\nCobro", onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const RequestMoneyScreen())), color: colorScheme.primary)),
+                              SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.add_link_rounded, texto: "Enlaces de\nCobro", 
+                                color: planConfig.hasFeature(currentTier, 'ENLACES_COBRO') ? colorScheme.primary : Colors.grey.withOpacity(0.5),
+                                onTap: () => planConfig.hasFeature(currentTier, 'ENLACES_COBRO') ? Navigator.push(context, RouteHelper.slideUpRoute(const RequestMoneyScreen())) : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Enlaces de Cobro")
+                              )),
 
-                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.payments_rounded, texto: "Pagos\nDivididos", onTap: _abrirPantallaPagosDivididos, color: colorScheme.primary)),
+                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.payments_rounded, texto: "Pagos\nDivididos", 
+                                color: planConfig.hasFeature(currentTier, 'PAGOS_DIVIDIDOS') ? colorScheme.primary : Colors.grey.withOpacity(0.5),
+                                onTap: () => planConfig.hasFeature(currentTier, 'PAGOS_DIVIDIDOS') ? _abrirPantallaPagosDivididos() : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Pagos Divididos")
+                              )),
                               if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(
                                 icono: Icons.handshake_rounded, texto: "Deudas",
                                 color: planConfig.hasFeature(currentTier, 'DEUDAS') ? Colors.orange : Colors.grey.withOpacity(0.5),
-                                onTap: () {
-                                  if (planConfig.hasFeature(currentTier, 'DEUDAS')) {
-                                    Navigator.push(context, RouteHelper.slideUpRoute(DebtsScreen()));
-                                  } else {
-                                    PremiumBlockerModal.show(context, planRequerido: "BASIC", featureName: "Gestión de Deudas");
-                                  }
-                                },
+                                onTap: () => planConfig.hasFeature(currentTier, 'DEUDAS') ? Navigator.push(context, RouteHelper.slideUpRoute(DebtsScreen())) : PremiumBlockerModal.show(context, planRequerido: "BASIC", featureName: "Gestión de Deudas")
                               )),
-                                if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.event_repeat_rounded, texto: "Pagos\nProgramados", color: Colors.orange, onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const ScheduledPaymentsScreen())))),
+                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.event_repeat_rounded, texto: "Pagos\nProgramados", color: Colors.orange, onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const ScheduledPaymentsScreen())))),
 
                               // --- FILA 3: DEFI & AHORRO ---
                               if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(
                                 icono: Icons.savings_rounded, texto: "Bolsillos",
                                 color: planConfig.hasFeature(currentTier, 'BOSILLOS') ? const Color(0xFF10B981) : Colors.grey.withOpacity(0.5),
-                                onTap: () {
-                                  if (planConfig.hasFeature(currentTier, 'BOSILLOS')) {
-                                    Navigator.push(context, RouteHelper.slideUpRoute(VaultsScreen()));
-                                  } else {
-                                    PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Bolsillos Inteligentes");
-                                  }
-                                },
+                                onTap: () => planConfig.hasFeature(currentTier, 'BOSILLOS') ? Navigator.push(context, RouteHelper.slideUpRoute(VaultsScreen())) : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Bolsillos Inteligentes")
                               )),
                               if (!isBusiness) SizedBox(width: itemWidth, child: Badge(
                                 isLabelVisible: _retiroListoParaReclamar, backgroundColor: colorScheme.error,
                                 child: _BotonAccion(
                                   icono: Icons.auto_graph_rounded, texto: "Minar",
                                   color: planConfig.hasFeature(currentTier, 'MINAR') ? const Color(0xFF10B981) : Colors.grey.withOpacity(0.5),
-                                  onTap: () {
-                                    if (planConfig.hasFeature(currentTier, 'MINAR')) _abrirModalStake();
-                                    else PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Staking y Minería");
-                                  }, 
+                                  onTap: () => planConfig.hasFeature(currentTier, 'MINAR') ? _abrirModalStake() : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Staking y Minería")
                                 ),
                               )),
 
                               // --- FILA 4: AVANZADO & NOTARÍA ---
-                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.wallet_giftcard_rounded, texto: "Burner\nWallet", color: const Color(0xFF10B981), onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const BurnerWalletsScreen())))),
-                              SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.workspace_premium_rounded, texto: "Membresía", color: const Color(0xFF10B981), onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const MembershipsScreen())))),
+                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.wallet_giftcard_rounded, texto: "Burner\nWallet", 
+                                color: planConfig.hasFeature(currentTier, 'CARTERA_TEMPORAL') ? const Color(0xFF10B981) : Colors.grey.withOpacity(0.5),
+                                onTap: () => planConfig.hasFeature(currentTier, 'CARTERA_TEMPORAL') ? Navigator.push(context, RouteHelper.slideUpRoute(const BurnerWalletsScreen())) : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Carteras Desechables")
+                              )),
+                              SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.workspace_premium_rounded, texto: "Membresía", color: const Color(0xFF10B981), onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const MembershipsScreen())))), // Membresía siempre libre
                               SizedBox(width: itemWidth, child: _BotonAccion(
                                 icono: Icons.description_rounded, texto: "Notaría",
                                 color: planConfig.hasFeature(currentTier, 'NOTARIA') ? Colors.deepPurple : Colors.grey.withOpacity(0.5),
-                                onTap: () {
-                                  if (planConfig.hasFeature(currentTier, 'NOTARIA')) {
-                                    Navigator.push(context, RouteHelper.slideUpRoute(const DocumentNotaryScreen()));
-                                  } else {
-                                    PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Notaría Blockchain");
-                                  }
-                                },
+                                onTap: () => planConfig.hasFeature(currentTier, 'NOTARIA') ? Navigator.push(context, RouteHelper.slideUpRoute(const DocumentNotaryScreen())) : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Notaría Blockchain")
                               )),
                               
                               SizedBox(width: itemWidth, child: _BotonAccion(
                                 icono: Icons.adf_scanner_rounded, texto: "Validar\nDoc.",
                                 color: planConfig.hasFeature(currentTier, 'VALIDAR_DOCUMENTO') ? Colors.deepPurple : Colors.grey.withOpacity(0.5), 
-                                onTap: () {
-                                  if (planConfig.hasFeature(currentTier, 'VALIDAR_DOCUMENTO')) {
-                                    Navigator.push(context, RouteHelper.slideUpRoute(DocumentValidatorScreen()));
-                                  } else {
-                                    PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Validación Notarial");
-                                  }
-                                },
+                                onTap: () => planConfig.hasFeature(currentTier, 'VALIDAR_DOCUMENTO') ? Navigator.push(context, RouteHelper.slideUpRoute(DocumentValidatorScreen())) : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Validación Notarial")
                               )),
-                              SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.document_scanner_rounded, texto: "Validar\nHash", color: Colors.deepPurple, onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(HashValidatorScreen())))),
+                              SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.document_scanner_rounded, texto: "Validar\nHash", 
+                                color: planConfig.hasFeature(currentTier, 'VALIDAR_HASH') ? Colors.deepPurple : Colors.grey.withOpacity(0.5),
+                                onTap: () => planConfig.hasFeature(currentTier, 'VALIDAR_HASH') ? Navigator.push(context, RouteHelper.slideUpRoute(HashValidatorScreen())) : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Verificador de Hashes")
+                              )),
 
                               // --- FILA 5: EMPRESAS (Solo Negocios y Admins) ---
-                              if (isBusiness || isAdmin)
-                                SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.business_center_rounded, texto: "Empresas", onTap: _abrirPantallaEmpresas, color: colorScheme.primary)),
+                          if (isBusiness || isAdmin)
+                                SizedBox(width: itemWidth, child: _BotonAccion(
+                                  icono: Icons.business_center_rounded, texto: "Empresas", 
+                                  color: (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness || isAdmin) ? colorScheme.primary : Colors.grey.withOpacity(0.5),
+                                  onTap: () => (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness || isAdmin) ? _abrirPantallaEmpresas() : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Panel de Empresas")
+                                )),
                             
-                            // 🔥 NUEVO: Historial Corporativo (SOLO EMPRESAS)
                               if (isBusiness)
                                 SizedBox(
                                   width: itemWidth, 
                                   child: _BotonAccion(
                                     icono: Icons.business_center_rounded, 
                                     texto: "Historial\nCorporativo", 
-                                    onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const AdminBurnerHistoryScreen())), 
-                                    color: Colors.deepOrange // Color corporativo Burner
+                                    color: (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness) ? Colors.deepOrange : Colors.grey.withOpacity(0.5),
+                                    onTap: () => (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness) ? Navigator.push(context, RouteHelper.slideUpRoute(const AdminBurnerHistoryScreen())) : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Panel de Empresas")
                                   )
                                 ),
 
@@ -1083,9 +1099,8 @@ return Scaffold(
                                    child: _BotonAccion(
                                      icono: Icons.task_rounded, 
                                      texto: "Administración\nDe Tareas", 
-                                     // 🔥 CORREGIDO: Abrimos la pantalla de administración y filtros avanzados
-                                     onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const TaskAdminScreen())), 
-                                     color: Colors.deepOrange // Color corporativo Burner
+                                     color: (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness) ? Colors.deepOrange : Colors.grey.withOpacity(0.5),
+                                     onTap: () => (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness) ? Navigator.push(context, RouteHelper.slideUpRoute(const TaskAdminScreen())) : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Panel de Empresas")
                                    )
                                  ),
                             ],

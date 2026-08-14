@@ -175,7 +175,8 @@ Future<void> _crearBilleteraFinal() async {
         "email": widget.email,
         "password": widget.password,
         "phoneNumber": widget.phoneNumber,
-        if (fcmToken != null) "fcmToken": fcmToken
+        if (fcmToken != null) "fcmToken": fcmToken,
+        "country": widget.extraData?["country"] ?? "Ecuador",
       };
 
       if (esEmpresa) {
@@ -219,8 +220,36 @@ Future<void> _crearBilleteraFinal() async {
           } catch (e) {}
 
           if (!mounted) return;
-          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) =>  MainScreen()), (r) => false);
+          
+          // 🔥 FIX: Navegamos a MainScreen y le decimos que muestre el modal de bienvenida
+          Navigator.pushAndRemoveUntil(
+            context, 
+            MaterialPageRoute(builder: (_) => MainScreen(showWelcomeTrial: true, newAlias: widget.alias)), 
+            (r) => false
+          );
         }
+        
+        // if (esEmpresa) {
+        //   // Si es empresa, borramos la sesión local porque requiere aprobación del Admin
+        //   await authCore.deleteWallet(); 
+        //   UIHelper.showCustomSnackbar("Registro exitoso. Tu cuenta empresarial está en revisión.", isError: false);
+          
+        //   if (!mounted) return;
+        //   Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
+        // } else {
+        //   // Flujo normal de usuario personal
+        //   await authCore.requestJwtToken(widget.password);
+        //   try {
+        //     await http.post(
+        //       Uri.parse(ApiConfig.registerAlias),
+        //       headers: { "Content-Type": "application/json", if (authCore.jwtToken != null) "Authorization": "Bearer ${authCore.jwtToken}" },
+        //       body: jsonEncode({ "alias": widget.alias, "walletAddress": nuevaWalletGenerada.toLowerCase() }),
+        //     );
+        //   } catch (e) {}
+
+        //   if (!mounted) return;
+        //   Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) =>  MainScreen()), (r) => false);
+        // }
 
       } else {
         await authCore.deleteWallet();

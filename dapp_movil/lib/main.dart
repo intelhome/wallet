@@ -74,9 +74,9 @@ await Firebase.initializeApp();
 
   //await PushNotificationService.init();
 
-  if (Platform.isAndroid || Platform.isIOS) {
-    await ScreenProtector.preventScreenshotOn();
-  }
+  // if (Platform.isAndroid || Platform.isIOS) {
+  //   await ScreenProtector.preventScreenshotOn();
+  // }
 FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
     _handleNotificationClick(message);
   });
@@ -233,19 +233,34 @@ class _MiDAppState extends State<MiDApp> with WidgetsBindingObserver {
 
 @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    // Si la pantalla de bloqueo está abierta, la UI nativa de la huella
+    // disparará eventos paused/resumed caóticos. Los ignoramos por completo.
+    if (_isLockScreenOpen) {
+      return; 
+    }
+
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.hidden) {
       _backgroundTime = DateTime.now();
     } else if (state == AppLifecycleState.resumed) {
       if (_backgroundTime != null) {
         final diff = DateTime.now().difference(_backgroundTime!);
-        if (diff.inSeconds > 30 && !_isLockScreenOpen) {
+        
+        if (diff.inSeconds > 30) {
           _isLockScreenOpen = true;
+          _backgroundTime = null; // Limpiamos el reloj para que no se re-dispare
           
           final authCore = Provider.of<AuthCoreService>(navigatorKey.currentContext!, listen: false);
 
-          navigatorKey.currentState?.push(
+          navigatorKey.currentState?.push<bool>(
             MaterialPageRoute(builder: (_) => AppLockScreen(authCore: authCore))
-          ).then((_) => _isLockScreenOpen = false);
+          ).then((fueDesbloqueado) {
+            _isLockScreenOpen = false;
+            // Solo si se desbloqueó con éxito o se cerró, reseteamos el reloj
+            _backgroundTime = DateTime.now(); 
+          });
+        } else {
+          // Si no pasaron 30 segundos, simplemente reseteamos
+          _backgroundTime = null;
         }
       }
     }

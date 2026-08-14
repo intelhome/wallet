@@ -1,3 +1,4 @@
+import 'package:dapp_movil/modules/business/screens/task_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -204,7 +205,7 @@ class _AiTaskReportScreenState extends State<AiTaskReportScreen> {
                       ),
                       const SizedBox(height: 24),
                     ],
-                     // ALERTAS CRÍTICAS (DE RIESGO)
+                 // ALERTAS CRÍTICAS (DE RIESGO)
                     if (_aiReport!['expiring_warnings'] != null && (_aiReport!['expiring_warnings'] as List).isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Row(
@@ -215,23 +216,55 @@ class _AiTaskReportScreenState extends State<AiTaskReportScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      ...(_aiReport!['expiring_warnings'] as List).map((w) => Container(
-                        margin: const EdgeInsets.only(bottom: 12), 
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.redAccent.withOpacity(0.05), 
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.redAccent.withOpacity(0.2))
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(w.toString(), style: TextStyle(fontSize: 14, color: onSurface.withOpacity(0.9), height: 1.4)),
-                            const SizedBox(height: 8),
-                            const Text("RIESGO ALTO", style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-                          ],
-                        ),
-                      )),
+                      ...(_aiReport!['expiring_warnings'] as List).map((w) {
+                        String alertText = w.toString();
+                        
+                        // Intentar extraer un Task ID si la IA lo incluyó en el mensaje (requiere que el backend envíe el ID en el warning)
+                        // Si el backend no envía el ID, intentaremos hacer match por título (menos confiable pero funciona como fallback)
+                        var matchedTask;
+                        try {
+                           matchedTask = widget.allTasks.firstWhere((t) => alertText.contains(t['title']), orElse: () => null);
+                        } catch(e) { matchedTask = null; }
+
+                      return GestureDetector(
+                          onTap: matchedTask != null ? () {
+                            Navigator.push(
+                              context, 
+                              MaterialPageRoute(
+                                builder: (_) => TaskDetailsScreen(
+                                  task: matchedTask,
+                                  isEmployer: true, // Quien revisa auditorías de IA es el administrador/empresa
+                                  onRefresh: widget.onRefreshBack,
+                                )
+                              )
+                            );
+                          } : null,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12), 
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colorScheme.error.withOpacity(0.05), 
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: colorScheme.error.withOpacity(0.2))
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                     Expanded(child: Text(alertText, style: TextStyle(fontSize: 14, color: onSurface.withOpacity(0.9), height: 1.4))),
+                                     if (matchedTask != null) 
+                                        Icon(Icons.arrow_forward_ios_rounded, size: 14, color: colorScheme.error.withOpacity(0.5))
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text("RIESGO ALTO", style: TextStyle(color: colorScheme.error, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
                       const SizedBox(height: 20),
                     ],
                     

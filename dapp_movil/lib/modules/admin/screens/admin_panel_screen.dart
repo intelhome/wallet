@@ -25,11 +25,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   bool _isLoading = true;
   List<dynamic> _planes = [];
 
- final List<String> _todosLosModulos = [
-    "COMPRAR", "ENVIAR", "RECIBIR", "RETIRAR", "MINAR", "BOSILLOS",
-    "CARTERA_TEMPORAL", "DEUDAS", "VALIDAR_DOCUMENTO", "VALIDAR_HASH",
-    "OPCION_NEGOCIO", "IA", "GRUPOS", "NOTARIA", "INVITACIONES", 
-    "PAGOS_DIVIDIDOS", "EMPRESAS", "PAYPAL"
+final List<String> _todosLosModulos = [
+    "COMPRAR", "ENVIAR", "RECIBIR", "RETIRAR", "PAYPAL", 
+    "CONTACTOS", "ENLACES_COBRO", "PAGOS_DIVIDIDOS", "VALIDAR_HASH",
+    "DEUDAS", "IA", "BOSILLOS", "MINAR", "CARTERA_TEMPORAL", 
+    "NOTARIA", "VALIDAR_DOCUMENTO", "OPCION_NEGOCIO", "GRUPOS"
   ];
 
   @override

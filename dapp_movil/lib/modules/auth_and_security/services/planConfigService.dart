@@ -38,7 +38,7 @@ class PlanConfigService {
 //     return allowed.contains(featureName);
 //   }
 
-// 🔥 FIX: Añadimos cycle y autoRenew
+
   Future<String> upgradePlanWithCrypto(AuthCoreService authCore, String planName, String signature, String cycle, bool autoRenew) async {
     try {
       final response = await http.post(
@@ -62,7 +62,7 @@ class PlanConfigService {
     }
   }
 
-  // 🔥 NUEVO: Método para cancelar la autorenovación
+  
   Future<bool> cancelAutoRenew(AuthCoreService authCore) async {
     try {
       final res = await http.post(
@@ -123,6 +123,32 @@ Future<void> fetchPlansConfig() async {
 
   double getPlanPrice(String tier) {
     return _tierPrices[tier] ?? 0.0;
+  }
+
+ Future<String> generatePagoPluxLink(AuthCoreService authCore, String planName, double amount) async {
+    try {
+      final response = await http.post(
+        Uri.parse("${ApiConfig.baseUrl}/fiat-subscriptions/generate-link"),
+        headers: authCore.authHeaders,
+        body: jsonEncode({
+          "walletAddress": authCore.publicAddress.toLowerCase(), // Siempre en minúsculas por seguridad
+          "plan": planName, 
+          "amount": amount
+        })
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['url'];
+      } else {
+        // 🔥 Capturamos el error real que envía PagoPlux desde el Backend
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? "Error desconocido del servidor");
+      }
+    } catch (e) {
+      print("🚨 Error PagoPlux: $e");
+      // Relanzamos el error para que la pantalla lo atrape
+      throw Exception(e.toString().replaceAll("Exception: ", ""));
+    }
   }
   
 }

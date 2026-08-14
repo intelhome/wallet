@@ -1,6 +1,8 @@
 import 'package:dapp_movil/core/helpers/share_helper.dart';
+import 'package:dapp_movil/core/services/smart_avatar.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/document_notary/services/notary_service.dart';
+import 'package:dapp_movil/modules/settings_and_profile/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -95,7 +97,7 @@ AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: fa
           border: Border.all(color: colorScheme.onSurface.withOpacity(0.1)),
           borderRadius: BorderRadius.circular(16)
         ),
-        // 🔥 MAGIA: Renderizado de PDF directo desde la URL
+     
         child: SfPdfViewer.network(
           _docInfo!['fileUrl'],
           canShowScrollHead: false, // Oculta barras feas de scroll extra
@@ -106,19 +108,19 @@ AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: fa
     );
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
-   final theme = Theme.of(context);
+    final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final onSurfaceColor = colorScheme.onSurface;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.88,
+      height: MediaQuery.of(context).size.height * 0.90, // Un poco más alto para mejor vista de PDF
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        color: theme.scaffoldBackgroundColor, // Fondo general oscuro
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
       child: _isLoading
           ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
           : _docInfo == null
@@ -130,69 +132,76 @@ AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: fa
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("Estado del Documento", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
+                        Text("Estado del Documento", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: onSurfaceColor)),
+                        IconButton(icon: Icon(Icons.close_rounded, color: onSurfaceColor), onPressed: () => Navigator.pop(context)),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 24),
 
-                    // --- ESTADO GENERAL ---
+                    // --- TARJETA ESTADO GENERAL DEL DOCUMENTO ---
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: _docInfo!['fullySigned'] ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16)
+                        color: theme.cardColor,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: onSurfaceColor.withOpacity(0.05)),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            _docInfo!['fullySigned'] ? Icons.verified_rounded : Icons.pending_actions_rounded, 
-                            color: _docInfo!['fullySigned'] ? Colors.green : Colors.orange,
-                            size: 32,
+                          Text(_docInfo!['title'] ?? 'Sin título', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: onSurfaceColor)),
+                          const SizedBox(height: 8),
+                          Text(
+                            _docInfo!['fullySigned'] ? "Ejecutado e inmutable" : "Esperando firmas...",
+                            style: TextStyle(color: _docInfo!['fullySigned'] ? const Color(0xFF10B981) : Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 13),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text(_docInfo!['title'] ?? 'Sin título', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                Text(
-                                  _docInfo!['fullySigned'] ? "Ejecutado e inmutable" : "Esperando firmas...",
-                                  style: TextStyle(color: _docInfo!['fullySigned'] ? Colors.green : Colors.orange, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 6),
-                                InkWell(
-                                  onTap: () {
-                                    Clipboard.setData(ClipboardData(text: widget.docHash));
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Hash copiado al portapapeles")));
-                                  },
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.copy_rounded, size: 14, color: onSurfaceColor.withOpacity(0.5)),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        "Hash: ${widget.docHash.substring(0, 10)}...",
-                                        style: TextStyle(fontSize: 12, color: onSurfaceColor.withOpacity(0.5), decoration: TextDecoration.underline),
-                                      ),
-                                    ],
+                          const SizedBox(height: 16),
+                          Text("SHA-256 Hash", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: onSurfaceColor.withOpacity(0.7))),
+                          const SizedBox(height: 8),
+                          // Bloque de Hash con Copiar
+                          InkWell(
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: widget.docHash));
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Hash copiado al portapapeles")));
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: theme.scaffoldBackgroundColor, // Fondo un poco más oscuro
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: onSurfaceColor.withOpacity(0.1)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      widget.docHash,
+                                      style: TextStyle(fontSize: 12, color: onSurfaceColor, fontFamily: 'monospace', height: 1.4),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 12),
+                                  Icon(Icons.copy_rounded, size: 20, color: onSurfaceColor.withOpacity(0.6)),
+                                ],
+                              ),
                             ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            "Puedes verificar la integridad de este documento utilizando este Hash en el Validador Criptográfico.",
+                            style: TextStyle(fontSize: 12, color: onSurfaceColor.withOpacity(0.6), height: 1.4),
                           )
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
 
-                    // 🔥 NUEVO: TOGGLE DE PESTAÑAS (Firmantes vs Vista Previa) 🔥
+             
                     Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: onSurfaceColor.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(16)),
                       child: Row(
                         children: [
                           Expanded(
@@ -200,13 +209,12 @@ AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: fa
                               onTap: () => setState(() => _mostrarVistaPrevia = false),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                                 decoration: BoxDecoration(
-                                  color: !_mostrarVistaPrevia ? theme.cardColor : Colors.transparent,
+                                  color: !_mostrarVistaPrevia ? onSurfaceColor.withOpacity(0.05) : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
-                                  boxShadow: !_mostrarVistaPrevia ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
                                 ),
-                                child: Text("Firmantes", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, color: !_mostrarVistaPrevia ? colorScheme.primary : onSurfaceColor.withOpacity(0.5))),
+                                child: Text("Firmantes", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, color: !_mostrarVistaPrevia ? const Color(0xFFBAC3FF) : onSurfaceColor.withOpacity(0.5))),
                               ),
                             ),
                           ),
@@ -215,98 +223,388 @@ AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: fa
                               onTap: () => setState(() => _mostrarVistaPrevia = true),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                                 decoration: BoxDecoration(
-                                  color: _mostrarVistaPrevia ? theme.cardColor : Colors.transparent,
+                                  color: _mostrarVistaPrevia ? onSurfaceColor.withOpacity(0.05) : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
-                                  boxShadow: _mostrarVistaPrevia ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
                                 ),
-                                child: Text("Documento PDF", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, color: _mostrarVistaPrevia ? colorScheme.primary : onSurfaceColor.withOpacity(0.5))),
+                                child: Text("Documento PDF", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, color: _mostrarVistaPrevia ? const Color(0xFFBAC3FF) : onSurfaceColor.withOpacity(0.5))),
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     
                     // --- ÁREA DINÁMICA: Muestra Lista o Muestra PDF ---
-                    Expanded(
+                   Expanded(
                       child: _mostrarVistaPrevia 
                         ? _construirVistaPreviaPDF(colorScheme)
                         : ListView.builder(
+                            physics: const BouncingScrollPhysics(),
                             itemCount: (_docInfo!['requiredSigners'] as List).length,
                             itemBuilder: (ctx, i) {
                               String requiredSigner = _docInfo!['requiredSigners'][i].toString().toLowerCase();
                               List<dynamic> signedByList = _docInfo!['signedBy'] ?? [];
-                              
                               bool hasSigned = signedByList.map((e) => e.toString().toLowerCase()).contains(requiredSigner);
+                              bool isMe = requiredSigner == authCore.publicAddress.toLowerCase();
 
-                              return ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: CircleAvatar(
-                                  backgroundColor: hasSigned ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                                  child: Icon(
-                                    hasSigned ? Icons.check_circle_rounded : Icons.access_time_rounded,
-                                    color: hasSigned ? Colors.green : Colors.orange,
-                                  ),
-                                ),
-                                title: Text(
-                                  requiredSigner == authCore.publicAddress.toLowerCase() ? "Tú" : "${requiredSigner.substring(0, 8)}...${requiredSigner.substring(requiredSigner.length - 4)}",
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text(hasSigned ? "Firma registrada en Blockchain" : "Pendiente de firma"),
+                              String shortWallet = "${requiredSigner.substring(0, 6)}...${requiredSigner.substring(requiredSigner.length - 4)}";
+                              String nameDisplay = isMe ? "Tú" : (hasSigned ? "Firmado" : "Pendiente"); 
+
+                              final userService = Provider.of<UserService>(context, listen: false);
+
+                              return FutureBuilder<Map<String, dynamic>?>(
+                                future: userService.getUserByWallet(requiredSigner),
+                                builder: (context, snapshot) {
+                                  String realAlias = isMe ? "@tú" : "@usuario_${requiredSigner.substring(2, 5)}";
+                                  String realCedula = "Oculto";
+                                  String realEmail = "Oculto";
+
+                                  if (snapshot.hasData && snapshot.data != null) {
+                                    realAlias = "@${snapshot.data!['alias'] ?? 'desconocido'}";
+                                    realCedula = isMe ? (snapshot.data!['cedula'] ?? "No registrada") : "Oculto";
+                                    realEmail = isMe ? (snapshot.data!['email'] ?? "No registrado") : "Oculto";
+                                  }
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 16),
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: theme.cardColor,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: onSurfaceColor.withOpacity(0.05)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            SmartAvatar(address: requiredSigner, size: 48),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(nameDisplay, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: onSurfaceColor)),
+                                                  Text(realAlias, style: TextStyle(color: onSurfaceColor.withOpacity(0.5), fontSize: 13)),
+                                                ],
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              decoration: BoxDecoration(
+                                                color: Colors.transparent,
+                                                borderRadius: BorderRadius.circular(20),
+                                                border: Border.all(color: hasSigned ? const Color(0xFF10B981).withOpacity(0.5) : onSurfaceColor.withOpacity(0.2)),
+                                              ),
+                                              child: Text(
+                                                hasSigned ? "Firmado" : "Esperando", 
+                                                style: TextStyle(color: hasSigned ? const Color(0xFF10B981) : onSurfaceColor.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.bold)
+                                              ),
+                                            )
+                                          ],
+                                        ),
+                                        const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(height: 1, color: Colors.white10)),
+                                        _buildFirmanteInfoRow("Wallet", shortWallet.toUpperCase(), onSurfaceColor, isCopyable: true, fullData: requiredSigner),
+                                        _buildFirmanteInfoRow("Identificación", realCedula, onSurfaceColor),
+                                        _buildFirmanteInfoRow("Email", realEmail, onSurfaceColor),
+                                      ],
+                                    ),
+                                  );
+                                }
                               );
                             },
                           ),
                     ),
 
-                    const SizedBox(height: 16),
 
 
-                    // --- BOTÓN VER DOCUMENTO ---
                     const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+
+                    // --- BOTONES INFERIORES FIJOS ---
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              height: 54,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4361EE),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                ),
+                                onPressed: () {
+                                  if (_docInfo!['fileUrl'] != null && _docInfo!['fileUrl'].toString().isNotEmpty) {
+                                    _abrirPDF(_docInfo!['fileUrl']);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El archivo no está disponible')));
+                                  }
+                                },
+                                icon: const Icon(Icons.picture_as_pdf_rounded, size: 20),
+                                label: const Text("Ver Documento Original", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 54,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF4361EE),
+                                  side: const BorderSide(color: Color(0xFF4361EE)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                ),
+                                onPressed: () {
+                                  ShareHelper.generarYCompartirCertificadoNotarial(context, _docInfo!, authCore.publicAddress);
+                                },
+                                icon: const Icon(Icons.qr_code_rounded, size: 20),
+                                label: const Text("Descargar Certificado Blockchain", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              ),
+                            )
+                          ],
+                        ),
                       ),
-                      onPressed: () {
-                        if (_docInfo!['fileUrl'] != null && _docInfo!['fileUrl'].toString().isNotEmpty) {
-                          _abrirPDF(_docInfo!['fileUrl']);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El archivo no está disponible')));
-                        }
-                      },
-                      icon: const Icon(Icons.picture_as_pdf_rounded),
-                      label: const Text("Ver Documento Original", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
-
-                    const SizedBox(height: 10),
-
-                    // 🔥 2. NUEVO: Generar el Certificado Notarial de Blockchain
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        foregroundColor: colorScheme.primary,
-                        side: BorderSide(color: colorScheme.primary.withOpacity(0.5)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: () {
-                        ShareHelper.generarYCompartirCertificadoNotarial(
-                          context, 
-                          _docInfo!, 
-                          authCore.publicAddress
-                        );
-                      },
-                      icon: const Icon(Icons.qr_code_rounded),
-                      label: const Text("Descargar Certificado Blockchain", style: TextStyle(fontWeight: FontWeight.bold)),
-                    )
                   ],
                 ),
-                
     );
   }
+
+  // WIDGET HELPER PARA LAS FILAS DEL FIRMANTE
+  Widget _buildFirmanteInfoRow(String label, String value, Color onSurfaceColor, {bool isCopyable = false, String fullData = ""}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: onSurfaceColor.withOpacity(0.8), fontSize: 13, fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              Text(value, style: TextStyle(color: onSurfaceColor, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: isCopyable ? 'monospace' : null)),
+              if (isCopyable) ...[
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: fullData));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Copiado al portapapeles")));
+                  },
+                  child: Icon(Icons.copy_rounded, size: 16, color: onSurfaceColor.withOpacity(0.5)),
+                )
+              ]
+            ],
+          )
+        ],
+      ),
+    );
+  }
+  
+  // @override
+  // Widget build(BuildContext context) {
+  //  final theme = Theme.of(context);
+  //   final colorScheme = theme.colorScheme;
+  //   final onSurfaceColor = colorScheme.onSurface;
+
+  //   return Container(
+  //     height: MediaQuery.of(context).size.height * 0.88,
+  //     decoration: BoxDecoration(
+  //       color: theme.scaffoldBackgroundColor,
+  //       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+  //     ),
+  //     padding: const EdgeInsets.all(24),
+  //     child: _isLoading
+  //         ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
+  //         : _docInfo == null
+  //             ? const Center(child: Text("Documento no encontrado o alterado."))
+  //             : Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.stretch,
+  //                 children: [
+  //                   // --- CABECERA ---
+  //                   Row(
+  //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                     children: [
+  //                       const Text("Estado del Documento", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+  //                       IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
+  //                     ],
+  //                   ),
+  //                   const SizedBox(height: 10),
+
+  //                   // --- ESTADO GENERAL ---
+  //                   Container(
+  //                     padding: const EdgeInsets.all(16),
+  //                     decoration: BoxDecoration(
+  //                       color: _docInfo!['fullySigned'] ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+  //                       borderRadius: BorderRadius.circular(16)
+  //                     ),
+  //                     child: Row(
+  //                       children: [
+  //                         Icon(
+  //                           _docInfo!['fullySigned'] ? Icons.verified_rounded : Icons.pending_actions_rounded, 
+  //                           color: _docInfo!['fullySigned'] ? Colors.green : Colors.orange,
+  //                           size: 32,
+  //                         ),
+  //                         const SizedBox(width: 12),
+  //                         Expanded(
+  //                           child: Column(
+  //                             crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: [
+  //                               Text(_docInfo!['title'] ?? 'Sin título', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+  //                               Text(
+  //                                 _docInfo!['fullySigned'] ? "Ejecutado e inmutable" : "Esperando firmas...",
+  //                                 style: TextStyle(color: _docInfo!['fullySigned'] ? Colors.green : Colors.orange, fontWeight: FontWeight.bold),
+  //                               ),
+  //                               const SizedBox(height: 6),
+  //                               InkWell(
+  //                                 onTap: () {
+  //                                   Clipboard.setData(ClipboardData(text: widget.docHash));
+  //                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Hash copiado al portapapeles")));
+  //                                 },
+  //                                 child: Row(
+  //                                   children: [
+  //                                     Icon(Icons.copy_rounded, size: 14, color: onSurfaceColor.withOpacity(0.5)),
+  //                                     const SizedBox(width: 4),
+  //                                     Text(
+  //                                       "Hash: ${widget.docHash.substring(0, 10)}...",
+  //                                       style: TextStyle(fontSize: 12, color: onSurfaceColor.withOpacity(0.5), decoration: TextDecoration.underline),
+  //                                     ),
+  //                                   ],
+  //                                 ),
+  //                               ),
+  //                             ],
+  //                           ),
+  //                         )
+  //                       ],
+  //                     ),
+  //                   ),
+  //                   const SizedBox(height: 20),
+
+
+  //                   // 🔥 NUEVO: TOGGLE DE PESTAÑAS (Firmantes vs Vista Previa) 🔥
+  //                   Container(
+  //                     padding: const EdgeInsets.all(4),
+  //                     decoration: BoxDecoration(
+  //                       color: onSurfaceColor.withOpacity(0.05),
+  //                       borderRadius: BorderRadius.circular(16),
+  //                     ),
+  //                     child: Row(
+  //                       children: [
+  //                         Expanded(
+  //                           child: GestureDetector(
+  //                             onTap: () => setState(() => _mostrarVistaPrevia = false),
+  //                             child: AnimatedContainer(
+  //                               duration: const Duration(milliseconds: 200),
+  //                               padding: const EdgeInsets.symmetric(vertical: 12),
+  //                               decoration: BoxDecoration(
+  //                                 color: !_mostrarVistaPrevia ? theme.cardColor : Colors.transparent,
+  //                                 borderRadius: BorderRadius.circular(12),
+  //                                 boxShadow: !_mostrarVistaPrevia ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
+  //                               ),
+  //                               child: Text("Firmantes", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, color: !_mostrarVistaPrevia ? colorScheme.primary : onSurfaceColor.withOpacity(0.5))),
+  //                             ),
+  //                           ),
+  //                         ),
+  //                         Expanded(
+  //                           child: GestureDetector(
+  //                             onTap: () => setState(() => _mostrarVistaPrevia = true),
+  //                             child: AnimatedContainer(
+  //                               duration: const Duration(milliseconds: 200),
+  //                               padding: const EdgeInsets.symmetric(vertical: 12),
+  //                               decoration: BoxDecoration(
+  //                                 color: _mostrarVistaPrevia ? theme.cardColor : Colors.transparent,
+  //                                 borderRadius: BorderRadius.circular(12),
+  //                                 boxShadow: _mostrarVistaPrevia ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
+  //                               ),
+  //                               child: Text("Documento PDF", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, color: _mostrarVistaPrevia ? colorScheme.primary : onSurfaceColor.withOpacity(0.5))),
+  //                             ),
+  //                           ),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                   const SizedBox(height: 16),
+                    
+  //                   // --- ÁREA DINÁMICA: Muestra Lista o Muestra PDF ---
+  //                   Expanded(
+  //                     child: _mostrarVistaPrevia 
+  //                       ? _construirVistaPreviaPDF(colorScheme)
+  //                       : ListView.builder(
+  //                           itemCount: (_docInfo!['requiredSigners'] as List).length,
+  //                           itemBuilder: (ctx, i) {
+  //                             String requiredSigner = _docInfo!['requiredSigners'][i].toString().toLowerCase();
+  //                             List<dynamic> signedByList = _docInfo!['signedBy'] ?? [];
+                              
+  //                             bool hasSigned = signedByList.map((e) => e.toString().toLowerCase()).contains(requiredSigner);
+
+  //                             return ListTile(
+  //                               contentPadding: EdgeInsets.zero,
+  //                               leading: CircleAvatar(
+  //                                 backgroundColor: hasSigned ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+  //                                 child: Icon(
+  //                                   hasSigned ? Icons.check_circle_rounded : Icons.access_time_rounded,
+  //                                   color: hasSigned ? Colors.green : Colors.orange,
+  //                                 ),
+  //                               ),
+  //                               title: Text(
+  //                                 requiredSigner == authCore.publicAddress.toLowerCase() ? "Tú" : "${requiredSigner.substring(0, 8)}...${requiredSigner.substring(requiredSigner.length - 4)}",
+  //                                 style: const TextStyle(fontWeight: FontWeight.bold),
+  //                               ),
+  //                               subtitle: Text(hasSigned ? "Firma registrada en Blockchain" : "Pendiente de firma"),
+  //                             );
+  //                           },
+  //                         ),
+  //                   ),
+
+  //                   const SizedBox(height: 16),
+
+
+  //                   // --- BOTÓN VER DOCUMENTO ---
+  //                   const SizedBox(height: 16),
+  //                   ElevatedButton.icon(
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor: colorScheme.primary,
+  //                       foregroundColor: colorScheme.onPrimary,
+  //                       padding: const EdgeInsets.symmetric(vertical: 16),
+  //                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //                     ),
+  //                     onPressed: () {
+  //                       if (_docInfo!['fileUrl'] != null && _docInfo!['fileUrl'].toString().isNotEmpty) {
+  //                         _abrirPDF(_docInfo!['fileUrl']);
+  //                       } else {
+  //                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El archivo no está disponible')));
+  //                       }
+  //                     },
+  //                     icon: const Icon(Icons.picture_as_pdf_rounded),
+  //                     label: const Text("Ver Documento Original", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+  //                   ),
+
+  //                   const SizedBox(height: 10),
+
+  //                   // 🔥 2. NUEVO: Generar el Certificado Notarial de Blockchain
+  //                   OutlinedButton.icon(
+  //                     style: OutlinedButton.styleFrom(
+  //                       padding: const EdgeInsets.symmetric(vertical: 16),
+  //                       foregroundColor: colorScheme.primary,
+  //                       side: BorderSide(color: colorScheme.primary.withOpacity(0.5)),
+  //                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //                     ),
+  //                     onPressed: () {
+  //                       ShareHelper.generarYCompartirCertificadoNotarial(
+  //                         context, 
+  //                         _docInfo!, 
+  //                         authCore.publicAddress
+  //                       );
+  //                     },
+  //                     icon: const Icon(Icons.qr_code_rounded),
+  //                     label: const Text("Descargar Certificado Blockchain", style: TextStyle(fontWeight: FontWeight.bold)),
+  //                   )
+  //                 ],
+  //               ),
+                
+  //   );
+  // }
 }

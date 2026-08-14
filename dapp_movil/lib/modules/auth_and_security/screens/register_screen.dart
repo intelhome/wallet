@@ -1,5 +1,6 @@
 import 'package:dapp_movil/config/api_config.dart';
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
+import 'package:dapp_movil/modules/auth_and_security/modals/select_country_modal.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/settings_and_profile/services/user_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -42,6 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   bool _isLoading = false;
   bool _obscurePass = true;
 
+
   @override
   void initState() {
     super.initState();
@@ -54,13 +56,21 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     return !dominiosProhibidos.contains(dominio);
   }
 
+  Map<String, String>? _selectedCountry;
+
   void _intentarRegistro() async {
     final email = _emailController.text.trim();
     final pass = _passwordController.text;
     final isBusiness = _tabController.index == 1;
+    final aliasOrBusiness = isBusiness ? _businessNameController.text.replaceAll(' ', '').toLowerCase() : _aliasController.text.trim();
 
-    // Validaciones básicas
-    if (email.isEmpty || pass.isEmpty || _phoneController.text.isEmpty) {
+    // 1. Validaciones básicas
+    if (_selectedCountry == null) {
+      UIHelper.showCustomSnackbar("Por favor, selecciona un país primero", isError: true);
+      return;
+    }
+    
+    if (email.isEmpty || pass.isEmpty || _phoneController.text.isEmpty || aliasOrBusiness.isEmpty) {
       UIHelper.showCustomSnackbar("Por favor, llena todos los campos", isError: true);
       return;
     }
@@ -71,9 +81,17 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     }
 
     setState(() => _isLoading = true);
-
-    // Si todo está bien, enviamos el OTP (reutilizamos tu lógica de validación de correo)
     final userService = Provider.of<UserService>(context, listen: false);
+
+    // 🔥 2. VALIDAR ALIAS ANTES DE ENVIAR EL OTP
+    bool isAliasAvailable = await userService.checkAliasAvailability(aliasOrBusiness);
+    if (!isAliasAvailable) {
+      setState(() => _isLoading = false);
+      UIHelper.showCustomSnackbar("El alias @$aliasOrBusiness ya está en uso", isError: true);
+      return; // Detenemos el flujo aquí
+    }
+
+    // 3. Si todo está perfecto, enviamos el OTP
     bool otpEnviado = await userService.sendOtp(email);
 
     setState(() => _isLoading = false);
@@ -86,23 +104,81 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
           builder: (context) => OtpScreen(
             password: pass,
             email: email,
-            // Pasamos los datos adicionales según el tipo de cuenta
-            alias: isBusiness ? _businessNameController.text.replaceAll(' ', '').toLowerCase() : _aliasController.text.trim(),
-            phoneNumber: _phoneController.text.trim(),
+            alias: aliasOrBusiness,
+            phoneNumber: _selectedCountry!['code']! + _phoneController.text.trim(), // Se adjunta el prefijo
             extraData: isBusiness ? {
               "type": "BUSINESS",
               "businessName": _businessNameController.text.trim(),
               "ruc": _rucController.text.trim(),
               "website": _websiteController.text.trim(),
+              "country": _selectedCountry!['name'],
             } : {
               "type": "PERSONAL",
               "cedula": _cedulaController.text.trim(),
+              "country": _selectedCountry!['name'],
             },
           ),
         ),
       );
+    } else {
+      UIHelper.showCustomSnackbar("Error enviando OTP. Revisa tu correo.", isError: true);
     }
   }
+
+  // void _intentarRegistro() async {
+  //   final email = _emailController.text.trim();
+  //   final pass = _passwordController.text;
+  //   final isBusiness = _tabController.index == 1;
+
+  //   // Validaciones básicas
+  //   if (email.isEmpty || pass.isEmpty || _phoneController.text.isEmpty) {
+  //     UIHelper.showCustomSnackbar("Por favor, llena todos los campos", isError: true);
+  //     return;
+  //   }
+
+  //   if (isBusiness && !_esCorreoInstitucional(email)) {
+  //     UIHelper.showCustomSnackbar("Las empresas deben usar un correo institucional (no Gmail/Hotmail)", isError: true);
+  //     return;
+  //   }
+
+  //   setState(() => _isLoading = true);
+
+  //   // Si todo está bien, enviamos el OTP (reutilizamos tu lógica de validación de correo)
+  //   final userService = Provider.of<UserService>(context, listen: false);
+
+    
+  //   bool otpEnviado = await userService.sendOtp(email);
+
+  //   setState(() => _isLoading = false);
+
+  //   if (otpEnviado) {
+  //     if (!mounted) return;
+  //     Navigator.push(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (context) => OtpScreen(
+  //           password: pass,
+  //           email: email,
+  //           // Pasamos los datos adicionales según el tipo de cuenta
+  //           alias: isBusiness ? _businessNameController.text.replaceAll(' ', '').toLowerCase() : _aliasController.text.trim(),
+  //           phoneNumber: _phoneController.text.trim(),
+  //           extraData: isBusiness ? {
+  //             "type": "BUSINESS",
+  //             "businessName": _businessNameController.text.trim(),
+  //             "ruc": _rucController.text.trim(),
+  //             "website": _websiteController.text.trim(),
+  //             "country": _selectedCountry,
+  //           } : {
+  //             "type": "PERSONAL",
+  //             "cedula": _cedulaController.text.trim(),
+  //             "country": _selectedCountry,
+  //           },
+  //         ),
+  //       ),
+  //     );
+  //   }
+  // }
+
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +202,33 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
+          GestureDetector(
+              onTap: () async {
+                final result = await SelectCountryModal.show(context, initialCountry: _selectedCountry);
+                if (result != null) setState(() => _selectedCountry = result);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.public_rounded, color: colorScheme.onSurface.withOpacity(0.5)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedCountry != null ? "${_selectedCountry!['flag']} ${_selectedCountry!['name']}" : "Selecciona tu país",
+                        style: TextStyle(color: _selectedCountry != null ? colorScheme.onSurface : colorScheme.onSurface.withOpacity(0.5), fontSize: 16),
+                      ),
+                    ),
+                    Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurface.withOpacity(0.5)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             // Campos comunes
             _buildField(controller: _emailController, label: "Correo Electrónico", icon: Icons.email_outlined, type: TextInputType.emailAddress),
             const SizedBox(height: 16),
@@ -139,19 +242,32 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 controller: _tabController,
                 children: [
                   // FORMULARIO PERSONAL
-                  Column(
+               Column(
                     children: [
                       _buildField(controller: _aliasController, label: "Alias de Usuario", icon: Icons.alternate_email),
                       const SizedBox(height: 16),
-                      _buildField(controller: _cedulaController, label: "Cédula Ecuatoriana", icon: Icons.badge_outlined, type: TextInputType.number, limit: 10),
+                      // 🔥 MODIFICADO: Título y límite dinámico según el país
+                      _buildField(
+                        controller: _cedulaController, 
+                        label: _selectedCountry == 'Ecuador' ? "Cédula Ecuatoriana" : "Documento de Identidad (DNI)", 
+                        icon: Icons.badge_outlined, 
+                        type: TextInputType.number, 
+                        limit: _selectedCountry == 'Ecuador' ? 10 : 20
+                      ),
                     ],
                   ),
                   // FORMULARIO EMPRESA
-                  Column(
+                Column(
                     children: [
                       _buildField(controller: _businessNameController, label: "Nombre del Comercio", icon: Icons.business_outlined),
                       const SizedBox(height: 16),
-                      _buildField(controller: _rucController, label: "RUC", icon: Icons.numbers_outlined, type: TextInputType.number, limit: 13),
+                      _buildField(
+                        controller: _rucController, 
+                        label: _selectedCountry == 'Ecuador' ? "RUC" : "Identificación Fiscal", 
+                        icon: Icons.numbers_outlined, 
+                        type: TextInputType.number, 
+                        limit: _selectedCountry == 'Ecuador' ? 13 : 20
+                      ),
                       const SizedBox(height: 16),
                       _buildField(controller: _websiteController, label: "Página Web (opcional)", icon: Icons.language_outlined),
                     ],
@@ -159,7 +275,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 ],
               ),
             ),
-
             _buildField(
               controller: _passwordController, 
               label: "Contraseña de Bóveda", 

@@ -31,6 +31,7 @@ class CreateTaskModal {
     String? initialOpinionQuestion,
     List<String>? initialPollOptions,
     List<String>? initialFormFields,
+    bool lockAssignee = false,
   }){
 
 //     final activeTeam = [];
@@ -298,6 +299,84 @@ showModalBottomSheet(
                   // ==========================================
                   // CAJA 1: ASIGNACIÓN
                   // ==========================================
+                  // Container(
+                  //   padding: const EdgeInsets.all(20),
+                  //   decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: onSurface.withOpacity(0.05))),
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+                  //       Text("Asignación", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: onSurface)),
+                  //       const SizedBox(height: 16),
+                  //       Container(
+                  //         padding: const EdgeInsets.all(4),
+                  //         decoration: BoxDecoration(color: onSurface.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
+                  //         child: Row(
+                  //           children: [
+                  //             Expanded(
+                  //               child: GestureDetector(
+                  //                 onTap: () => setStateModal(() => assignToDept = false),
+                  //                 child: Container(
+                  //                   padding: const EdgeInsets.symmetric(vertical: 12),
+                  //                   decoration: BoxDecoration(color: !assignToDept ? colorScheme.primary : Colors.transparent, borderRadius: BorderRadius.circular(8)),
+                  //                   child: Text("Empleado", textAlign: TextAlign.center, style: TextStyle(color: !assignToDept ? Colors.white : onSurface.withOpacity(0.5), fontWeight: FontWeight.bold)),
+                  //                 ),
+                  //               ),
+                  //             ),
+                  //             Expanded(
+                  //               child: GestureDetector(
+                  //                 onTap: () => setStateModal(() => assignToDept = true),
+                  //                 child: Container(
+                  //                   padding: const EdgeInsets.symmetric(vertical: 12),
+                  //                   decoration: BoxDecoration(color: assignToDept ? colorScheme.primary : Colors.transparent, borderRadius: BorderRadius.circular(8)),
+                  //                   child: Text("Departamento", textAlign: TextAlign.center, style: TextStyle(color: assignToDept ? Colors.white : onSurface.withOpacity(0.5), fontWeight: FontWeight.bold)),
+                  //                 ),
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 16),
+                  //       Text(assignToDept ? "Seleccionar Departamento" : "Seleccionar Asignado", style: TextStyle(fontSize: 11, color: onSurface.withOpacity(0.6), fontWeight: FontWeight.bold)),
+                  //       const SizedBox(height: 8),
+                  //       if (assignToDept && departments.isNotEmpty)
+                  //         DropdownButtonFormField<String>(
+                  //           value: selectedDept,
+                  //           decoration: InputDecoration(
+                  //             prefixIcon: Icon(Icons.domain_rounded, color: onSurface.withOpacity(0.5)), 
+                  //             hintText: "Buscar departamento...",
+                  //             filled: true, fillColor: onSurface.withOpacity(0.05), 
+                  //             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)
+                  //           ),
+                  //           items: departments.map<DropdownMenuItem<String>>((dept) => DropdownMenuItem(value: dept['id'], child: Text(dept['name'] ?? 'Área'))).toList(),
+                  //           onChanged: (val) => setStateModal(() => selectedDept = val),
+                  //         )
+                  //       else if (activeTeam.isNotEmpty) ...[
+                  //         DropdownButtonFormField<String>(
+                  //           value: selectedWallet,
+                  //           decoration: InputDecoration(
+                  //             prefixIcon: Icon(Icons.person_search_rounded, color: onSurface.withOpacity(0.5)), 
+                  //             hintText: "Buscar empleado...",
+                  //             filled: true, fillColor: onSurface.withOpacity(0.05), 
+                  //             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)
+                  //           ),
+                  //           items: activeTeam.map<DropdownMenuItem<String>>((member) => DropdownMenuItem(value: member['wallet'], child: Text(member['alias'] ?? member['identifier'] ?? 'Sin Nombre'))).toList(),
+                  //           onChanged: (val) async {
+                  //             setStateModal(() => selectedWallet = val);
+                  //             if (val != null) {
+                  //               var wl = await Provider.of<BusinessTaskService>(context, listen: false).getUserWorkload(val);
+                  //               setStateModal(() => employeeWorkload = wl);
+                  //             }
+                  //           },
+                  //         ),
+                  //         if (employeeWorkload != null && employeeWorkload!['workloadStatus'] == 'OVERLOADED')
+                  //           Padding(
+                  //             padding: const EdgeInsets.only(top: 8.0),
+                  //             child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.redAccent), const SizedBox(width: 8), Expanded(child: Text("¡Advertencia! Este empleado ya tiene una carga de ${employeeWorkload!['workloadPercentage']}% (${employeeWorkload!['totalEstimatedHours']} horas activas).", style: const TextStyle(color: Colors.redAccent, fontSize: 12)))]))
+                  //           )
+                  //       ],
+                  //     ],
+                  //   ),
+                  // ),
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: onSurface.withOpacity(0.05))),
@@ -306,6 +385,8 @@ showModalBottomSheet(
                       children: [
                         Text("Asignación", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: onSurface)),
                         const SizedBox(height: 16),
+                        
+                        // 🔥 Bloqueamos el Switch de Dept/Empleado si está predefinido
                         Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(color: onSurface.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
@@ -313,7 +394,7 @@ showModalBottomSheet(
                             children: [
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () => setStateModal(() => assignToDept = false),
+                                  onTap: lockAssignee ? null : () => setStateModal(() => assignToDept = false),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(vertical: 12),
                                     decoration: BoxDecoration(color: !assignToDept ? colorScheme.primary : Colors.transparent, borderRadius: BorderRadius.circular(8)),
@@ -323,7 +404,7 @@ showModalBottomSheet(
                               ),
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () => setStateModal(() => assignToDept = true),
+                                  onTap: lockAssignee ? null : () => setStateModal(() => assignToDept = true),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(vertical: 12),
                                     decoration: BoxDecoration(color: assignToDept ? colorScheme.primary : Colors.transparent, borderRadius: BorderRadius.circular(8)),
@@ -337,6 +418,8 @@ showModalBottomSheet(
                         const SizedBox(height: 16),
                         Text(assignToDept ? "Seleccionar Departamento" : "Seleccionar Asignado", style: TextStyle(fontSize: 11, color: onSurface.withOpacity(0.6), fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
+                        
+                        // 🔥 Deshabilitamos (onChanged: null) si lockAssignee es true
                         if (assignToDept && departments.isNotEmpty)
                           DropdownButtonFormField<String>(
                             value: selectedDept,
@@ -347,7 +430,7 @@ showModalBottomSheet(
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)
                             ),
                             items: departments.map<DropdownMenuItem<String>>((dept) => DropdownMenuItem(value: dept['id'], child: Text(dept['name'] ?? 'Área'))).toList(),
-                            onChanged: (val) => setStateModal(() => selectedDept = val),
+                            onChanged: lockAssignee ? null : (val) => setStateModal(() => selectedDept = val),
                           )
                         else if (activeTeam.isNotEmpty) ...[
                           DropdownButtonFormField<String>(
@@ -359,7 +442,7 @@ showModalBottomSheet(
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)
                             ),
                             items: activeTeam.map<DropdownMenuItem<String>>((member) => DropdownMenuItem(value: member['wallet'], child: Text(member['alias'] ?? member['identifier'] ?? 'Sin Nombre'))).toList(),
-                            onChanged: (val) async {
+                            onChanged: lockAssignee ? null : (val) async {
                               setStateModal(() => selectedWallet = val);
                               if (val != null) {
                                 var wl = await Provider.of<BusinessTaskService>(context, listen: false).getUserWorkload(val);
@@ -370,7 +453,7 @@ showModalBottomSheet(
                           if (employeeWorkload != null && employeeWorkload!['workloadStatus'] == 'OVERLOADED')
                             Padding(
                               padding: const EdgeInsets.only(top: 8.0),
-                              child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.redAccent), const SizedBox(width: 8), Expanded(child: Text("¡Advertencia! Este empleado ya tiene una carga de ${employeeWorkload!['workloadPercentage']}% (${employeeWorkload!['totalEstimatedHours']} horas activas).", style: const TextStyle(color: Colors.redAccent, fontSize: 12)))]))
+                              child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: colorScheme.error.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.warning_amber_rounded, color: colorScheme.error), const SizedBox(width: 8), Expanded(child: Text("¡Advertencia! Este empleado ya tiene una carga de ${employeeWorkload!['workloadPercentage']}% (${employeeWorkload!['totalEstimatedHours']} horas activas).", style: TextStyle(color: colorScheme.error, fontSize: 12)))]))
                             )
                         ],
                       ],

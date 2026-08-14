@@ -1,4 +1,5 @@
 import 'package:dapp_movil/core/services/smart_avatar.dart';
+import 'package:dapp_movil/modules/business/modals/create_task_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/helpers/ui_helper.dart';
@@ -85,53 +86,100 @@ class DepartmentDetailsModal {
                 const SizedBox(height: 32),
 
                 // CABECERA EQUIPO
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //   children: [
+                //     Row(
+                //       children: [
+                //         Icon(Icons.people_alt_rounded, color: onSurface.withOpacity(0.7), size: 24),
+                //         const SizedBox(width: 12),
+                //         Text("Miembros\nActuales", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: onSurface, height: 1.1)),
+                //       ],
+                //     ),
+                //     ElevatedButton.icon(
+                //       style: ElevatedButton.styleFrom(
+                //         backgroundColor: const Color(0xFF4361EE),
+                //         foregroundColor: Colors.white,
+                //         elevation: 0,
+                //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                //       ),
+                //       icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
+                //       label: const Text("Añadir\nMiembro", textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                //       onPressed: () {
+                //         // Modal para elegir empleado sin ensuciar la UI principal
+                //         final available = activeTeam.where((m) => !membersWallets.contains(m['wallet'])).toList();
+                //         if (available.isEmpty) {
+                //           UIHelper.showCustomSnackbar("Todos los empleados ya están en este departamento.");
+                //           return;
+                //         }
+                //         showDialog(
+                //           context: context,
+                //           builder: (c) => AlertDialog(
+                //             backgroundColor: theme.cardColor,
+                //             title: const Text("Añadir al Área", style: TextStyle(fontWeight: FontWeight.bold)),
+                //             content: DropdownButtonFormField<String>(
+                //               decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), filled: true, fillColor: onSurface.withOpacity(0.05)),
+                //               hint: const Text("Selecciona un empleado"),
+                //               items: available.map<DropdownMenuItem<String>>((member) => DropdownMenuItem(value: member['wallet'], child: Text(member['alias'] ?? member['identifier']))).toList(),
+                //               onChanged: (newWallet) async {
+                //                 if (newWallet == null) return;
+                //                 Navigator.pop(c);
+                //                 setStateModal(() => isProcessing = true);
+                //                 await Provider.of<BusinessService>(context, listen: false).addMemberToDepartment(department['id'], newWallet);
+                //                 Navigator.pop(ctx); onRefresh();
+                //               },
+                //             ),
+                //           )
+                //         );
+                //       },
+                //     ),
+                //   ],
+                // ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Expanded(child: Text(department['name'], style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: onSurface, height: 1.1))),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.people_alt_rounded, color: onSurface.withOpacity(0.7), size: 24),
-                        const SizedBox(width: 12),
-                        Text("Miembros\nActuales", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: onSurface, height: 1.1)),
+                        IconButton(
+                          icon: Icon(Icons.add_task_rounded, color: colorScheme.primary, size: 28), 
+                          tooltip: "Asignar Tarea al Área",
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            // 🔥 Obtenemos el equipo actual (necesario para el Modal)
+                            final bService = Provider.of<BusinessService>(context, listen: false);
+                            List<dynamic> activeTeam = []; 
+                            List<dynamic> depts = [];
+                            try {
+                              activeTeam = await bService.getTeamMembers(); 
+                              depts = await bService.getDepartments(); 
+                            } catch(e) {}
+                            
+                            if (!context.mounted) return;
+                            
+                            // Abrimos el modal bloqueado para este departamento
+                            CreateTaskModal.show(
+                              context, activeTeam, depts, onRefresh,
+                              initialAssigneeAlias: department['name'], // Pasa el nombre del departamento
+                              lockAssignee: true,                       // Lo bloquea en la UI
+                            );
+                          }
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete_outline_rounded, color: colorScheme.error, size: 28), 
+                          onPressed: () async {
+                            bool? confirm = await UIHelper.mostrarConfirmacion(context: context, titulo: "Eliminar Área", mensaje: "¿Estás seguro de eliminar este departamento?", textoConfirmar: "Eliminar");
+                            if (confirm == true) {
+                              await Provider.of<BusinessService>(context, listen: false).deleteDepartment(department['id']);
+                              if (context.mounted) Navigator.pop(ctx); 
+                              onRefresh();
+                            }
+                          }
+                        ),
                       ],
-                    ),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4361EE),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
-                      label: const Text("Añadir\nMiembro", textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      onPressed: () {
-                        // Modal para elegir empleado sin ensuciar la UI principal
-                        final available = activeTeam.where((m) => !membersWallets.contains(m['wallet'])).toList();
-                        if (available.isEmpty) {
-                          UIHelper.showCustomSnackbar("Todos los empleados ya están en este departamento.");
-                          return;
-                        }
-                        showDialog(
-                          context: context,
-                          builder: (c) => AlertDialog(
-                            backgroundColor: theme.cardColor,
-                            title: const Text("Añadir al Área", style: TextStyle(fontWeight: FontWeight.bold)),
-                            content: DropdownButtonFormField<String>(
-                              decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), filled: true, fillColor: onSurface.withOpacity(0.05)),
-                              hint: const Text("Selecciona un empleado"),
-                              items: available.map<DropdownMenuItem<String>>((member) => DropdownMenuItem(value: member['wallet'], child: Text(member['alias'] ?? member['identifier']))).toList(),
-                              onChanged: (newWallet) async {
-                                if (newWallet == null) return;
-                                Navigator.pop(c);
-                                setStateModal(() => isProcessing = true);
-                                await Provider.of<BusinessService>(context, listen: false).addMemberToDepartment(department['id'], newWallet);
-                                Navigator.pop(ctx); onRefresh();
-                              },
-                            ),
-                          )
-                        );
-                      },
-                    ),
+                    )
                   ],
                 ),
                 const SizedBox(height: 16),

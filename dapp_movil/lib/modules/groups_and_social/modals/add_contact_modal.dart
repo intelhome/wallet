@@ -282,10 +282,28 @@ class AddContactModal {
                           ),
                           const SizedBox(height: 24),
                           Divider(color: onSurfaceColor.withOpacity(0.05), height: 1),
-                          _buildInfoRow(Icons.account_balance_wallet_outlined, "Wallet", "${usuarioEncontrado!['walletAddress'].toString().substring(0, 6)}...${usuarioEncontrado!['walletAddress'].toString().substring(usuarioEncontrado!['walletAddress'].toString().length - 4)}", true, onSurfaceColor),
-                          _buildInfoRow(Icons.phone_android_rounded, "Celular", usuarioEncontrado!['phoneNumber'] ?? "No disponible", false, onSurfaceColor),
-                          _buildInfoRow(Icons.badge_outlined, "Cédula", usuarioEncontrado!['cedula'] ?? "No disponible", false, onSurfaceColor),
-                          _buildInfoRow(Icons.email_outlined, "Correo", usuarioEncontrado!['email'] ?? "No disponible", false, onSurfaceColor),
+                        FutureBuilder<Map<String, dynamic>?>(
+                      future: Provider.of<UserService>(ctx, listen: false).getUserByWallet(usuarioEncontrado!['walletAddress']),
+                      builder: (context, snapshot) {
+                        String phone = "No registrado";
+                        String cedula = "No registrada";
+                        String email = "No registrado";
+
+                        if (snapshot.hasData && snapshot.data != null) {
+                          phone = snapshot.data!['phoneNumber'] ?? phone;
+                          cedula = snapshot.data!['cedula'] ?? cedula;
+                          email = snapshot.data!['email'] ?? email;
+                        }
+
+                        return Column(
+                          children: [
+                            _buildInfoRow(Icons.phone_android_rounded, "Celular", phone, false, onSurfaceColor),
+                            _buildInfoRow(Icons.badge_outlined, "Cédula", cedula, false, onSurfaceColor),
+                            _buildInfoRow(Icons.email_outlined, "Correo", email, false, onSurfaceColor),
+                          ],
+                        );
+                      }
+                    ),
                         ],
                       ),
                     ),

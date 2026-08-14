@@ -1,6 +1,9 @@
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
+import 'package:dapp_movil/modules/business/modals/create_task_modal.dart';
+import 'package:dapp_movil/modules/business/services/business_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../core/services/smart_avatar.dart';
 import '../../chat_and_social/screens/chat_room_screen.dart'; // Ajusta tu ruta del chat
 
@@ -77,27 +80,88 @@ class TeamMemberDetailsModal {
             const SizedBox(height: 24),
 
             // BOTÓN CHAT (ESTILO MOCKUP)
-            SizedBox(
-              height: 56,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFBAC3FF), 
-                  foregroundColor: const Color(0xFF00218d),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))
+            // SizedBox(
+            //   height: 56,
+            //   child: ElevatedButton.icon(
+            //     style: ElevatedButton.styleFrom(
+            //       backgroundColor: const Color(0xFFBAC3FF), 
+            //       foregroundColor: const Color(0xFF00218d),
+            //       elevation: 0,
+            //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))
+            //     ),
+            //     icon: const Icon(Icons.send_rounded),
+            //     label: const Text("Enviar Mensaje", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            //     onPressed: () {
+            //       Navigator.pop(ctx);
+            //       if (wallet.isNotEmpty) {
+            //         Navigator.push(context, MaterialPageRoute(builder: (_) => ChatRoomScreen(
+            //           address: wallet,
+            //           alias: alias,
+            //         )));
+            //       }
+            //     },
+            //   ),
+            // ),
+            // BOTONES DE ACCIÓN RÁPIDA (MOCKUP M3)
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: colorScheme.primary),
+                        foregroundColor: colorScheme.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                      ),
+                      icon: const Icon(Icons.send_rounded, size: 18),
+                      label: const Text("Mensaje", style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        if (wallet.isNotEmpty) {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => ChatRoomScreen(address: wallet, alias: alias)));
+                        }
+                      },
+                    ),
+                  ),
                 ),
-                icon: const Icon(Icons.send_rounded),
-                label: const Text("Enviar Mensaje", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  if (wallet.isNotEmpty) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => ChatRoomScreen(
-                      address: wallet,
-                      alias: alias,
-                    )));
-                  }
-                },
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary, 
+                        foregroundColor: colorScheme.onPrimary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                      ),
+                      icon: const Icon(Icons.add_task_rounded, size: 18),
+                      label: const Text("Asignar Tarea", style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        // 🔥 Obtenemos el equipo actual (necesario para el Modal)
+                        final bService = Provider.of<BusinessService>(context, listen: false);
+                        List<dynamic> activeTeam = []; 
+                        List<dynamic> departments = [];
+                        try {
+                          activeTeam = await bService.getTeamMembers(); 
+                          departments = await bService.getDepartments(); 
+                        } catch(e) {}
+                        
+                        if (!context.mounted) return;
+                        
+                        // Abrimos el modal con los datos bloqueados para este empleado
+                        CreateTaskModal.show(
+                          context, activeTeam, departments, () {},
+                          initialAssigneeAlias: alias, // Pasa el alias del usuario actual
+                          lockAssignee: true,          // Lo bloquea en la UI
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: MediaQuery.of(ctx).viewInsets.bottom + 10),
           ],

@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dapp_movil/config/api_config.dart';
+import 'package:dapp_movil/core/helpers/PremiumBlockerModal.dart';
 import 'package:dapp_movil/modules/business/modals/create_department_modal.dart';
 import 'package:dapp_movil/modules/debts_and_payments/modals/split_bill_modal.dart';
 import 'package:dapp_movil/modules/vaults_and_savings/modals/create_vault_modal.dart';
+import 'package:dapp_movil/modules/vaults_and_savings/screens/stake_screen.dart';
+import 'package:dapp_movil/modules/wallet_and_tx/screens/buy_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -27,10 +30,8 @@ import '../../document_notary/modals/create_document_modal.dart';
 import '../../document_notary/services/notary_service.dart';
 import '../../groups_and_social/services/group_social_service.dart';
 import '../../settings_and_profile/services/user_service.dart';
-import '../../vaults_and_savings/modals/stake_modal.dart';
 import '../../vaults_and_savings/screens/vaults_screen.dart';
 import '../../vaults_and_savings/services/smart_vault_service.dart';
-import '../../wallet_and_tx/modals/buy_modal.dart';
 import '../../wallet_and_tx/modals/send_modal.dart';
 import '../../wallet_and_tx/modals/send_paypal_modal.dart';
 import '../../wallet_and_tx/services/transaction_service.dart';
@@ -97,37 +98,48 @@ class AiChatHandler extends ChangeNotifier {
           ? "MEMORIA DE LA ACCIÓN ANTERIOR (SI EL USUARIO DICE 'haz lo mismo', 'repite', 'ahora con X monto', 'a él/ella', usa estos datos de base):\n${jsonEncode(_lastActionData)}\n"
           : "";
 
-      final String promptSistema = """
-Eres el núcleo de enrutamiento de TTC Wallet. Traduce intenciones a JSON.
+   final String promptSistema = """
+Eres el núcleo de enrutamiento de TTC Wallet. Tu propósito es ejecutar acciones dentro de la aplicación basándote en la petición del usuario, o responder cordialmente si no se requiere ninguna acción.
+NO ERES un asesor financiero general. NO ERES un conversador casual extenso. NO DEBES mencionar criptomonedas externas (Ethereum, Bitcoin, etc.), exchanges, ni redes ajenas a TTC.
+
 EL USUARIO ACTUAL TIENE EL ROL: $rolUsuario.
 HOY ES: $hoy
 $contextoFinanciero
 $contextoAccionAnterior
 
 REGLAS DE SEGUIMIENTO CONTEXTUAL:
-- Si el usuario dice "haz lo mismo pero con 10ttc" o similar, busca en la MEMORIA DE LA ACCIÓN ANTERIOR el destinatario, tipo, motivo, etc., y reemplaza únicamente lo solicitado.
+- Si el usuario pide repetir o modificar la acción anterior (ej. "haz lo mismo pero con 10ttc"), busca en la MEMORIA DE LA ACCIÓN ANTERIOR y reemplaza ÚNICAMENTE el dato solicitado.
 
-🔥 REGLAS DE EXTRACCIÓN DE DATOS (DEBES PONER ESTO DENTRO DE 'action_data'):
-- "CREATE_TASK": Extrae 'task_type' (STANDARD, GPS, MEET, FORM, OPINION), 'title' (Resume de qué trata), 'description' (Genera una si el usuario no la da), 'assignee' (Alias del empleado sin el @), 'budget', 'estimated_hours', 'urgency' (Baja, Normal, Alta, Urgente), 'deadline', 'subtasks' (array).
-  * 📍 Si menciona un lugar o ciudad (ej. Cuenca): Pon 'task_type' en 'GPS' y deduce aprox 'gps_lat' y 'gps_lon'.
-  * 🤝 Si menciona reunión/meet: Pon 'task_type' en 'MEET'.
-  * 📝 Si es encuesta: Pon 'task_type' en 'OPINION' y extrae 'opinion_question' y 'poll_options' (array).
-  * 📋 Si es formulario: Pon 'task_type' en 'FORM' y extrae 'form_fields' (array).
-- "SPLIT_PAYMENT": Extrae 'amount', 'reason', 'split_with' (Array), 'destination' (Alias o comercio destino).
+🔥 REGLAS PARA CUANDO NO HAY ACCIÓN QUE EJECUTAR (¡MUY IMPORTANTE!):
+Si el usuario dice su nombre, saluda, hace una pregunta general que no requiere transferir, crear tareas, ni nada que esté en la lista de tx_type permitidos, DEBES responder con formato "MESSAGE". No inventes acciones.
+
+🔥 REGLAS DE EXTRACCIÓN DE DATOS (DENTRO DE 'action_data'):
+- "CREATE_TASK": Extrae 'task_type' (STANDARD, GPS, MEET, FORM, OPINION), 'title' (Resumen), 'description', 'assignee' (Alias SIN '@'), 'budget', 'estimated_hours', 'urgency' (BAJA, NORMAL, ALTA, URGENTE), 'deadline', 'subtasks' (array).
+  * Lugar/ciudad: 'task_type' -> 'GPS', deduce 'gps_lat' y 'gps_lon'.
+  * Reunión: 'task_type' -> 'MEET'.
+  * Encuesta: 'task_type' -> 'OPINION', extrae 'opinion_question' y 'poll_options'.
+  * Formulario: 'task_type' -> 'FORM', extrae 'form_fields'.
+- "SPLIT_PAYMENT": Extrae 'amount', 'reason', 'split_with' (Array), 'destination'.
 - "CREATE_CROWDFUNDING": Extrae 'title', 'amount', 'duration_days'.
 - "CREATE_VAULT": Extrae 'amount', 'vault_type', 'vault_name', 'target_amount'.
 
-LISTA DE tx_type PERMITIDOS:
+LISTA ESTRICTA DE tx_type PERMITIDOS:
 SEND, BUY, STAKE, CREATE_GROUP, ADD_TO_GROUP, REPORT, PLAN_PAYMENT, INSTALLMENT_PAYMENT, CREATE_DEBT, CREATE_DOCUMENT, CREATE_CROWDFUNDING, CREATE_BURNER, INVITE_MEMBER, CREATE_TASK, SEND_MESSAGE, SPLIT_PAYMENT, CREATE_VAULT
 
-FORMATO DE SALIDA COMPULSORIO (NO AGREGUES TEXTO FUERA DEL JSON):
+FORMATO DE SALIDA OBLIGATORIO (SOLO JSON, NADA DE TEXTO ADICIONAL):
+Si SE REQUIERE una acción financiera o corporativa:
 {
   "type": "ACTION",
-  "message": "Mensaje amigable confirmando lo que vas a hacer...",
+  "message": "Un mensaje BREVE y directo confirmando la acción a realizar.",
   "action_data": {
       "tx_type": "TIPO_DE_ACCION",
-      // ... AQUÍ VAN TODOS LOS DATOS EXTRAÍDOS (assignee, title, gps_lat, etc.)
+      // ... Datos extraídos según la acción
   }
+}
+Si NO SE REQUIERE ninguna acción (Ej. charla, saludos, decir su nombre):
+{
+  "type": "MESSAGE",
+  "message": "Tu respuesta corta y amigable al usuario."
 }
 """;
 
@@ -139,13 +151,22 @@ FORMATO DE SALIDA COMPULSORIO (NO AGREGUES TEXTO FUERA DEL JSON):
       // Quitamos el globo de carga
       messages.removeWhere((m) => m["isLoading"] == true);
 
-      if (jsonResponse != null && jsonResponse.containsKey('response')) {
-        final String aiResponseText = jsonResponse['response']; 
-        final String cleanJsonStr = aiResponseText.replaceAll('```json', '').replaceAll('```', '').trim();
-        final Map<String, dynamic> aiData = jsonDecode(cleanJsonStr);
-        
-        messages.add({"isUser": false, "text": aiData['message'] ?? "Entendido."});
-        notifyListeners();
+   if (jsonResponse != null) {
+ 
+        if (jsonResponse.containsKey('error') && jsonResponse['error'] == 'QUOTA_EXCEEDED') {
+          messages.add({"isUser": false, "text": "Has alcanzado tu límite de consultas IA. Mejora tu plan para seguir chateando."});
+          notifyListeners();
+          PremiumBlockerModal.show(context, planRequerido: "BASIC", featureName: "Más consultas IA");
+          return;
+        }
+
+        if (jsonResponse.containsKey('response')) {
+          final String aiResponseText = jsonResponse['response']; 
+          final String cleanJsonStr = aiResponseText.replaceAll('```json', '').replaceAll('```', '').trim();
+          final Map<String, dynamic> aiData = jsonDecode(cleanJsonStr);
+          
+          messages.add({"isUser": false, "text": aiData['message'] ?? "Entendido."});
+          notifyListeners();
 
         if (aiData['action_data'] != null) {
           Map<String, dynamic> action = Map<String, dynamic>.from(aiData['action_data']);
@@ -305,15 +326,44 @@ FORMATO DE SALIDA COMPULSORIO (NO AGREGUES TEXTO FUERA DEL JSON):
                 notifyListeners();
               });
             }
-          } else if (tipoTx == 'BUY') {
-            BuyModal.show(context: context, initialAmount: action['amount']?.toString(), onUpdateBalance: () {}, mostrarMensaje: (m, {bool esError=false}) {});
+         } else if (tipoTx == 'BUY') {
+            Navigator.push(
+              context,
+              RouteHelper.slideUpRoute(
+                BuyScreen(
+                  initialAmount: action['amount']?.toString(),
+                  onUpdateBalance: () {},
+                  mostrarMensaje: (m, {bool esError = false}) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(m), backgroundColor: esError ? Colors.red : Colors.green)
+                    );
+                  },
+                )
+              )
+            );
           } else if (tipoTx == 'STAKE') {
             final txService = Provider.of<TransactionService>(context, listen: false);
             final vaultService = Provider.of<SmartVaultService>(context, listen: false);
             String saldoReal = await txService.getBalance();
             String stakedReal = await vaultService.getStakedBalance();
-            StakeModal.show(context: context, balanceTTC: saldoReal, stakedTTC: stakedReal, initialAmount: action['amount']?.toString(), onUpdateBalance: () {}, mostrarMensaje: (m, {bool esError=false}) {});
-          } else if (tipoTx == 'CREATE_GROUP') { 
+            
+            Navigator.push(
+              context,
+              RouteHelper.slideUpRoute(
+                StakeScreen(
+                  balanceTTC: saldoReal,
+                  stakedTTC: stakedReal,
+                  initialAmount: action['amount']?.toString(),
+                  onUpdateBalance: () {},
+                  mostrarMensaje: (m, {bool esError = false}) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(m), backgroundColor: esError ? Colors.red : Colors.green)
+                    );
+                  },
+                )
+              )
+            );
+          } else if (tipoTx == 'CREATE_GROUP') {
             await _ejecutarCreacionDeGrupoPorIA(context, (action['group_name'] ?? "Nuevo Fondo").toString(), action['members'] ?? []);
           }
 
@@ -385,6 +435,7 @@ FORMATO DE SALIDA COMPULSORIO (NO AGREGUES TEXTO FUERA DEL JSON):
             }
           }
         }
+      }
       } else {
         messages.add({"isUser": false, "text": "Disculpa, el nodo de IA no devolvió una estructura comprensible."});
         notifyListeners();

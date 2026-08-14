@@ -11,10 +11,12 @@ import 'package:dapp_movil/modules/crowdfunding/screens/campaigns_screen.dart';
 import 'package:dapp_movil/modules/debts_and_payments/screens/debts_screen.dart';
 import 'package:dapp_movil/modules/document_notary/screens/document_notary_screen.dart';
 import 'package:dapp_movil/modules/wallet_and_tx/screens/ttc_business_screen.dart';
+import 'package:dapp_movil/modules/wallet_and_tx/screens/welcome_trial_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:web_socket_channel/io.dart';
 import 'dashboard_screen.dart';
 import 'history_screen.dart';
 import '../../groups_and_social/screens/contacts_screen.dart';
@@ -23,11 +25,23 @@ import '../../debts_and_payments/screens/scheduled_payments_screen.dart';
 import '../../ai_assistant/screens/ai_assistant_screen.dart';
 import '../../../core/notifications/push_notification_service.dart';
 
-final GlobalKey<_MainScreenState> mainScreenKey = GlobalKey<_MainScreenState>();
+// final GlobalKey<_MainScreenState> mainScreenKey = GlobalKey<_MainScreenState>();
 
+// class MainScreen extends StatefulWidget {
+//   //const MainScreen({super.key});
+//   MainScreen({Key? key}) : super(key: mainScreenKey ?? key);
+
+//   @override
+//   State<MainScreen> createState() => _MainScreenState();
+// }
+
+final GlobalKey<_MainScreenState> mainScreenKey = GlobalKey<_MainScreenState>();
 class MainScreen extends StatefulWidget {
-  //const MainScreen({super.key});
-  MainScreen({Key? key}) : super(key: mainScreenKey ?? key);
+  final bool showWelcomeTrial;
+  final String? newAlias;
+
+  // Pasamos el key ?? mainScreenKey para que siempre tenga la referencia correcta
+  MainScreen({Key? key, this.showWelcomeTrial = false, this.newAlias}) : super(key: key ?? mainScreenKey);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -35,12 +49,14 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: false);
-  DateTime? _pausedTime;
-  bool _isLockScreenVisible = false;
+  //DateTime? _pausedTime;
+  //bool _isLockScreenVisible = false;
   
   int _currentIndex = 0;
 
   Key _dashboardKey = UniqueKey();
+
+  IOWebSocketChannel? _userWsChannel;
 
   void forceDashboardRefresh() async {
     if (mounted) {
@@ -61,40 +77,71 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPendingNotifications();
+   if (widget.showWelcomeTrial) {
+        WelcomeTrialModal.show(context, widget.newAlias);
+      }
     });
     _iniciarSimuladorIaSulencioso();
+    _conectarWebSocketUsuario();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this); 
+    _userWsChannel?.sink.close();
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      _pausedTime ??= DateTime.now();
-    } else if (state == AppLifecycleState.resumed) {
-      if (_pausedTime != null) {
-        final secondsInBg = DateTime.now().difference(_pausedTime!).inSeconds;
-        if (secondsInBg >= 30 && !_isLockScreenVisible) {
-          _isLockScreenVisible = true;
-          final authCore = Provider.of<AuthCoreService>(context, listen: false);
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   if (state == AppLifecycleState.paused) {
+  //     _pausedTime ??= DateTime.now();
+  //   } else if (state == AppLifecycleState.resumed) {
+  //     if (_pausedTime != null) {
+  //       final secondsInBg = DateTime.now().difference(_pausedTime!).inSeconds;
+  //       if (secondsInBg >= 30 && !_isLockScreenVisible) {
+  //         _isLockScreenVisible = true;
+  //         final authCore = Provider.of<AuthCoreService>(context, listen: false);
           
-          Navigator.push(
-            context,
-            RouteHelper.fadeRoute(AppLockScreen(authCore: authCore)),
-          ).then((_) {
-            _isLockScreenVisible = false;
-          });
+  //         Navigator.push(
+  //           context,
+  //           RouteHelper.fadeRoute(AppLockScreen(authCore: authCore)),
+  //         ).then((_) {
+  //           _isLockScreenVisible = false;
+  //         });
+  //       }
+  //     }
+  //     _pausedTime = null; 
+  //   }
+  // }
+
+  void _conectarWebSocketUsuario() {
+    final authCore = Provider.of<AuthCoreService>(context, listen: false);
+    if (authCore.publicAddress.isEmpty) return;
+
+    // Conectamos al endpoint WS de usuarios (ajusta la URL si en tu ApiConfig se llama distinto)
+    final wsUrl = "${ApiConfig.baseUrl.replaceFirst('http', 'ws').replaceFirst('/api', '')}/ws/users/${authCore.publicAddress.toLowerCase()}";
+    
+    try {
+      _userWsChannel = IOWebSocketChannel.connect(Uri.parse(wsUrl));
+      _userWsChannel!.stream.listen((message) async {
+        
+        // 🔥 SI EL BACKEND NOS AVISA QUE EL PLAN EXPIRÓ
+        if (message == "PLAN_EXPIRED") {
+          await authCore.refreshTokenAndTier(); // Actualizamos el JWT y el Tier ("FREE")
+          if (mounted) {
+            UIHelper.showCustomSnackbar("Tu periodo de prueba ha expirado. Ahora estás en el plan FREE.", isError: true);
+            forceDashboardRefresh(); // Refrescamos el Dashboard para ocultar funciones Premium
+          }
         }
-      }
-      _pausedTime = null; 
+        
+      });
+    } catch (e) {
+      debugPrint("Error conectando al WS de usuario: $e");
     }
   }
 
-  // 🔥 LÓGICA DEL SIMULADOR AUTÓNOMO BLINDADA
+  // LÓGICA DEL SIMULADOR AUTÓNOMO BLINDADA
   void _iniciarSimuladorIaSulencioso() {
     Future.delayed(const Duration(seconds: 10), () async {
       if (!mounted) return;
