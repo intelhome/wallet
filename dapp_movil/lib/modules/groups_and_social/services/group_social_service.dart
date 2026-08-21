@@ -338,12 +338,11 @@ Future<String> addGroupMember(String groupId, String memberAddress, String membe
   }
 
   // ==========================================================
-  // 🔥 CHAT GRUPAL Y TESORERO IA
+  // CHAT GRUPAL Y TESORERO IA
   // ==========================================================
 
- Future<List<dynamic>> getGroupChatHistory(String groupId) async {
+Future<List<dynamic>> getGroupChatHistory(String groupId) async {
     try {
-      // 🔥 FIX: Forzamos la ruta absoluta
       final url = "${ApiConfig.baseUrl}/groups/$groupId/chat";
       final res = await http.get(Uri.parse(url), headers: authCore.authHeaders);
       return res.statusCode == 200 ? jsonDecode(res.body) : [];
@@ -351,18 +350,18 @@ Future<String> addGroupMember(String groupId, String memberAddress, String membe
       return [];
     }
   }
-
-  Future<bool> sendGroupMessage({
+  
+Future<Map<String, dynamic>?> sendGroupMessage({
     required String groupId,
     required String senderWallet,
     required String senderAlias,
     required String content,
     required String messageType,
+    required String tempId, //  NUEVO: Recibe el ID temporal
   }) async {
     try {
-      // 🔥 FIX: Forzamos la ruta absoluta
       final url = "${ApiConfig.baseUrl}/groups/$groupId/chat";
-      debugPrint("📡 Enviando mensaje a: $url");
+      debugPrint("📡 Enviando mensaje grupal a: $url");
       
       final Map<String, String> headers = {
         ...authCore.authHeaders,
@@ -373,6 +372,7 @@ Future<String> addGroupMember(String groupId, String memberAddress, String membe
         Uri.parse(url),
         headers: headers,
         body: jsonEncode({
+          "tempId": tempId, // Lo mandamos en el DTO de Spring
           "senderWallet": senderWallet,
           "senderAlias": senderAlias,
           "content": content,
@@ -381,14 +381,15 @@ Future<String> addGroupMember(String groupId, String memberAddress, String membe
       );
       
       if (res.statusCode == 200) {
-        return true;
+        // Devuelve el ACK (Contiene 'tempId' y 'realId')
+        return jsonDecode(res.body);
       } else {
         debugPrint("❌ Error del servidor al enviar: ${res.statusCode} - ${res.body}");
-        return false;
+        return null;
       }
     } catch (e) {
-      debugPrint("❌ Excepción al enviar mensaje: $e");
-      return false;
+      debugPrint("❌ Excepción al enviar mensaje grupal: $e");
+      return null;
     }
   }
 }

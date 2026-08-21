@@ -229,8 +229,10 @@ class _VaultsScreenState extends State<VaultsScreen> {
   //     ),
   //   );
   // }
-  Widget _buildVaultList(List<dynamic> vaultsList, bool isFlexibleTab) {
-    final onSurfaceColor = Theme.of(context).colorScheme.onSurface;
+Widget _buildVaultList(List<dynamic> vaultsList, bool isFlexibleTab) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final onSurfaceColor = colorScheme.onSurface;
 
     if (vaultsList.isEmpty) {
       return UIHelper.emptyState(
@@ -258,10 +260,13 @@ class _VaultsScreenState extends State<VaultsScreen> {
           final hasTarget = targetAmount > 0;
           final progress = hasTarget ? (balance / targetAmount).clamp(0.0, 1.0) : 0.0;
 
+          // 🔥 Dinámica de colores según el tipo de bóveda, usando AppTheme
+          final iconColor = isFlexible ? colorScheme.primary : colorScheme.secondary;
+
           return Container(
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: onSurfaceColor.withOpacity(0.08)),
             ),
@@ -337,7 +342,7 @@ class _VaultsScreenState extends State<VaultsScreen> {
                                 value: progress,
                                 minHeight: 6,
                                 backgroundColor: onSurfaceColor.withOpacity(0.1),
-                                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4361EE)),
+                                valueColor: AlwaysStoppedAnimation<Color>(iconColor), // 🔥 Color de meta
                               ),
                             ),
                           ),

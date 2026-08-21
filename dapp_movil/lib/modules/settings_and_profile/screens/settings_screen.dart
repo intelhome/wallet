@@ -24,10 +24,10 @@ class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, this.aliasUsuario = "Usuario"});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  State<SettingsScreen> createState() => SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class SettingsScreenState extends State<SettingsScreen> {
   AuthCoreService get authCore =>
       Provider.of<AuthCoreService>(context, listen: false);
   UserService get userService =>
@@ -55,6 +55,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _paypalEmailController = TextEditingController();
   bool _guardandoPaypal = false;
 
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _paypalKey = GlobalKey(); 
+  bool _highlightPaypal = false; 
+
   @override
   void initState() {
     super.initState();
@@ -80,6 +84,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _presupuestoMensual = prefs.getDouble('presupuesto_mensual') ?? 500.0;
       });
     }
+  }
+
+  void focusOnPayPal() {
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (_paypalKey.currentContext != null) {
+        Scrollable.ensureVisible(
+          _paypalKey.currentContext!,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+        setState(() => _highlightPaypal = true);
+        
+        // Quita el resaltado después de unos segundos
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) setState(() => _highlightPaypal = false);
+        });
+      }
+    });
   }
 
   Future<void> _cambiarPresupuesto() async {
@@ -907,6 +929,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: _cargandoConfiguraciones
           ? const Center(child: CircularProgressIndicator())
           : ListView(
+            controller: _scrollController,
               padding: const EdgeInsets.all(16),
               children: [
                 // ================= AVATAR Y PERFIL =================
@@ -1804,24 +1827,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       // CONFIGURACIÓN DE PAYPAL
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            SwitchListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text(
-                                "Activar pagos con PayPal",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
+                      AnimatedContainer(
+                  duration: const Duration(seconds: 1),
+                  curve: Curves.easeInOut,
+                  margin: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    // 🔥 Borde brillante si está resaltado
+                    border: Border.all(
+                      color: _highlightPaypal ? Colors.blueAccent : Colors.transparent,
+                      width: _highlightPaypal ? 3 : 0
+                    ),
+                    boxShadow: _highlightPaypal 
+                      ? [BoxShadow(color: Colors.blueAccent.withOpacity(0.5), blurRadius: 15, spreadRadius: 2)] 
+                      : [],
+                  ),
+                  child: Card(
+                    key: _paypalKey, // <-- CLAVE AQUÍ PARA ENCONTRARLA
+                    color: theme.cardColor,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                      child:Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                        SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text(
+                              "Activar pagos con PayPal",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                               subtitle: const Text(
                                 "Permite que otros usuarios te envíen dinero Fiat directo a tu cuenta bancaria/PayPal.",
                               ),
                               value: _paypalEnabled,
                               activeColor: colorScheme.primary,
-                              onChanged: (val) =>
-                                  setState(() => _paypalEnabled = val),
+                              onChanged: (val) async {
+                                //  FIX: Guardar el estado del switch INMEDIATAMENTE en backend
+                                setState(() => _paypalEnabled = val);
+                                
+                                // Mandamos solo el estado al servidor (el mail va como nulo para que el patch lo ignore)
+                                bool ok = await configService.savePayPalConfig(val, "");
+                                
+                                if (!ok) {
+                                  // Si falló, revertimos
+                                  setState(() => _paypalEnabled = !val);
+                                  UIHelper.showCustomSnackbar("Error al sincronizar con el servidor", isError: true);
+                                }
+                              },
                             ),
                             if (_paypalEnabled) ...[
                               const SizedBox(height: 12),
@@ -1910,6 +1966,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ],
                           ],
                         ),
+                      ),
+                  ),
                       ),
                       Divider(
                         color: Theme.of(context).dividerColor,

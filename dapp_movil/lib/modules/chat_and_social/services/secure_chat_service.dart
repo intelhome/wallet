@@ -66,8 +66,8 @@ void _listenToMessages() {
       try {
         final data = jsonDecode(message);
         
-        // 🔥 FIX: 1. PRIMERO ATRAPAMOS EL EVENTO TYPING (Que no tiene encryptedPayload)
-        if (data['type'] == 'TYPING') {
+        // 1. TYPING
+        if (data['type'] == 'TYPING' || data['eventType'] == 'TYPING') {
           typingUser = data['senderWallet'].toString().toLowerCase();
           notifyListeners();
           
@@ -76,21 +76,35 @@ void _listenToMessages() {
             typingUser = null;
             notifyListeners();
           });
-          return; // 🔥 SALIMOS AQUÍ para no procesar el resto
+          return; 
         }
 
-        // 🔥 FIX: 2. AHORA SÍ LEEMOS LOS MENSAJES REALES
-        String sender = data['senderWallet']?.toString().toLowerCase() ?? "";
+        if (data['eventType'] == 'ACK') {
+           String peerWallet = data['receiverWallet']?.toString().toLowerCase() ?? "";
+           String permanentId = data['id'];
+           
+           if (_chatRooms.containsKey(peerWallet)) {
+             // Actualizamos el ID temporal por el ID real de Mongo
+             // (Aquí podrías usar el id temporal que mandaste si lo devolviera el backend, 
+             // pero por simplicidad asumiremos que el ACK actualiza el mensaje más reciente pendiente)
+             for (var m in _chatRooms[peerWallet]!) {
+               if (m['status'] == 'SENT') {
+                 m['id'] = permanentId;
+                 m['status'] = 'DELIVERED'; // Ahora sabemos que llegó al servidor
+                 break;
+               }
+             }
+             notifyListeners();
+           }
+           return;
+        }
+      String sender = data['senderWallet']?.toString().toLowerCase() ?? "";
         String receiver = data['receiverWallet']?.toString().toLowerCase() ?? "";
         
-        // Usamos ?? "" para proteger contra nulos por si llega algún JSON raro
         String encryptedPayload = data['encryptedPayload'] ?? ""; 
         if (encryptedPayload.isEmpty) return; 
         
-        // Identificamos con quién es la conversación
         String peerWallet = sender == _authCore.publicAddress.toLowerCase() ? receiver : sender;
-
-        // Desencriptamos el mensaje
         String decryptedJson = CryptoChatHelper.decryptPayload(_authCore.publicAddress, peerWallet, encryptedPayload);
 
         // 🔥 NUEVO: NOTIFICACIÓN IN-APP (ESTILO WHATSAPP)
@@ -265,43 +279,57 @@ void _listenToMessages() {
   }
 
   /// 4. ENVIAR UN MENSAJE (ENCRIPTADO)
+  
   Future<bool> sendMessage(String destinationAddress, String contentJson, {int? ttlInSeconds}) async {
     if (_channel == null) return false;
     destinationAddress = destinationAddress.toLowerCase();
 
     try {
-      // 1. Encriptamos
+      // 1. Extraer o deducir el tipo de mensaje para el backend (TEXT, AUDIO, IMAGE, etc)
+      String messageType = "TEXT";
+      String? mediaUrl;
+      try {
+        final Map<String, dynamic> parsedContent = jsonDecode(contentJson);
+        if (parsedContent.containsKey('type')) messageType = parsedContent['type'];
+        if (parsedContent.containsKey('remoteUrl')) mediaUrl = parsedContent['remoteUrl'];
+      } catch (_) {}
+
+      // 2. Encriptamos el contenido final
       String encryptedPayload = CryptoChatHelper.encryptPayload(_authCore.publicAddress, destinationAddress, contentJson);
 
-      // 2. Preparamos el DTO para Spring Boot incluyendo el TTL
+      // 3. Preparamos el DTO para Spring Boot
+      final String tempMsgId = DateTime.now().millisecondsSinceEpoch.toString();
       final payload = jsonEncode({
+        "id": tempMsgId, // Enviamos un ID temporal para que el backend nos responda con un ACK
+        "eventType": "CHAT_MESSAGE",
         "senderWallet": _authCore.publicAddress.toLowerCase(),
         "receiverWallet": destinationAddress,
         "encryptedPayload": encryptedPayload,
-        "ttlInSeconds": ttlInSeconds // 🔥 Le decimos a Spring Boot en cuánto tiempo borrarlo
+        "messageType": messageType,
+        "mediaUrl": mediaUrl,
+        "ttlInSeconds": ttlInSeconds 
       });
 
-      // 3. Enviamos por WebSocket
+      // 4. Enviamos por WebSocket
       _channel!.sink.add(payload);
 
-      // 4. Guardado local
-      final String msgId = DateTime.now().millisecondsSinceEpoch.toString();
+      // 5. Guardado local Inmediato (Lag-Zero)
       final localMsg = {
-        "id": msgId,
+        "id": tempMsgId, // Usamos el temporal hasta que llegue el ACK
         "sender": _authCore.publicAddress.toLowerCase(),
         "content": contentJson,
         "timestamp": DateTime.now(),
+        "status": "SENT" // Status interno para la UI
       };
 
       if (!_chatRooms.containsKey(destinationAddress)) _chatRooms[destinationAddress] = [];
       _chatRooms[destinationAddress]!.insert(0, localMsg);
-      
       notifyListeners();
 
-      // 🔥 5. AUTO-DESTRUCCIÓN VISUAL (Para el que envía)
+      // 6. AUTO-DESTRUCCIÓN VISUAL
       if (ttlInSeconds != null && ttlInSeconds > 0) {
         Future.delayed(Duration(seconds: ttlInSeconds), () {
-          _chatRooms[destinationAddress]?.removeWhere((m) => m["id"] == msgId);
+          _chatRooms[destinationAddress]?.removeWhere((m) => m["id"] == tempMsgId);
           notifyListeners();
         });
       }
@@ -312,7 +340,55 @@ void _listenToMessages() {
       print("🚨 Error enviando mensaje cifrado: $e");
       return false;
     }
-  }
+  } 
+  // Future<bool> sendMessage(String destinationAddress, String contentJson, {int? ttlInSeconds}) async {
+  //   if (_channel == null) return false;
+  //   destinationAddress = destinationAddress.toLowerCase();
+
+  //   try {
+  //     // 1. Encriptamos
+  //     String encryptedPayload = CryptoChatHelper.encryptPayload(_authCore.publicAddress, destinationAddress, contentJson);
+
+  //     // 2. Preparamos el DTO para Spring Boot incluyendo el TTL
+  //     final payload = jsonEncode({
+  //       "senderWallet": _authCore.publicAddress.toLowerCase(),
+  //       "receiverWallet": destinationAddress,
+  //       "encryptedPayload": encryptedPayload,
+  //       "ttlInSeconds": ttlInSeconds // 🔥 Le decimos a Spring Boot en cuánto tiempo borrarlo
+  //     });
+
+  //     // 3. Enviamos por WebSocket
+  //     _channel!.sink.add(payload);
+
+  //     // 4. Guardado local
+  //     final String msgId = DateTime.now().millisecondsSinceEpoch.toString();
+  //     final localMsg = {
+  //       "id": msgId,
+  //       "sender": _authCore.publicAddress.toLowerCase(),
+  //       "content": contentJson,
+  //       "timestamp": DateTime.now(),
+  //     };
+
+  //     if (!_chatRooms.containsKey(destinationAddress)) _chatRooms[destinationAddress] = [];
+  //     _chatRooms[destinationAddress]!.insert(0, localMsg);
+      
+  //     notifyListeners();
+
+  //     // 🔥 5. AUTO-DESTRUCCIÓN VISUAL (Para el que envía)
+  //     if (ttlInSeconds != null && ttlInSeconds > 0) {
+  //       Future.delayed(Duration(seconds: ttlInSeconds), () {
+  //         _chatRooms[destinationAddress]?.removeWhere((m) => m["id"] == msgId);
+  //         notifyListeners();
+  //       });
+  //     }
+
+  //     return true;
+
+  //   } catch (e) {
+  //     print("🚨 Error enviando mensaje cifrado: $e");
+  //     return false;
+  //   }
+  // }
 
   /// 5. OBTENER TODAS LAS CONVERSACIONES (INBOX)
   // Future<List<Map<String, dynamic>>> getConversations() async {

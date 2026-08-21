@@ -330,8 +330,8 @@ class CreateVaultModal {
                       height: 56,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: tabIndex == 0 ? Colors.blueAccent : Colors.purpleAccent,
-                          foregroundColor: Colors.white,
+                        backgroundColor: tabIndex == 0 ? colorScheme.primary : colorScheme.secondary,
+                          foregroundColor: colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
                         ),
                         onPressed: (isProcessing || saldoInsuficiente) ? null : () async {
@@ -409,7 +409,8 @@ class CreateVaultModal {
   }
 
   static Widget _buildTab(int index, String title, IconData icon, bool isSelected, ColorScheme colorScheme, VoidCallback onTap) {
-    Color activeColor = index == 0 ? Colors.blueAccent : Colors.purpleAccent;
+    // 🔥 Usamos primary para Flexible (0) y secondary para Plazo Fijo (1)
+    Color activeColor = index == 0 ? colorScheme.primary : colorScheme.secondary;
 
     return GestureDetector(
       onTap: onTap, 

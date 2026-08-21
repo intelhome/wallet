@@ -194,4 +194,14 @@ Future<List<dynamic>> getMyPendingInvites() async {
       return res.statusCode == 200 ? "SUCCESS" : "Error al eliminar";
     } catch (e) { return "Error de red"; }
   }
+
+  Future<List<dynamic>> getTeamDashboardAnalytics() async {
+    try {
+      final url = ApiConfig.getTeamDashboard.replaceAll("{address}", authCore.publicAddress.toLowerCase());
+      final res = await http.get(Uri.parse(url), headers: authCore.authHeaders);
+      return res.statusCode == 200 ? jsonDecode(res.body) : [];
+    } catch (e) {
+      return [];
+    }
+  }
 }

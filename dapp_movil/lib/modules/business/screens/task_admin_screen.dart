@@ -47,21 +47,26 @@ class _TaskAdminScreenState extends State<TaskAdminScreen> {
     _loadAdminData();
     _conectarWebSocket();
   }
-
-  void _conectarWebSocket() {
+void _conectarWebSocket() {
     try {
       final authCore = Provider.of<AuthCoreService>(context, listen: false);
       String baseWsUrl = ApiConfig.baseUrl.replaceFirst('http', 'ws');
-      final wsUrl = "$baseWsUrl/ws/notifications/${authCore.publicAddress.toLowerCase()}";
+      
+      // 🔥 FIX 1: Cambiamos /ws/notifications/ por /ws/users/ que es el endpoint real del backend
+      final wsUrl = "$baseWsUrl/ws/users/${authCore.publicAddress.toLowerCase()}";
       
       _wsChannel = IOWebSocketChannel.connect(Uri.parse(wsUrl), headers: authCore.authHeaders);
       _wsChannel!.stream.listen((message) {
-        _loadAdminData();
-        PushNotificationService.showLocalNotification("Alerta Operativa 📋", "Un empleado ha interactuado con una tarea asignada.");
+        
+        // 🔥 FIX 2: Filtramos el mensaje para que no salte la alerta si el WS avisa de un "UPDATE_DEBTS"
+        if (message == "UPDATE_TASKS") {
+          _loadAdminData();
+          PushNotificationService.showLocalNotification("Alerta Operativa 📋", "Un empleado ha interactuado con una tarea asignada.");
+        }
+        
       });
     } catch (_) {}
   }
-
   @override
   void dispose() {
     _wsChannel?.sink.close();

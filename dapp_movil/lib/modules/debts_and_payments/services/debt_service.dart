@@ -192,4 +192,21 @@ class DebtService {
       return "Error de conexión";
     }
   }
+
+  Future<String> sendPaymentReminder(String debtId, String method) async {
+    try {
+      final res = await http.post(
+        Uri.parse("${ApiConfig.baseUrl}/debts/$debtId/remind"), 
+        headers: authCore.authHeaders,
+        body: jsonEncode({"method": method})
+      ).timeout(const Duration(seconds: 15));
+
+      if (res.statusCode == 200) {
+        return "Exito";
+      }
+      return _extractErrorMessage(res.body, res.statusCode);
+    } catch (e) {
+      return "Error de red al intentar enviar el recordatorio.";
+    }
+  }
 }

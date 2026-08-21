@@ -86,6 +86,35 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     super.dispose();
   }
 
+  // void _conectarWebSocket() {
+  //   try {
+  //     final authCore = Provider.of<AuthCoreService>(context, listen: false);
+  //     final wsUrl = "${ApiConfig.baseUrl.replaceFirst('http', 'ws')}/ws/groups/${widget.groupId}";
+      
+  //     _wsChannel = IOWebSocketChannel.connect(
+  //       Uri.parse(wsUrl),
+  //       headers: { if (authCore.jwtToken != null) "Authorization": "Bearer ${authCore.jwtToken}" }
+  //     );
+
+  //     _wsChannel!.stream.listen((message) {
+  //       if (message == "UPDATE" || message == "UPDATE_GROUP") {
+  //         _loadHistory();
+  //       } else {
+  //         try {
+  //           final data = jsonDecode(message);
+  //           if (data['type'] == 'TYPING' && data['senderWallet'] != authCore.publicAddress.toLowerCase()) {
+  //             setState(() => _typingUserAlias = data['senderAlias'] ?? "Alguien");
+  //             _typingTimer?.cancel();
+  //             _typingTimer = Timer(const Duration(seconds: 3), () {
+  //               if (mounted) setState(() => _typingUserAlias = null);
+  //             });
+  //           }
+  //         } catch (_) {}
+  //       }
+  //     });
+  //   } catch (e) {}
+  // }
+
   void _conectarWebSocket() {
     try {
       final authCore = Provider.of<AuthCoreService>(context, listen: false);
@@ -98,6 +127,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
       _wsChannel!.stream.listen((message) {
         if (message == "UPDATE" || message == "UPDATE_GROUP") {
+          // 🔥 Solo recargamos si no fuimos nosotros los que enviamos (Evita duplicados visuales)
+          // (Si necesitas recargar todo el historial para asegurar consistencia, puedes hacerlo,
+          // pero como ya inyectamos el nuestro localmente, es mejor recargar "silenciosamente"
+          // o solo cuando envían otros).
           _loadHistory();
         } else {
           try {
@@ -141,6 +174,22 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     setState(() => _isRecording = true);
   }
 
+  // Future<void> _detenerYEnviarAudio() async {
+  //   if (!_isRecording) return; 
+  //   final path = await _audioRecorder.stopRecorder();
+  //   setState(() => _isRecording = false);
+  //   if (path != null) {
+  //     File audioFile = File(path);
+  //     UIHelper.showCustomSnackbar("Cifrando nota de voz...");
+  //     final authCore = Provider.of<AuthCoreService>(context, listen: false);
+  //     final uploadData = await ChatMediaService.encryptAndUpload(audioFile, authCore.jwtToken ?? "");
+  //     if (uploadData != null) {
+  //       final payload = jsonEncode({"remoteUrl": uploadData['remoteUrl'], "localPath": audioFile.path, "mediaKey": uploadData['mediaKey'], "mediaIv": uploadData['mediaIv']});
+  //       await Provider.of<GroupSocialService>(context, listen: false).sendGroupMessage(groupId: widget.groupId, senderWallet: authCore.publicAddress.toLowerCase(), senderAlias: "Yo", content: payload, messageType: "AUDIO");
+  //     }
+  //   }
+  // }
+
   Future<void> _detenerYEnviarAudio() async {
     if (!_isRecording) return; 
     final path = await _audioRecorder.stopRecorder();
@@ -152,10 +201,22 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       final uploadData = await ChatMediaService.encryptAndUpload(audioFile, authCore.jwtToken ?? "");
       if (uploadData != null) {
         final payload = jsonEncode({"remoteUrl": uploadData['remoteUrl'], "localPath": audioFile.path, "mediaKey": uploadData['mediaKey'], "mediaIv": uploadData['mediaIv']});
-        await Provider.of<GroupSocialService>(context, listen: false).sendGroupMessage(groupId: widget.groupId, senderWallet: authCore.publicAddress.toLowerCase(), senderAlias: "Yo", content: payload, messageType: "AUDIO");
+        _ejecutarEnvioGrupal(payload, "AUDIO");
       }
     }
   }
+
+  // Future<void> _enviarImagen() async {
+  //   final authCore = Provider.of<AuthCoreService>(context, listen: false);
+  //   File? compressedImage = await ChatMediaService.pickAndCompressImage();
+  //   if (compressedImage == null) return;
+  //   UIHelper.showCustomSnackbar("Cifrando imagen...");
+  //   final uploadData = await ChatMediaService.encryptAndUpload(compressedImage, authCore.jwtToken ?? "");
+  //   if (uploadData != null) {
+  //     final payload = jsonEncode({"remoteUrl": uploadData['remoteUrl'], "localPath": compressedImage.path, "mediaKey": uploadData['mediaKey'], "mediaIv": uploadData['mediaIv'], "caption": ""});
+  //     await Provider.of<GroupSocialService>(context, listen: false).sendGroupMessage(groupId: widget.groupId, senderWallet: authCore.publicAddress.toLowerCase(), senderAlias: "Yo", content: payload, messageType: "IMAGE");
+  //   }
+  // }
 
   Future<void> _enviarImagen() async {
     final authCore = Provider.of<AuthCoreService>(context, listen: false);
@@ -165,12 +226,12 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     final uploadData = await ChatMediaService.encryptAndUpload(compressedImage, authCore.jwtToken ?? "");
     if (uploadData != null) {
       final payload = jsonEncode({"remoteUrl": uploadData['remoteUrl'], "localPath": compressedImage.path, "mediaKey": uploadData['mediaKey'], "mediaIv": uploadData['mediaIv'], "caption": ""});
-      await Provider.of<GroupSocialService>(context, listen: false).sendGroupMessage(groupId: widget.groupId, senderWallet: authCore.publicAddress.toLowerCase(), senderAlias: "Yo", content: payload, messageType: "IMAGE");
+      _ejecutarEnvioGrupal(payload, "IMAGE");
     }
   }
 
   // ==========================================================
-  // 🔥 LÓGICA REFACTORIZADA DE PAGOS DIVIDIDOS (SPLIT BILL)
+  //  LÓGICA REFACTORIZADA DE PAGOS DIVIDIDOS (SPLIT BILL)
   // ==========================================================
 
   Future<void> _abrirSplitBillScreen() async {
@@ -209,17 +270,16 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           onBillSplitSuccessDetails: (total, reason, perPerson) async {
             // 3. Cuando el pago se divida, mandamos la tarjeta al grupo
             String simId = "DEBT_MANUAL_${DateTime.now().millisecondsSinceEpoch}";
-            await groupService.sendGroupMessage(
-              groupId: widget.groupId,
-              senderWallet: authCore.publicAddress.toLowerCase(),
-              senderAlias: "Yo",
-              messageType: "SPLIT_BILL_CARD",
-              content: jsonEncode({
+            
+            //  FIX: Usamos _ejecutarEnvioGrupal en lugar del servicio directo
+            _ejecutarEnvioGrupal(
+              jsonEncode({
                 "text": "He dividido $total TTC por $reason. Nos toca de a ${perPerson.toStringAsFixed(2)} TTC.",
                 "splitBillId": simId,
                 "amountPerPerson": perPerson,
                 "creatorWallet": authCore.publicAddress.toLowerCase()
               }),
+              "SPLIT_BILL_CARD"
             );
           }
         )
@@ -293,16 +353,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             initialAddress: cardData['creatorWallet'], 
             debtId: debtId, 
             onUpdateBalance: () {}, 
-            mostrarMensaje: (msg, {bool esError = false}) { 
+           mostrarMensaje: (msg, {bool esError = false}) { 
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: esError ? Colors.red : Colors.green)); 
                 if (!esError) {
-                    final chatService = Provider.of<GroupSocialService>(context, listen: false);
-                    chatService.sendGroupMessage(
-                        groupId: widget.groupId,
-                        senderWallet: authCore.publicAddress.toLowerCase(),
-                        senderAlias: "Yo",
-                        messageType: "TEXT",
-                        content: jsonEncode({"text": "✅ He pagado mi parte (${cardData['amountPerPerson']} TTC) de la cuenta dividida."})
+                    //  FIX: Usamos _ejecutarEnvioGrupal en lugar del servicio directo para que se pinte al instante
+                    _ejecutarEnvioGrupal(
+                        jsonEncode({"text": "✅ He pagado mi parte (${cardData['amountPerPerson']} TTC) de la cuenta dividida."}),
+                        "TEXT"
                     );
                 }
             }
@@ -314,9 +371,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     String text = _msgController.text.trim();
     if (text.isEmpty) return;
     
-    setState(() { _isSending = true; }); 
+    _msgController.clear();
+    setState(() => _hasText = false);
     
-    final chatService = Provider.of<GroupSocialService>(context, listen: false);
     final miWallet = Provider.of<AuthCoreService>(context, listen: false).publicAddress.toLowerCase();
     
     if (AiTreasurerHandler.containsFinancialIntent(text)) {
@@ -325,18 +382,93 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     }
 
     final payload = jsonEncode({ "text": text, "content": text, "type": "TEXT" });
-    bool success = await chatService.sendGroupMessage(
-      groupId: widget.groupId, senderWallet: miWallet, senderAlias: "Yo", content: payload, messageType: "TEXT"
+    _ejecutarEnvioGrupal(payload, "TEXT");
+  }
+
+  Future<void> _ejecutarEnvioGrupal(String payloadJson, String messageType) async {
+    final chatService = Provider.of<GroupSocialService>(context, listen: false);
+    final authCore = Provider.of<AuthCoreService>(context, listen: false);
+    final miWallet = authCore.publicAddress.toLowerCase();
+    
+    // 1. Crear ID temporal y mensaje local para Lag-Zero
+    String tempId = "TEMP_${DateTime.now().millisecondsSinceEpoch}";
+    
+    Map<String, dynamic> localMsg = {
+      "id": tempId,
+      "groupId": widget.groupId,
+      "senderWallet": miWallet,
+      "senderAlias": "Yo",
+      "content": payloadJson,
+      "messageType": messageType,
+      "timestamp": DateTime.now().toIso8601String(),
+      "status": "SENT" // Pendiente de ACK
+    };
+
+    setState(() {
+      _messages.add(localMsg); // Insertamos en la UI al instante
+    });
+
+    // 2. Disparar petición HTTP real
+    final ackData = await chatService.sendGroupMessage(
+      groupId: widget.groupId, 
+      senderWallet: miWallet, 
+      senderAlias: "Yo", 
+      content: payloadJson, 
+      messageType: messageType,
+      tempId: tempId
     );
 
-    if (success) {
-      _msgController.clear();
-      setState(() { _hasText = false; });
+    // 3. Procesar ACK del backend
+    if (ackData != null && ackData['eventType'] == 'ACK') {
+      String idTemporalDevuelto = ackData['tempId'];
+      String idReal = ackData['realId'];
+
+      setState(() {
+        // Buscamos el mensaje temporal y lo "formalizamos"
+        for (var msg in _messages) {
+          if (msg['id'] == idTemporalDevuelto) {
+            msg['id'] = idReal;
+            msg['status'] = "DELIVERED"; // Dibuja el tick
+            break;
+          }
+        }
+      });
     } else {
-      UIHelper.showCustomSnackbar("Error del Servidor: El mensaje no pudo ser guardado.", isError: true);
+      // Falló, lo quitamos de la UI
+      setState(() {
+        _messages.removeWhere((msg) => msg['id'] == tempId);
+      });
+      UIHelper.showCustomSnackbar("Error: El mensaje no pudo ser guardado.", isError: true);
     }
-    setState(() => _isSending = false);
   }
+
+  // Future<void> _enviarMensajeTexto() async {
+  //   String text = _msgController.text.trim();
+  //   if (text.isEmpty) return;
+    
+  //   setState(() { _isSending = true; }); 
+    
+  //   final chatService = Provider.of<GroupSocialService>(context, listen: false);
+  //   final miWallet = Provider.of<AuthCoreService>(context, listen: false).publicAddress.toLowerCase();
+    
+  //   if (AiTreasurerHandler.containsFinancialIntent(text)) {
+  //     UIHelper.showCustomSnackbar("El Tesorero IA está calculando...");
+  //     await AiTreasurerHandler.processGroupMessage(context, text, widget.groupId, miWallet, widget.totalMembers);
+  //   }
+
+  //   final payload = jsonEncode({ "text": text, "content": text, "type": "TEXT" });
+  //   bool success = await chatService.sendGroupMessage(
+  //     groupId: widget.groupId, senderWallet: miWallet, senderAlias: "Yo", content: payload, messageType: "TEXT"
+  //   );
+
+  //   if (success) {
+  //     _msgController.clear();
+  //     setState(() { _hasText = false; });
+  //   } else {
+  //     UIHelper.showCustomSnackbar("Error del Servidor: El mensaje no pudo ser guardado.", isError: true);
+  //   }
+  //   setState(() => _isSending = false);
+  // }
 
   // ==========================================================
   // CONSTRUCCIÓN DE UI
@@ -409,12 +541,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                           return _buildSplitBillCard(jsonDecode(msg['content']), isMe);
                         }
 
-                        Map<String, dynamic> parsedMap;
+                       Map<String, dynamic> parsedMap;
                         try {
                           parsedMap = jsonDecode(msg['content']);
                           parsedMap['type'] = msg['messageType'];
+                          // Le pasamos el status para que pinte el ✓ si está 'DELIVERED'
+                          parsedMap['status'] = msg['status']; 
                         } catch (_) {
-                          parsedMap = {"type": msg['messageType'], "text": msg['content'], "content": msg['content']};
+                          parsedMap = {"type": msg['messageType'], "text": msg['content'], "content": msg['content'], "status": msg['status']};
                         }
 
                         return Column(

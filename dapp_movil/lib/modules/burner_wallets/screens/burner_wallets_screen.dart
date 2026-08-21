@@ -149,8 +149,8 @@ class _BurnerWalletsScreenState extends State<BurnerWalletsScreen> {
         onPressed: () => CreateBurnerModal.show(context: context, onSuccess: _refresh), // 🔥 LLamamos al nuevo modal independiente
         label: const Text("Nueva Tarjeta", style: TextStyle(fontWeight: FontWeight.bold)),
         icon: const Icon(Icons.add_card_rounded),
-        backgroundColor: const Color(0xFF4361EE),
-        foregroundColor: Colors.white,
+      backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary, 
         elevation: 2,
       ),
     );
@@ -192,7 +192,8 @@ class _BurnerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final String address = wallet['burnerAddress'] ?? '';
 
     return Card(
@@ -206,8 +207,9 @@ class _BurnerCard extends StatelessWidget {
         child: Container(
           height: 240,
           decoration: BoxDecoration(
+            // 🔥 Degradado usando los colores del AppTheme
             gradient: LinearGradient(
-              colors: [colorScheme.primary, colorScheme.secondary, const Color(0xFFFFB86B)], 
+              colors: [colorScheme.primary, colorScheme.secondary, colorScheme.tertiary.withOpacity(0.8)], 
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               stops: const [0.0, 0.6, 1.0],
@@ -225,7 +227,7 @@ class _BurnerCard extends StatelessWidget {
                       width: 45,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE0A96D),
+                        color: colorScheme.tertiary.withOpacity(0.8), // 🔥 Reemplaza el dorado quemado
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: Colors.white38, width: 0.5),
                       ),
@@ -277,7 +279,8 @@ class _BurnerCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           "${wallet['balance'] ?? '0.0'} TTC",
-                          style: const TextStyle(color: Color(0xFFFFD166), fontSize: 18, fontWeight: FontWeight.w900),
+                          // 🔥 Reemplaza el amarillo quemado por el texto onPrimary
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
                         ),
                       ],
                     ),

@@ -143,8 +143,20 @@ Si NO SE REQUIERE ninguna acción (Ej. charla, saludos, decir su nombre):
 }
 """;
 
+      // final aiMemoryService = Provider.of<AiMemoryService>(context, listen: false);
+      // final jsonResponse = await aiMemoryService.sendMessageWithMemory(userText, promptSistema);
+
       final aiMemoryService = Provider.of<AiMemoryService>(context, listen: false);
-      final jsonResponse = await aiMemoryService.sendMessageWithMemory(userText, promptSistema);
+      
+      // Creamos una copia del historial SIN el último globo de "Procesando..." para no ensuciar la IA
+      final historialParaIA = messages.where((m) => m["isLoading"] != true).toList();
+
+      final jsonResponse = await aiMemoryService.sendMessageWithMemory(
+        userText, 
+        promptSistema,
+        history: historialParaIA 
+      );
+
       
       if (!context.mounted) return;
 

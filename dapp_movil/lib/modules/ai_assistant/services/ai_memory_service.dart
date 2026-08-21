@@ -72,17 +72,28 @@ class AiMemoryService {
     }
   }
 
- 
- Future<Map<String, dynamic>?> sendMessageWithMemory(String message, String systemPrompt) async {
+
+  Future<Map<String, dynamic>?> sendMessageWithMemory(String message, String systemPrompt, {List<Map<String, dynamic>>? history}) async {
     try {
+      final Map<String, dynamic> bodyPayload = {
+        "walletAddress": authCore.publicAddress.toLowerCase(),
+        "message": message,
+        "systemPrompt": systemPrompt 
+      };
+
+      // 🔥 Inyectamos la memoria a corto plazo (El historial de la pantalla actual)
+      if (history != null && history.isNotEmpty) {
+        // Mapeamos para enviar texto puro que Spring Boot espera
+        bodyPayload["history"] = history.map((msg) => {
+          "isUser": msg["isUser"] == true ? "true" : "false",
+          "text": msg["text"].toString()
+        }).toList();
+      }
+
       final res = await http.post(
-        Uri.parse(ApiConfig.aiChat), 
+        Uri.parse(ApiConfig.aiChat), // Asegúrate de que esto apunte a /api/ai/chat o /chat-memory
         headers: _headers,
-        body: jsonEncode({
-          "walletAddress": authCore.publicAddress.toLowerCase(),
-          "message": message,
-          "systemPrompt": systemPrompt 
-        }),
+        body: jsonEncode(bodyPayload),
       ).timeout(const Duration(seconds: 30));
 
       if (res.statusCode == 200 || res.statusCode == 402) {
@@ -93,6 +104,28 @@ class AiMemoryService {
     }
     return null;
   }
+
+ 
+//  Future<Map<String, dynamic>?> sendMessageWithMemory(String message, String systemPrompt) async {
+//     try {
+//       final res = await http.post(
+//         Uri.parse(ApiConfig.aiChat), 
+//         headers: _headers,
+//         body: jsonEncode({
+//           "walletAddress": authCore.publicAddress.toLowerCase(),
+//           "message": message,
+//           "systemPrompt": systemPrompt 
+//         }),
+//       ).timeout(const Duration(seconds: 30));
+
+//       if (res.statusCode == 200 || res.statusCode == 402) {
+//         return jsonDecode(res.body);
+//       }
+//     } catch (e) {
+//       print("❌ [AiMemoryService] Error sendMessageWithMemory: $e");
+//     }
+//     return null;
+//   }
 
 
  Future<bool> extractPreferencesFromChat(List<String> plainMessages) async {

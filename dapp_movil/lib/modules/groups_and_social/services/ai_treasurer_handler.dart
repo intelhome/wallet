@@ -55,7 +55,9 @@ class AiTreasurerHandler {
             totalAmount: amount, description: desc, useGroupFunds: false 
           ); 
           */
-          String simulatedSplitBillId = "DEBT_${DateTime.now().millisecondsSinceEpoch}";
+         String simulatedSplitBillId = "DEBT_${DateTime.now().millisecondsSinceEpoch}";
+          //  FIX: Generamos un tempId para la IA
+          String tempId = "TEMP_AI_${DateTime.now().millisecondsSinceEpoch}";
 
           // 2. LA IA ENVÍA SU TARJETA INTERACTIVA AL CHAT GRUPAL
           await chatService.sendGroupMessage(
@@ -65,12 +67,13 @@ class AiTreasurerHandler {
             messageType: "SPLIT_BILL_CARD",
             content: jsonEncode({
               "text": "¡Anotado! He dividido $amount TTC por $desc. Les toca de a ${perPerson.toStringAsFixed(2)} TTC.",
-              "splitBillId": simulatedSplitBillId, // El ID de la deuda generada
+              "splitBillId": simulatedSplitBillId, 
               "amountPerPerson": perPerson,
               "creatorWallet": miWallet
             }),
+            tempId: tempId, // 🔥 FIX: Agregamos el parámetro faltante
           );
-          return true; // Resolvió la intención
+          return true;
         }
       }
     } catch (e) {

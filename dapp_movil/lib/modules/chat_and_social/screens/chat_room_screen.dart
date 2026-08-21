@@ -425,29 +425,27 @@ Future<void> _iniciarGrabacion() async {
     );
   }
 
-  Future<void> _enviarImagen() async {
+ Future<void> _enviarImagen() async {
     final authCore = Provider.of<AuthCoreService>(context, listen: false);
     
-    // 1. Abrimos galería y comprimimos
     File? compressedImage = await ChatMediaService.pickAndCompressImage();
     if (compressedImage == null) return;
 
     UIHelper.showCustomSnackbar("Cifrando y subiendo imagen...");
 
-    // 2. Ciframos físicamente y subimos al servidor
     final uploadData = await ChatMediaService.encryptAndUpload(compressedImage, authCore.jwtToken ?? "");
     
     if (uploadData != null) {
-      // 3. Enviamos la llave y la URL por el chat seguro
       final payload = jsonEncode({
         "type": "IMAGE",
         "remoteUrl": uploadData['remoteUrl'],
-        "localPath": compressedImage.path, // Para mostrarlo yo sin descargarlo
+        "localPath": compressedImage.path, 
         "mediaKey": uploadData['mediaKey'],
         "mediaIv": uploadData['mediaIv'],
         "caption": ""
       });
 
+      // El tipo "IMAGE" ya va dentro del JSON, tu SecureChatService modificado lo extraerá para el backend
       await _chatService.sendMessage(widget.address.toLowerCase(), payload, ttlInSeconds: _isEphemeral ? 60 : null);
     } else {
       UIHelper.showCustomSnackbar("Error al subir la imagen", isError: true);

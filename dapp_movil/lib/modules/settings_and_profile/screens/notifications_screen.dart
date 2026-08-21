@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:dapp_movil/core/services/local_cache_service.dart';
 import 'package:dapp_movil/modules/settings_and_profile/modals/notifications_details_modal.dart';
 import 'package:flutter/material.dart';
@@ -64,6 +65,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       print("🚨 Error cargando notificaciones: $e");
       if (mounted && _notifications.isEmpty) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _clearNotifications() async {
+    bool? confirm = await UIHelper.mostrarConfirmacion(
+      context: context,
+      titulo: "Limpiar Notificaciones",
+      mensaje: "¿Estás seguro de que deseas borrar todo tu historial de notificaciones?",
+      textoConfirmar: "Sí, borrar",
+      colorConfirmar: Theme.of(context).colorScheme.error,
+    );
+    if (confirm == true) {
+      setState(() => _isLoading = true);
+      final authCore = Provider.of<AuthCoreService>(context, listen: false);
+      try {
+        await http.delete(Uri.parse(ApiConfig.clearNotifications), headers: authCore.authHeaders);
+        setState(() { _notifications.clear(); _isLoading = false; });
+        await LocalCacheService().saveNotifications([]);
+        UIHelper.showCustomSnackbar("Historial limpiado correctamente");
+      } catch (e) {
+        setState(() => _isLoading = false);
+        UIHelper.showCustomSnackbar("Error de red", isError: true);
+      }
     }
   }
 
@@ -195,11 +219,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
+   appBar: AppBar(
         title: const Text("TTC Wallet", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.delete_sweep_rounded, color: theme.colorScheme.error),
+            tooltip: "Limpiar Historial",
+            onPressed: _notifications.isEmpty ? null : _clearNotifications,
+          )
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

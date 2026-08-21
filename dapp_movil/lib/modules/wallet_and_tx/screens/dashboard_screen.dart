@@ -12,6 +12,7 @@ import 'package:dapp_movil/modules/auth_and_security/services/planConfigService.
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/burner_wallets/screens/burner_wallets_screen.dart';
 import 'package:dapp_movil/modules/business/screens/admin_burner_history_screen.dart';
+import 'package:dapp_movil/modules/business/screens/employee_management_screen.dart';
 import 'package:dapp_movil/modules/business/screens/job_invites_screen.dart';
 import 'package:dapp_movil/modules/business/screens/task_admin_screen.dart';
 import 'package:dapp_movil/modules/business/screens/task_details_screen.dart';
@@ -27,6 +28,7 @@ import 'package:dapp_movil/modules/document_notary/screens/document_notary_scree
 import 'package:dapp_movil/modules/document_notary/screens/document_validator_screen.dart';
 import 'package:dapp_movil/modules/document_notary/screens/hash_validator_screen.dart';
 import 'package:dapp_movil/modules/groups_and_social/screens/contacts_screen.dart';
+import 'package:dapp_movil/modules/groups_and_social/screens/social_screen.DART';
 import 'package:dapp_movil/modules/settings_and_profile/modals/web3_id_card_modal.dart';
 import 'package:dapp_movil/modules/settings_and_profile/screens/notifications_screen.dart';
 import 'package:dapp_movil/modules/settings_and_profile/services/user_service.dart';
@@ -728,16 +730,60 @@ Future<void> _cargarCacheLocal() async {
   );
 }
 
- void _abrirPantallaPaypal() {
-  SendPaypalModal.show(
-    context: context,
-    onSuccess: () {
-      // Aquí llamas a tu función para recargar el saldo o historial del Dashboard
-       _cargarBalance();
-      print("Pago PayPal completado, refrescando Dashboard");
-    },
-  );
-}
+//  void _abrirPantallaPaypal() {
+//   SendPaypalModal.show(
+//     context: context,
+//     onSuccess: () {
+//       // Aquí llamas a tu función para recargar el saldo o historial del Dashboard
+//        _cargarBalance();
+//       print("Pago PayPal completado, refrescando Dashboard");
+//     },
+//   );
+// }
+
+void _abrirPantallaPaypal() async {
+    // 1. Verificamos SI NOSOTROS (el que paga/cobra) tenemos PayPal habilitado
+    final userService = Provider.of<UserService>(context, listen: false);
+    final myStatus = await userService.checkPayeePayPal(authCore.publicAddress);
+
+    // Si nos dice que es false (no activo) o nulo
+    if (myStatus == null || myStatus['paypalEnabled'] != true) {
+      
+      // 2. Le preguntamos si desea configurarlo AHORA
+      bool? goSettings = await UIHelper.mostrarConfirmacion(
+        context: context, 
+        titulo: "PayPal no configurado", 
+        mensaje: "Para poder utilizar la pasarela P2P de PayPal, debes vincular tu correo primero en las configuraciones de seguridad de forma encriptada.\n\n¿Deseas configurarlo ahora?", 
+        textoConfirmar: "Ir a Configuración", 
+        colorConfirmar: Colors.blueAccent
+      );
+
+      if (goSettings == true && mounted) {
+        // 3. Abrimos SettingsScreen y le pasamos una GlobalKey para llamar a su método interno
+        final GlobalKey<SettingsScreenState> settingsKey = GlobalKey<SettingsScreenState>();
+        
+        Navigator.push(context, RouteHelper.slideUpRoute(SettingsScreen(
+          key: settingsKey,
+          aliasUsuario: _miAlias.replaceAll("@", "")
+        )));
+
+        // Le damos un milisegundo a la pantalla para renderizar y disparamos el Focus
+        Future.delayed(const Duration(milliseconds: 800), () {
+           settingsKey.currentState?.focusOnPayPal();
+        });
+      }
+      return; 
+    }
+
+    // Si sí lo tiene activo, abre el modal normal
+    SendPaypalModal.show(
+      context: context,
+      onSuccess: () {
+        _cargarBalance();
+        print("Pago PayPal completado, refrescando Dashboard");
+      },
+    );
+  }
 
 Widget _buildBudgetTracker() {
     if (_presupuestoMensual <= 0) return const SizedBox.shrink(); 
@@ -1008,10 +1054,11 @@ return Scaffold(
                               SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.history_rounded, texto: "Historial\nActividades", onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const TaskHistoryScreen())), color: colorScheme.primary)),
 
                               // --- FILA 2: SOCIAL & PAGOS ---
-                              SizedBox(width: itemWidth, child: _BotonAccion(
+                             SizedBox(width: itemWidth, child: _BotonAccion(
                                 icono: Icons.contacts_rounded, texto: "Contactos", 
                                 color: planConfig.hasFeature(currentTier, 'CONTACTOS') ? Colors.blueAccent : Colors.grey.withOpacity(0.5),
-                                onTap: () => planConfig.hasFeature(currentTier, 'CONTACTOS') ? Navigator.push(context, RouteHelper.slideUpRoute(const ContactsScreen())) : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Agenda de Contactos")
+                                // Cambia const ContactsScreen() a const SocialScreen()
+                                onTap: () => planConfig.hasFeature(currentTier, 'CONTACTOS') ? Navigator.push(context, RouteHelper.slideUpRoute(const SocialScreen())) : PremiumBlockerModal.show(context, planRequerido: "FREE", featureName: "Agenda de Contactos")
                               )),
                               // Invitaciones y Tareas de empresa son libres para aceptar trabajos/colaborar
                               SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.add_business_rounded, texto: "Invitaciones", onTap: _abrirPantallaEmpresasInvitacion, color: colorScheme.primary)),
@@ -1080,6 +1127,13 @@ return Scaffold(
                                   icono: Icons.business_center_rounded, texto: "Empresas", 
                                   color: (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness || isAdmin) ? colorScheme.primary : Colors.grey.withOpacity(0.5),
                                   onTap: () => (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness || isAdmin) ? _abrirPantallaEmpresas() : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Panel de Empresas")
+                                )),
+
+                                if (isBusiness || isAdmin)
+                                SizedBox(width: itemWidth, child: _BotonAccion(
+                                  icono: Icons.manage_accounts_rounded, texto: "Personal", 
+                                  color: (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness || isAdmin) ? colorScheme.primary : Colors.grey.withOpacity(0.5),
+                                  onTap: () => (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness || isAdmin) ? Navigator.push(context, RouteHelper.slideUpRoute(const EmployeeManagementScreen())) : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Gestión de Personal")
                                 )),
                             
                               if (isBusiness)

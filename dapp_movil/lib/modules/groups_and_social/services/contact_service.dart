@@ -94,7 +94,7 @@ class ContactService {
     }
   }
 
-  Future<bool> updateContact(String contactId, {String? alias, String? category, bool? isFavorite}) async {
+Future<bool> updateContact(String contactId, {String? alias, String? category, bool? isFavorite}) async {
     try {
       final bodyData = <String, dynamic>{};
       if (alias != null) bodyData["alias"] = alias;
@@ -102,12 +102,31 @@ class ContactService {
       if (isFavorite != null) bodyData["isFavorite"] = isFavorite;
 
       final url = Uri.parse(ApiConfig.updateContact.replaceAll("{id}", contactId));
-      final response = await http.put(url, headers: authCore.authHeaders, body: jsonEncode(bodyData));
+      
+      // 🔥 FIX: Cambiado de http.put a http.patch para coincidir con el Backend
+      final response = await http.patch(url, headers: authCore.authHeaders, body: jsonEncode(bodyData));
 
       return response.statusCode == 200;
     } catch (e) {
       return false;
     }
+  }
+
+  Future<List<dynamic>> syncPhoneContacts(List<String> phoneNumbers) async {
+    try {
+      final res = await http.post(
+        Uri.parse("${ApiConfig.baseUrl}/contacts/sync"), // El endpoint que creamos
+        headers: authCore.authHeaders,
+        body: jsonEncode({"phoneNumbers": phoneNumbers}),
+      ).timeout(const Duration(seconds: 15));
+
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (e) {
+      print("Error syncPhoneContacts: $e");
+    }
+    return [];
   }
 
   Future<bool> deleteContact(String contactId) async {

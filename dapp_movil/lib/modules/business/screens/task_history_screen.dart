@@ -126,17 +126,22 @@ Future<void> _loadData() async {
     });
   }
 
-  void _seleccionarDepartamento() {
+void _seleccionarDepartamento() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Fondo general oscuro
+      isScrollControlled: true, // 🔥 FIX 1: Permite que el modal tome el tamaño necesario
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
         final onSurface = Theme.of(context).colorScheme.onSurface;
         return Padding(
-          padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16, top: 16),
+          // 🔥 FIX 2: Usamos viewInsets y padding bottom seguro para evitar cortes
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).padding.bottom + 24, 
+            left: 16, right: 16, top: 24
+          ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min, // 🔥 FIX 3: Solo toma el espacio que necesita
             children: [
               // HEADER CON TÍTULO Y BOTÓN DE CERRAR
               Row(
@@ -151,43 +156,49 @@ Future<void> _loadData() async {
               ),
               Divider(color: onSurface.withOpacity(0.1), height: 16),
               
-              // OPCIONES DE ÁREAS (EN TARJETA UNIFICADA)
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: onSurface.withOpacity(0.05)),
-                ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: Icon(Icons.business_rounded, color: onSurface.withOpacity(0.5)),
-                      title: Text("Todas las Áreas / Empleados", style: TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
-                      onTap: () {
-                        setState(() { _selectedDeptId = null; _applyFilter(); });
-                        Navigator.pop(ctx);
-                      },
+              // OPCIONES DE ÁREAS (EN TARJETA UNIFICADA Y SCROLLABLE)
+              Flexible( // 🔥 FIX 4: Evita el desbordamiento de altura
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: onSurface.withOpacity(0.05)),
                     ),
-                    Divider(color: onSurface.withOpacity(0.05), height: 1, indent: 56),
-                    ..._departments.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final dept = entry.value;
-                      final isLast = index == _departments.length - 1;
-                      return Column(
-                        children: [
-                          ListTile(
-                            leading: Icon(Icons.work_outline_rounded, color: onSurface.withOpacity(0.5)),
-                            title: Text(dept['name'], style: TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
-                            onTap: () {
-                              setState(() { _selectedDeptId = dept['id']; _applyFilter(); });
-                              Navigator.pop(ctx);
-                            },
-                          ),
-                          if (!isLast) Divider(color: onSurface.withOpacity(0.05), height: 1, indent: 56),
-                        ],
-                      );
-                    }).toList(),
-                  ],
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: Icon(Icons.business_rounded, color: onSurface.withOpacity(0.5)),
+                          title: Text("Todas las Áreas / Empleados", style: TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
+                          onTap: () {
+                            setState(() { _selectedDeptId = null; _applyFilter(); });
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                        Divider(color: onSurface.withOpacity(0.05), height: 1, indent: 56),
+                        ..._departments.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final dept = entry.value;
+                          final isLast = index == _departments.length - 1;
+                          return Column(
+                            children: [
+                              ListTile(
+                                leading: Icon(Icons.work_outline_rounded, color: onSurface.withOpacity(0.5)),
+                                title: Text(dept['name'], style: TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
+                                onTap: () {
+                                  setState(() { _selectedDeptId = dept['id']; _applyFilter(); });
+                                  Navigator.pop(ctx);
+                                },
+                              ),
+                              if (!isLast) Divider(color: onSurface.withOpacity(0.05), height: 1, indent: 56),
+                            ],
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -196,7 +207,6 @@ Future<void> _loadData() async {
       }
     );
   }
-
   void _applyFilter() {
     List<dynamic> filtered = _allTasks.where((task) {
       // 1. FILTRO POR FECHA (Usamos la fecha de creación)
