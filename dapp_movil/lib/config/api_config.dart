@@ -83,6 +83,9 @@ static const String registerBusiness = "$baseUrl/users/register/business";
   static const String approveMultisigTransaction = "$baseUrl/payments/groups/{requestId}/approve";
   static const String getGroupBalance = "$baseUrl/transactions/balance/{walletAddress}";
   static const String stakeGroupTokens = "$baseUrl/payments/groups/{groupId}/{actionType}";
+
+  // --- LLAMADAS Y SEÑALIZACIÓN ---
+  static const String wakeUpCall = "$baseUrl/calls/wake-up";
   // Variables faltantes para Grupos:
   static const String updateGroup = "$baseUrl/groups/{id}";
 
@@ -175,6 +178,7 @@ static const String cancelScheduledPayment = "$baseUrl/payments/scheduled/{id}";
 
   static const String getNotifications = "$baseUrl/notifications";
   static const String markNotificationRead = "$baseUrl/notifications/{id}/read";
+  static const String clearNotifications = "$baseUrl/notifications/clear";
 
   // --- BUSINESS / EMPRESAS ---
   static const String inviteTeamMember = "$baseUrl/business/invite";
@@ -184,6 +188,7 @@ static const String cancelScheduledPayment = "$baseUrl/payments/scheduled/{id}";
   static const String removeTeamMember = "$baseUrl/business/{address}/team/{identifier}";
   static const String getTeamWithDetails = "$baseUrl/business/{address}/team/details";
   static const String getMyEmployers = "$baseUrl/business/employers/{address}";
+  static const String getTeamDashboard = "$baseUrl/business/{address}/team/dashboard";
   // --- DEPARTAMENTOS ---
   static const String getDepartments = "$baseUrl/business/departments/{address}";
   static const String createDepartment = "$baseUrl/business/departments";
@@ -199,6 +204,7 @@ static const String cancelScheduledPayment = "$baseUrl/payments/scheduled/{id}";
   static const String editBusinessTask = "$baseUrl/business/tasks/{taskId}";
   static const String deleteBusinessTask = "$baseUrl/business/tasks/{taskId}";
   static const String getUserWorkload = "$baseUrl/business/tasks/workload/{wallet}";
+  static const String reassignBusinessTask = "$baseUrl/business/tasks/{taskId}/reassign";
 
   // --- FAMILIA ---
   static const String inviteFamily = "$baseUrl/family/invite";
@@ -224,6 +230,26 @@ static const String cancelScheduledPayment = "$baseUrl/payments/scheduled/{id}";
   static const String aiChat = "$baseUrl/ai/chat-memory";
 
   static const String testAiPush = "$baseUrl/notifications/test-ai-push";
+
+  // --- BUSINESS GROUPS (Grupos Corporativos) ---
+  static const String createBusinessGroup = "$baseUrl/business-groups/create-area";
+  static const String getBusinessGroupsEmployer = "$baseUrl/business-groups/business/{address}";
+  static const String getBusinessGroupsEmployee = "$baseUrl/business-groups/employee/{address}";
+  static const String getBusinessGroupMembers = "$baseUrl/business-groups/{groupId}/members";
+  static const String removeBusinessGroupMember = "$baseUrl/business-groups/{groupId}/members/{wallet}";
+  static const String getBusinessGroupProductivity = "$baseUrl/business-groups/{groupId}/productivity";
+  static const String addBusinessGroupResource = "$baseUrl/business-groups/{groupId}/resources";
+  static const String addBusinessGroupGoal = "$baseUrl/business-groups/{groupId}/goals";
+  static const String updateBusinessGroupAnnouncement = "$baseUrl/business-groups/{groupId}/announcement";
+  static const String getBusinessGroupById = "$baseUrl/business-groups/{groupId}";
+  static const String auditBusinessGroupMember = "$baseUrl/business-groups/{groupId}/audit/{address}";
+  //static const String updateBusinessGroupResource = "$baseUrl/business-groups/{groupId}/resources/{resourceId}";
+  static const String deleteBusinessGroupResource = "$baseUrl/business-groups/{groupId}/resources/{resourceId}";
+  //static const String updateBusinessGroupGoal = "$baseUrl/business-groups/{groupId}/goals/{goalId}";
+  static const String deleteBusinessGroupGoal = "$baseUrl/business-groups/{groupId}/goals/{goalId}";
+  static const String addBusinessGroupGoalProgress = "$baseUrl/business-groups/{groupId}/goals/{goalId}/progress";
+  static const String updateBusinessGroupResource = "$baseUrl/business-groups/{groupId}/resources/{resourceId}";
+  static const String updateBusinessGroupGoal = "$baseUrl/business-groups/{groupId}/goals/{goalId}";
 
   static String aiStream(String address) => "$baseUrl/ai/memory/$address/stream";
   static String aiExtract(String address) => "$baseUrl/ai/memory/$address/extract";

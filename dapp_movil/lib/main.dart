@@ -11,6 +11,8 @@ import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.
 import 'package:dapp_movil/modules/burner_wallets/services/burner_service.dart';
 import 'package:dapp_movil/modules/business/services/business_service.dart';
 import 'package:dapp_movil/modules/business/services/business_task_service.dart';
+import 'package:dapp_movil/modules/business_groups/services/business_group_service.dart';
+import 'package:dapp_movil/modules/call_and_social/services/call_service.dart';
 import 'package:dapp_movil/modules/chat_and_social/screens/chat_room_screen.dart';
 import 'package:dapp_movil/modules/chat_and_social/services/secure_chat_service.dart';
 import 'package:dapp_movil/modules/crowdfunding/services/crowdfunding_service.dart';
@@ -158,6 +160,10 @@ final authCore = AuthCoreService();
           update: (_, authCore, __) => BusinessService(authCore),
         ),
 
+        ProxyProvider<AuthCoreService, BusinessGroupService>(
+          update: (_, authCore, __) => BusinessGroupService(authCore),
+        ),
+
         ProxyProvider<AuthCoreService, BusinessTaskService>(
           update: (_, authCore, __) => BusinessTaskService(authCore),
         ),
@@ -167,7 +173,9 @@ final authCore = AuthCoreService();
         ProxyProvider<AuthCoreService, FamilyService>(
           update: (_, authCore, __) => FamilyService(authCore),
         ),
-
+        ProxyProvider2<AuthCoreService, UserService, CallService>(
+          update: (_, authCore, userService, __) => CallService(authCore, userService),
+        ),
         ProxyProvider<AuthCoreService, UserConfigService>(
           update: (_, authCore, __) => UserConfigService(authCore),
         ),
@@ -222,7 +230,8 @@ class _MiDAppState extends State<MiDApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    PushNotificationService.init();
+   final authCore = Provider.of<AuthCoreService>(navigatorKey.currentContext ?? context, listen: false);
+    PushNotificationService.init(authCore);
   }
 
   @override

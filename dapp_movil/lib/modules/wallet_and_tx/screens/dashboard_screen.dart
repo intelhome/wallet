@@ -19,6 +19,7 @@ import 'package:dapp_movil/modules/business/screens/task_details_screen.dart';
 import 'package:dapp_movil/modules/business/screens/task_employee_screen.dart';
 import 'package:dapp_movil/modules/business/screens/task_history_screen.dart';
 import 'package:dapp_movil/modules/business/screens/team_management_screen.dart';
+import 'package:dapp_movil/modules/business_groups/screens/business_groups_screen.dart';
 import 'package:dapp_movil/modules/debts_and_payments/screens/debts_and_payments_hub_screen.dart';
 import 'package:dapp_movil/modules/debts_and_payments/screens/debts_screen.dart';
 import 'package:dapp_movil/modules/debts_and_payments/screens/scheduled_payments_screen.dart';
@@ -1064,6 +1065,12 @@ return Scaffold(
                               SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.add_business_rounded, texto: "Invitaciones", onTap: _abrirPantallaEmpresasInvitacion, color: colorScheme.primary)),
                               if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(icono: Icons.task_rounded, texto: "Tareas\nEmpresa", onTap: _abrirPantallaTaskUsuario, color: colorScheme.primary)),
 
+                              if (!isBusiness) SizedBox(width: itemWidth, child: _BotonAccion(
+                                icono: Icons.home_work_rounded, texto: "Grupos\nEmpresa", 
+                                onTap: () => Navigator.push(context, RouteHelper.slideUpRoute(const BusinessGroupsScreen(isEmployer: false))), 
+                                color: colorScheme.primary
+                              )),
+                              
                               SizedBox(width: itemWidth, child: _BotonAccion(
                                 icono: Icons.add_link_rounded, texto: "Enlaces de\nCobro", 
                                 color: planConfig.hasFeature(currentTier, 'ENLACES_COBRO') ? colorScheme.primary : Colors.grey.withOpacity(0.5),
@@ -1134,6 +1141,13 @@ return Scaffold(
                                   icono: Icons.manage_accounts_rounded, texto: "Personal", 
                                   color: (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness || isAdmin) ? colorScheme.primary : Colors.grey.withOpacity(0.5),
                                   onTap: () => (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness || isAdmin) ? Navigator.push(context, RouteHelper.slideUpRoute(const EmployeeManagementScreen())) : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Gestión de Personal")
+                                )),
+
+                                if (isBusiness || isAdmin)
+                                SizedBox(width: itemWidth, child: _BotonAccion(
+                                  icono: Icons.home_work_rounded, texto: "Grupos\nCorp.", 
+                                  color: (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness || isAdmin) ? colorScheme.primary : Colors.grey.withOpacity(0.5),
+                                  onTap: () => (planConfig.hasFeature(currentTier, 'OPCION_NEGOCIO') || isBusiness || isAdmin) ? Navigator.push(context, RouteHelper.slideUpRoute(const BusinessGroupsScreen(isEmployer: true))) : PremiumBlockerModal.show(context, planRequerido: "PREMIUM", featureName: "Grupos Corporativos")
                                 )),
                             
                               if (isBusiness)

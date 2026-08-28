@@ -6,6 +6,8 @@ import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:dapp_movil/modules/ai_assistant/services/ai_memory_service.dart';
 import 'package:dapp_movil/modules/business/modals/create_task_modal.dart';
 import 'package:dapp_movil/modules/business/services/business_service.dart';
+import 'package:dapp_movil/modules/call_and_social/screens/call_placeholder_screen.dart';
+import 'package:dapp_movil/modules/call_and_social/services/call_service.dart';
 import 'package:dapp_movil/modules/chat_and_social/modals/chat_profile_modal.dart';
 import 'package:dapp_movil/modules/chat_and_social/services/chat_media_service.dart';
 import 'package:dapp_movil/modules/chat_and_social/services/secure_chat_service.dart';
@@ -451,330 +453,6 @@ Future<void> _iniciarGrabacion() async {
       UIHelper.showCustomSnackbar("Error al subir la imagen", isError: true);
     }
   }
-  
-//   @override
-//   Widget build(BuildContext context) {
-//     final theme = Theme.of(context);
-//     final colorScheme = theme.colorScheme;
-//     final authCore = Provider.of<AuthCoreService>(context, listen: false);
-
-//     return Scaffold(
-//       backgroundColor: theme.scaffoldBackgroundColor,
-//      appBar: AppBar(
-//         backgroundColor: theme.cardColor,
-//         elevation: 1,
-//         titleSpacing: 0,
-//         actions: [
-//           IconButton(
-//             icon: const Icon(Icons.auto_awesome_rounded, color: Colors.amberAccent),
-//             tooltip: 'Aprender de este chat',
-//             onPressed: () => _extraerConocimiento(context),
-//           ),
-//         ],
-//         title: GestureDetector(
-//           onTap: () => ChatProfileModal.show(context, widget.address), // 🔥 MAGIA: Abre el modal al tocar
-//           child: Row(
-//             children: [
-//               SmartAvatar(address: widget.address, size: 36),
-//               const SizedBox(width: 12),
-//               Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   Text(widget.alias, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  
-//                   // 🔥 Animación de "Escribiendo..."
-//                 Consumer<SecureChatService>(
-//                       builder: (context, chatService, child) {
-//                         if (chatService.typingUser == widget.address.toLowerCase()) {
-//                           return Text("escribiendo...", style: TextStyle(color: colorScheme.primary, fontSize: 12, fontStyle: FontStyle.italic));
-//                         }
-//                         return Text(
-//                           "${widget.address.substring(0,6)}...${widget.address.substring(widget.address.length - 4)}", 
-//                           style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.5), fontFamily: 'monospace')
-//                         );
-//                       },
-//                   ),
-//                 ],
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//       body: _isLoading 
-//         ? const Center(child: CircularProgressIndicator())
-//         : Stack(
-//             children: [
-//               // 1. EL CONTENIDO PRINCIPAL (LISTA DE CHAT Y BARRA)
-//               Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   Expanded(
-//                     child: ListView.builder(
-//                       controller: _scrollController, // 🔥 AQUÍ LO AGREGAS
-//                       physics: const BouncingScrollPhysics(),
-//                       padding: const EdgeInsets.symmetric(vertical: 20),
-//                       reverse: true, // Empieza desde abajo
-//                       itemCount: _messages.length,
-//                       itemBuilder: (context, index) {
-//                         final rawMsg = _messages[index];
-//                         final parsedMap = _parseMessageContent(rawMsg['content'].toString());
-                        
-//                         final miBilletera = authCore.publicAddress.toLowerCase();
-//                         final senderWallet = rawMsg['sender'].toString().toLowerCase();
-//                         final isMe = (senderWallet == miBilletera) || (senderWallet == 'me');
-                        
-//                         return MessageBubble(message: parsedMap, isMe: isMe, peerAddress: widget.address);
-//                       },
-//                     ),
-//                   ),
-                  
-//                   // 🔥 INDICADOR DE "ESCRIBIENDO..."
-//                   Consumer<SecureChatService>(
-//                     builder: (context, chatService, child) {
-//                       if (chatService.typingUser == widget.address.toLowerCase()) {
-//                         return Padding(
-//                           padding: const EdgeInsets.only(left: 24.0, bottom: 8.0),
-//                           child: Row(
-//                             mainAxisSize: MainAxisSize.min,
-//                             children: [
-//                               Text(
-//                                 "${widget.alias} está escribiendo", 
-//                                 style: TextStyle(color: colorScheme.primary, fontSize: 13, fontStyle: FontStyle.italic, fontWeight: FontWeight.bold)
-//                               ),
-//                               Text("...", style: TextStyle(color: colorScheme.primary, fontSize: 13, fontWeight: FontWeight.bold)),
-//                             ],
-//                           ),
-//                         );
-//                       }
-//                       return const SizedBox.shrink();
-//                     },
-//                   ),
-
-//                   // 🔥 BARRA DE ENTRADA DE CHAT EXTRÍDA
-//                   _buildInputArea(),
-//                 ],
-//               ),
-
-//               // 🔥 2. EL MENÚ DESPLEGABLE DEL CLIP (AHORA ES CLICKEABLE)
-//               if (_showAttachmentMenu)
-//                 Positioned(
-//                   bottom: 75, // Justo encima de la barra
-//                   left: 5,
-//                   child: _buildAttachmentMenu(),
-//                 ),
-
-//               // 🔥 3. TOOLTIP TEMPORAL DE ENSEÑANZA
-//               if (_showMicTutorial)
-//                 Positioned(
-//                   bottom: 80,
-//                   right: 15,
-//                   child: Material(
-//                     color: Colors.transparent,
-//                     child: Container(
-//                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-//                       decoration: BoxDecoration(
-//                         color: colorScheme.primary,
-//                         borderRadius: BorderRadius.circular(16),
-//                         boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
-//                       ),
-//                       child: const Text(
-//                         "Mantén presionado para Audio 🎤\n¡O arrastra a la izquierda para IA! ✨",
-//                         style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-//                         textAlign: TextAlign.center,
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//             ],
-//           ),
-//     );
-//   }
-
-// Widget _buildAttachmentMenu() {
-//     final theme = Theme.of(context);
-//     return Material(
-//       color: Colors.transparent,
-//       child: Container(
-//         margin: const EdgeInsets.only(bottom: 10, left: 10),
-//         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-//         decoration: BoxDecoration(
-//           color: theme.cardColor,
-//           borderRadius: BorderRadius.circular(24),
-//           boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, spreadRadius: 2)],
-//         ),
-//         child: Column(
-//           mainAxisSize: MainAxisSize.min,
-//           children: [
-//             IconButton(
-//               icon: const Icon(Icons.attach_money_rounded, color: Colors.green),
-//               tooltip: "Enviar TTC",
-//               onPressed: () async {
-//                 setState(() => _showAttachmentMenu = false);
-//                 String saldo = await Provider.of<TransactionService>(context, listen: false).getBalance();
-//                 if (!mounted) return;
-//                 SendModal.show(context: context, balanceTTC: saldo, initialAddress: "@${widget.alias}", onUpdateBalance: () {}, mostrarMensaje: (m, {bool esError=false}) {});
-//               },
-//             ),
-//             IconButton(
-//               icon: Icon(Icons.timer_rounded, color: _isEphemeral ? Colors.redAccent : Colors.grey),
-//               tooltip: "Chat Efímero",
-//               onPressed: () {
-//                 setState(() { _isEphemeral = !_isEphemeral; _showAttachmentMenu = false; });
-//                 UIHelper.showCustomSnackbar(_isEphemeral ? "Modo Efímero Activado (10 min)" : "Modo Efímero Desactivado");
-//               },
-//             ),
-//             IconButton(
-//               icon: const Icon(Icons.image_rounded, color: Colors.blueAccent),
-//               tooltip: "Enviar Imagen",
-//               onPressed: () {
-//                 setState(() => _showAttachmentMenu = false);
-//                _enviarImagen();
-//               },
-//             ),
-//           IconButton(
-//               icon: const Icon(Icons.auto_awesome_rounded, color: Colors.deepPurpleAccent),
-//               tooltip: "Redactar Tarea IA",
-//               onPressed: () {
-//                 setState(() => _showAttachmentMenu = false);
-//                 if (_hasText) _crearTareaConIA(); // 🔥 CORREGIDO
-//               },
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-
-//   // 🔥 NUEVO MÉTODO CON LA BARRA DE CHAT SEPARADA Y ORDENADA 🔥
-// Widget _buildInputArea() {
-//     final theme = Theme.of(context);
-//     final colorScheme = theme.colorScheme;
-
-//     // 🔥 BARRA DE ESCRITURA PRINCIPAL (Sin Stack, pura UI de texto)
-//     return Container(
-//       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-//       decoration: BoxDecoration(
-//         color: theme.scaffoldBackgroundColor,
-//         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, -4))],
-//       ),
-//       child: SafeArea(
-//         child: Row(
-//           crossAxisAlignment: CrossAxisAlignment.end,
-//           children: [
-//             // BOTÓN DEL CLIP (Muestra/Oculta el Menú)
-//             Padding(
-//               padding: const EdgeInsets.only(bottom: 2),
-//               child: IconButton(
-//                 icon: AnimatedRotation(
-//                   turns: _showAttachmentMenu ? 0.125 : 0, // Gira 45° al abrir (efecto X)
-//                   duration: const Duration(milliseconds: 200),
-//                   child: Icon(Icons.attach_file_rounded, color: colorScheme.primary, size: 28),
-//                 ),
-//                 onPressed: () {
-//                   setState(() {
-//                     _showAttachmentMenu = !_showAttachmentMenu;
-//                     _showMicTutorial = false; // Ocultar tooltip si interactúa
-//                   });
-//                 },
-//               ),
-//             ),
-
-//             // TEXTFIELD LIMPIO (GIGANTE)
-//             Expanded(
-//               child: Container(
-//                 decoration: BoxDecoration(
-//                   color: theme.cardColor,
-//                   borderRadius: BorderRadius.circular(24),
-//                   border: Border.all(color: _isEphemeral ? Colors.redAccent.withOpacity(0.5) : colorScheme.onSurface.withOpacity(0.1)),
-//                 ),
-//                 child: TextField(
-//                   controller: _msgController,
-//                   focusNode: _focusNode,
-//                   maxLines: 5,
-//                   minLines: 1,
-//                   textCapitalization: TextCapitalization.sentences,
-//                   style: TextStyle(color: colorScheme.onSurface),
-//                   onChanged: (val) {
-//                     if (val.isNotEmpty && !_hasText) setState(() => _hasText = true);
-//                     else if (val.isEmpty && _hasText) setState(() => _hasText = false);
-//                     if (_showMicTutorial) setState(() => _showMicTutorial = false); // Ocultar tooltip al teclear
-//                   },
-//                   decoration: InputDecoration(
-//                     hintText: _isEphemeral ? "Mensaje efímero..." : "Escribe un mensaje...",
-//                     hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
-//                     border: InputBorder.none,
-//                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-//                   ),
-//                 ),
-//               ),
-//             ),
-//             const SizedBox(width: 8),
-
-//             // 🚀 BOTÓN MÁGICO 3 EN 1: Enviar / Grabar / IA (Swipe Left)
-//             Padding(
-//               padding: const EdgeInsets.only(bottom: 2),
-//               child: GestureDetector(
-//                 onTap: _hasText ? () {
-//                   _enviarMensajeTexto();
-//                   setState(() => _showAttachmentMenu = false);
-//                 } : null,
-                
-//                 onLongPress: () async {
-//                   setState(() => _showMicTutorial = false);
-//                   if (!_hasText) {
-//                     HapticFeedback.heavyImpact();
-//                     await _iniciarGrabacion();
-//                   }
-//                 },
-                
-//                 onLongPressMoveUpdate: _hasText ? (details) {
-//                   if (details.offsetFromOrigin.dx < -40 && !_isSwipingLeftForAi) {
-//                     setState(() => _isSwipingLeftForAi = true);
-//                     HapticFeedback.mediumImpact(); 
-//                   } else if (details.offsetFromOrigin.dx >= -40 && _isSwipingLeftForAi) {
-//                     setState(() => _isSwipingLeftForAi = false);
-//                   }
-//                 } : null,
-                
-//                 onLongPressEnd: (details) async {
-//                   if (!_hasText) {
-//                     await _detenerYEnviarAudio();
-//                   } else {
-//                     if (_isSwipingLeftForAi) {
-//                       setState(() => _isSwipingLeftForAi = false);
-//                       HapticFeedback.heavyImpact();
-//                       _crearTareaConIA(); 
-//                     } else {
-//                       _enviarMensajeTexto();
-//                     }
-//                   }
-//                 },
-                
-//                 child: AnimatedContainer(
-//                   duration: const Duration(milliseconds: 200),
-//                   padding: EdgeInsets.all(_isRecording ? 16 : 14),
-//                   decoration: BoxDecoration(
-//                     color: _isSwipingLeftForAi 
-//                       ? Colors.deepPurpleAccent 
-//                       : (_hasText ? colorScheme.primary : (_isRecording ? Colors.redAccent : colorScheme.primary)),
-//                     shape: BoxShape.circle,
-//                     boxShadow: _isSwipingLeftForAi ? [const BoxShadow(color: Colors.deepPurpleAccent, blurRadius: 12)] : [],
-//                   ),
-//                   child: Icon(
-//                     _isSwipingLeftForAi
-//                         ? Icons.auto_awesome_rounded 
-//                         : (_hasText ? Icons.send_rounded : (_isRecording ? Icons.mic_rounded : Icons.mic_none_rounded)),
-//                     color: Colors.white,
-//                     size: _isRecording || _isSwipingLeftForAi ? 26 : 22,
-//                   ),
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
 
 @override
   Widget build(BuildContext context) {
@@ -794,6 +472,31 @@ Future<void> _iniciarGrabacion() async {
           onPressed: () => Navigator.pop(context)
         ),
         actions: [
+
+       IconButton(
+            icon: Icon(Icons.call_rounded, color: colorScheme.primary),
+            tooltip: 'Llamada de voz',
+            onPressed: () async {
+              // 1. Obtenemos el número de teléfono del contacto cruzando su wallet
+              final userService = Provider.of<UserService>(context, listen: false);
+              final targetUser = await userService.getUserByWallet(widget.address);
+              
+              if (targetUser != null && targetUser['phoneNumber'] != null) {
+                String targetPhone = targetUser['phoneNumber'];
+                
+                // 2. En lugar de conectar el WebSocket que da error, lanzamos la pantalla animada
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => CallPlaceholderScreen(
+                    alias: widget.alias,
+                    address: widget.address,
+                    phoneNumber: targetPhone,
+                  )
+                ));
+              } else {
+                UIHelper.showCustomSnackbar("Este contacto no tiene un número registrado", isError: true);
+              }
+            },
+          ),
           //  BOTÓN IA RESTAURADO ARRIBA A LA DERECHA
           IconButton(
             icon: const Icon(Icons.auto_awesome_rounded, color: Colors.deepPurpleAccent),

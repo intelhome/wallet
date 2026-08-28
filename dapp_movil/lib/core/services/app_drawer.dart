@@ -1,5 +1,6 @@
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/groups_and_social/screens/contacts_screen.dart';
+import 'package:dapp_movil/modules/groups_and_social/screens/social_screen.DART';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -117,7 +118,7 @@ class AppDrawer extends StatelessWidget {
                 // MaterialPageRoute(
                 //   builder: (context) => ContactsScreen(service: service),
                 // ),
-                MaterialPageRoute(builder: (context) => const ContactsScreen()),
+             MaterialPageRoute(builder: (context) => const SocialScreen()),
               );
             },
           ),

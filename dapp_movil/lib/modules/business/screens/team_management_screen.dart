@@ -13,6 +13,8 @@ import 'package:dapp_movil/modules/business/screens/team_members_tab.dart';
 import 'package:dapp_movil/modules/business/screens/team_tasks_tab.dart';
 import 'package:dapp_movil/modules/business/services/business_task_service.dart';
 import 'package:dapp_movil/modules/business/widgets/task_card.dart';
+import 'package:dapp_movil/modules/business_groups/modals/create_business_group_modal.dart';
+import 'package:dapp_movil/modules/business_groups/screens/business_groups_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/helpers/ui_helper.dart';
@@ -112,6 +114,17 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
               tooltip: "Calendario",
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const BusinessCalendarScreen(isEmployer: true)));
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.group_add_rounded),
+              tooltip: "Crear Grupo Rápido",
+              onPressed: () {
+                // Pasamos los departamentos y el equipo activo para crear el grupo
+                final activeTeam = _team.where((m) => m['status'] == 'ACCEPTED').toList();
+                CreateBusinessGroupModal.show(context, _departments, activeTeam, () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const BusinessGroupsScreen(isEmployer: true)));
+                });
               },
             ),
             IconButton(

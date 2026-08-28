@@ -81,11 +81,34 @@ class BusinessTaskService {
       return res.statusCode == 200 ? "SUCCESS" : "Error al actualizar estado";
     } catch (e) { return "Error de red"; }
   }
+  // Future<String> editTask(String taskId, Map<String, dynamic> taskData) async {
+  //   try {
+  //     final url = ApiConfig.editBusinessTask.replaceAll("{taskId}", taskId);
+  //     final res = await http.put(Uri.parse(url), headers: authCore.authHeaders, body: jsonEncode(taskData));
+  //     return res.statusCode == 200 ? "SUCCESS" : "Error al editar tarea";
+  //   } catch (e) { return "Error de red"; }
+  // }
   Future<String> editTask(String taskId, Map<String, dynamic> taskData) async {
     try {
       final url = ApiConfig.editBusinessTask.replaceAll("{taskId}", taskId);
+     
       final res = await http.put(Uri.parse(url), headers: authCore.authHeaders, body: jsonEncode(taskData));
       return res.statusCode == 200 ? "SUCCESS" : "Error al editar tarea";
+    } catch (e) { return "Error de red"; }
+  }
+
+  Future<String> reassignTask(String taskId, String? newAssignedWallet, String? newDepartmentId) async {
+    try {
+      final url = ApiConfig.reassignBusinessTask.replaceAll("{taskId}", taskId);
+      final res = await http.put(
+        Uri.parse(url), 
+        headers: authCore.authHeaders, 
+        body: jsonEncode({
+          "newAssignedWallet": newAssignedWallet,
+          "newDepartmentId": newDepartmentId
+        })
+      );
+      return res.statusCode == 200 ? "SUCCESS" : "Error al reasignar tarea";
     } catch (e) { return "Error de red"; }
   }
 

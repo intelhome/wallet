@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dapp_movil/core/notifications/push_router.dart';
+import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -11,7 +12,7 @@ class PushNotificationService {
       FirebaseMessaging.instance; 
   static Map<String, dynamic>? pendingRoute;
 
-  static Future<void> init() async {
+ static Future<void> init(AuthCoreService authCore) async {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const InitializationSettings initSettings = InitializationSettings(
@@ -32,26 +33,24 @@ class PushNotificationService {
         }
       },
     );
-    // Solicitar permisos al usuario (Android 13+ / iOS)
-    //_localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
 
-   NotificationSettings settings = await _firebaseMessaging.requestPermission();
+    NotificationSettings settings = await _firebaseMessaging.requestPermission();
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      // 1. Obtener y enviar el token al abrir la app
       String? token = await _firebaseMessaging.getToken();
-      print("🔥 FIREBASE TOKEN DEL DISPOSITIVO: $token");
-    }
+      if (token != null) {
+        print("🔥 FIREBASE TOKEN DEL DISPOSITIVO: $token");
+        authCore.syncFcmToken(token); // Lo mandamos al backend
+      }
 
-    // 2. RECIBIR EN PRIMER PLANO (Foreground)
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // Convertimos el mapa de datos (data) a un String JSON para pasarlo al payload local
-      String payloadStr = jsonEncode(message.data);
-      
-      showLocalNotification(
-        message.notification?.title ?? "Nueva Notificación", 
-        message.notification?.body ?? "",
-        payloadStr
-      );
-    });
+      // 2. 🔥 NUEVO: ESCUCHAR RENOVACIONES AUTOMÁTICAS DE GOOGLE 🔥
+      _firebaseMessaging.onTokenRefresh.listen((String newToken) {
+        print("🔄 [FIREBASE] Token caducado. Google generó uno nuevo: $newToken");
+        authCore.syncFcmToken(newToken); // Se actualiza en tu base de datos instantáneamente
+      }).onError((err) {
+        print("❌ Error escuchando actualización de token FCM: $err");
+      });
+    }
 // 3. CLIC EN SEGUNDO PLANO (Background - App minimizada)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print("🚀 [BACKGROUND CLICK] Ejecutando acción desde segundo plano");
