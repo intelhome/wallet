@@ -1,5 +1,7 @@
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
+import 'package:dapp_movil/modules/wallet_and_tx/modals/report_pdf_history_modal.dart';
+import 'package:dapp_movil/modules/wallet_and_tx/services/history_service.dart';
 import 'package:dapp_movil/modules/wallet_and_tx/services/transaction_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -22,13 +24,20 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  TransactionService get txService => Provider.of<TransactionService>(context, listen: false);
-AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: false);
+  // 🔥 Usamos HistoryService en lugar de TransactionService
+  HistoryService get historyService => Provider.of<HistoryService>(context, listen: false);
+  AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: false);
 
-
+  final ScrollController _scrollController = ScrollController();
+  
   List<dynamic> _allTransactions = [];
   Map<String, List<dynamic>> _groupedTransactions = {};
+  
   bool _isLoading = true;
+  bool _isFetchingMore = false;
+  bool _hasMoreData = true;
+  int _currentPage = 0;
+
   String _selectedFilter = 'Todos';
   DateTime? _fechaInicio;
   DateTime? _fechaFin;
@@ -36,26 +45,80 @@ AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: fa
   @override
   void initState() {
     super.initState();
-    _loadHistory();
+    _loadInitialHistory(); // 🔥 Llamamos al nuevo método paginado
+
+    // Listener para el Infinite Scroll
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        _loadMoreHistory();
+      }
+    });
   }
 
- Future<void> _loadHistory() async {
-    if (mounted) {
-      setState(() => _isLoading = true);
-    }
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
-    // 1. Consulta única y directa al servidor
-    final txs = await txService.getTransactionHistory();
+ Future<void> _loadInitialHistory() async {
+    if (mounted) setState(() => _isLoading = true);
+
+    _currentPage = 0;
+    _hasMoreData = true;
+
+    // Llamamos a la API paginada a través de HistoryService
+    final data = await historyService.getTransactionHistoryPaged(page: _currentPage);
 
     if (mounted) {
       setState(() {
-        _allTransactions = txs.toList();
+        _allTransactions = data['content'] ?? [];
+        _hasMoreData = !(data['last'] ?? true); // Spring Boot dice si es la última página
         _applyFilter();
         _isLoading = false; 
       });
     }
   }
-  // 🔥 MÉTODOS DEL CALENDARIO DE RANGOS M3
+
+  Future<void> _loadMoreHistory() async {
+    if (_isFetchingMore || !_hasMoreData || _isLoading) return;
+
+    setState(() => _isFetchingMore = true);
+    _currentPage++;
+
+    final data = await historyService.getTransactionHistoryPaged(page: _currentPage);
+
+    if (mounted) {
+      setState(() {
+        final newItems = data['content'] ?? [];
+        if (newItems.isNotEmpty) {
+          _allTransactions.addAll(newItems);
+          _applyFilter();
+        }
+        _hasMoreData = !(data['last'] ?? true);
+        _isFetchingMore = false;
+      });
+    }
+  }
+
+
+//  Future<void> _loadHistory() async {
+//     if (mounted) {
+//       setState(() => _isLoading = true);
+//     }
+
+//     // 1. Consulta única y directa al servidor
+//     final txs = await txService.getTransactionHistory();
+
+//     if (mounted) {
+//       setState(() {
+//         _allTransactions = txs.toList();
+//         _applyFilter();
+//         _isLoading = false; 
+//       });
+//     }
+//   }
+//   //  MÉTODOS DEL CALENDARIO DE RANGOS M3
   Future<void> _seleccionarRangoFechas() async {
     final DateTimeRange? rango = await showDateRangePicker(
       context: context,
@@ -293,12 +356,17 @@ child:Scaffold(
             child: IconButton(
               icon: const Icon(Icons.picture_as_pdf, color: Colors.deepOrangeAccent, size: 20),
               tooltip: "Descargar Estado de Cuenta",
-              onPressed: () {
+             onPressed: () {
                 if (_allTransactions.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No hay transacciones para generar un reporte.")));
                   return;
                 }
-               ShareHelper.generarYCompartirPDFHistory(context, _allTransactions, authCore.publicAddress);
+                // 🔥 NUEVA LLAMADA AL MODAL PERSONALIZADO
+                ReportPdfHistoryModal.show(
+                  context: context, 
+                  allTransactions: _allTransactions, 
+                  myAddress: authCore.publicAddress
+                );
               },
             ),
           ),
@@ -388,42 +456,48 @@ child:Scaffold(
               ]
             ),
           ),
-          Expanded(
+         Expanded(
             child: _isLoading
-                //? const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
                 ? UIHelper.buildSkeletonList(context)
                 : _groupedTransactions.isEmpty
-                 ? UIHelper.emptyState( // 🔥 2. Estado Vacío Premium
-              context: context,
-              icon: Icons.receipt_long_rounded,
-              title: "Historial Vacío",
-              message: "Aún no has realizado ninguna transacción de este tipo. Cuando envíes o recibas TTC, aparecerán aquí.",
-              actionLabel: "Recibir mis primeros TTC",
-              onAction: () {
-                // Aquí abres el modal de recibir
-              }
-            )
-          : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _groupedTransactions.keys.length,
-                        itemBuilder: (context, index) {
-                          String date = _groupedTransactions.keys.elementAt(index);
-                          List<dynamic> txs = _groupedTransactions[date]!;
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                                child: Text(date.toUpperCase(), style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2)),
-                              ),
-                              ...txs.map((tx) => Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: _buildTransactionCard(tx, colorScheme.onSurface, context),
-                              )).toList(),
-                            ],
-                          );
-                        },
-                      ),
+                 ? UIHelper.emptyState( 
+                    context: context,
+                    icon: Icons.receipt_long_rounded,
+                    title: "Historial Vacío",
+                    message: "Aún no has realizado ninguna transacción de este tipo.",
+                  )
+                 : ListView.builder(
+                    controller: _scrollController, // 🔥 Agrega el controlador
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _groupedTransactions.keys.length + (_isFetchingMore ? 1 : 0), // Extra item para el loader
+                    itemBuilder: (context, index) {
+                      
+                      // Mostramos el loader al final
+                      if (index == _groupedTransactions.keys.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+
+                      String date = _groupedTransactions.keys.elementAt(index);
+                      List<dynamic> txs = _groupedTransactions[date]!;
+                      
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                            child: Text(date.toUpperCase(), style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2)),
+                          ),
+                          ...txs.map((tx) => Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: _buildTransactionCard(tx, colorScheme.onSurface, context),
+                          )).toList(),
+                        ],
+                      );
+                    },
+                  ),
           ),
         ],
       ),

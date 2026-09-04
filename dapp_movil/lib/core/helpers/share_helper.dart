@@ -949,11 +949,135 @@ String statusMessage = "";
         ),
       );
 
+      
+
       final bytes = await pdf.save();
       // Compartir o Guardar
       await Printing.sharePdf(bytes: bytes, filename: 'Reporte_Tareas_${DateTime.now().millisecondsSinceEpoch}.pdf');
     } catch (e) {
       debugPrint("Error generando PDF de tareas: $e");
     }
+  }
+
+  static Future<void> generarYCompartirPDFAdminAnalytics(BuildContext context, Map<String, dynamic> analyticsData) async {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Generando Reporte Ejecutivo...", style: TextStyle(color: Colors.white))));
+
+    final int totalUsers = analyticsData['totalUsers'] ?? 0;
+    final int newUsers = analyticsData['newUsersThisMonth'] ?? 0;
+    final double growth = double.tryParse(analyticsData['userGrowthPercentage']?.toString() ?? '0') ?? 0.0;
+    final double revenue = double.tryParse(analyticsData['estimatedMonthlyRevenueUSD']?.toString() ?? '0') ?? 0.0;
+    final Map<String, dynamic> plans = analyticsData['plans'] ?? {};
+    final List<dynamic> recentUsers = analyticsData['recentUsers'] ?? [];
+
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (pw.Context context) {
+          return [
+            // --- ENCABEZADO ---
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                  pw.Text("TTC WALLET", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.deepPurple800)),
+                  pw.Text("Reporte Ejecutivo de Administración", style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey700)),
+                ]),
+                pw.Text("Fecha: ${DateTime.now().toString().substring(0, 10)}", style: const pw.TextStyle(fontSize: 12)),
+              ]
+            ),
+            pw.SizedBox(height: 30),
+
+            // --- KPIS RESUMEN ---
+            pw.Container(
+              padding: const pw.EdgeInsets.all(16),
+              decoration: const pw.BoxDecoration(color: PdfColors.grey100, borderRadius: pw.BorderRadius.all(pw.Radius.circular(8))),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                children: [
+                  _buildAdminKpi("Total Usuarios", "$totalUsers"),
+                  _buildAdminKpi("Nuevos (Mes)", "+$newUsers"),
+                  _buildAdminKpi("Crecimiento", "${growth > 0 ? '+' : ''}$growth%", color: growth >= 0 ? PdfColors.green700 : PdfColors.red700),
+                  _buildAdminKpi("Ingresos Est.", "\$${revenue.toStringAsFixed(2)}"),
+                ]
+              )
+            ),
+            pw.SizedBox(height: 30),
+
+            // --- TABLA DE DISTRIBUCIÓN DE PLANES ---
+            pw.Text("Distribución de Membresías", style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 10),
+            pw.TableHelper.fromTextArray(
+              context: context,
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.deepPurple700),
+              headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 10),
+              cellStyle: const pw.TextStyle(fontSize: 10),
+              data: <List<String>>[
+                <String>['Plan', 'Usuarios', 'Porcentaje', 'Ingresos Estimados'],
+                ...plans.entries.map((e) {
+                  final data = e.value as Map<String, dynamic>;
+                  return <String>[
+                    e.key,
+                    data['count']?.toString() ?? '0',
+                    "${double.tryParse(data['percentageOfTotal']?.toString() ?? '0')?.toStringAsFixed(1)}%",
+                    "\$${double.tryParse(data['estimatedRevenue']?.toString() ?? '0')?.toStringAsFixed(2)}"
+                  ];
+                })
+              ],
+            ),
+            pw.SizedBox(height: 30),
+
+            // --- TABLA DE USUARIOS RECIENTES ---
+            pw.Text("Últimos Usuarios Registrados", style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 10),
+            recentUsers.isEmpty 
+              ? pw.Text("No hay usuarios recientes.", style: const pw.TextStyle(color: PdfColors.grey))
+              : pw.TableHelper.fromTextArray(
+                  context: context,
+                  headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey700),
+                  headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 10),
+                  cellStyle: const pw.TextStyle(fontSize: 9),
+                  data: <List<String>>[
+                    <String>['Alias', 'Email', 'Plan', 'Tipo', 'Fecha Registro'],
+                    ...recentUsers.map((u) {
+                      String date = u['createdAt'] != null ? u['createdAt'].toString().substring(0, 10) : "N/A";
+                      return <String>[
+                        u['alias'] ?? 'N/A',
+                        u['email'] ?? 'N/A',
+                        u['membershipTier'] ?? 'FREE',
+                        u['accountType'] ?? 'PERSONAL',
+                        date
+                      ];
+                    })
+                  ]
+                ),
+
+            pw.SizedBox(height: 40),
+            pw.Divider(),
+            pw.Text(
+              "Documento generado automáticamente por el panel de control de TTC Wallet.", 
+              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600), 
+              textAlign: pw.TextAlign.center
+            ),
+          ];
+        }
+      )
+    );
+
+    await Printing.sharePdf(bytes: await pdf.save(), filename: 'Reporte_Ejecutivo_Admin_TTC.pdf');
+  }
+
+  // Helper privado para los KPIs del PDF Admin
+  static pw.Widget _buildAdminKpi(String label, String value, {PdfColor color = PdfColors.black}) {
+    return pw.Column(
+      children: [
+        pw.Text(label, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+        pw.SizedBox(height: 4),
+        pw.Text(value, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: color)),
+      ]
+    );
   }
 }

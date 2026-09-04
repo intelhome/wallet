@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:dapp_movil/core/helpers/PremiumBlockerModal.dart';
 import 'package:dapp_movil/core/helpers/route_helper.dart';
 import 'package:dapp_movil/core/helpers/ui_helper.dart';
+import 'package:dapp_movil/modules/ai_assistant/modals/ai_quick_actions_modal.dart';
 import 'package:dapp_movil/modules/ai_assistant/screens/ai_memory_screen.dart';
 import 'package:dapp_movil/modules/ai_assistant/services/ai_chat_handler.dart';
 import 'package:dapp_movil/modules/ai_assistant/services/ai_memory_service.dart';
@@ -36,6 +37,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../wallet_and_tx/modals/send_modal.dart';
 import '../../wallet_and_tx/modals/buy_modal.dart';
 import '../../../config/api_config.dart';
@@ -630,6 +632,8 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
   final TextEditingController _msgController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _audioRecorder = FlutterSoundRecorder();
+
+  List<String> _activeActionIds = ["TRANSFER", "REPORT", "SPLIT", "PAYPAL"];
   
  late AiVoiceHandler _voiceHandler;
   bool _hasText = false;
@@ -656,10 +660,20 @@ class _AiAssistantDeepSeekScreenState extends State<AiAssistantDeepSeekScreen> {
       });
     });
 
+    _loadQuickActions();
+
     // Escuchamos el estado de la voz para redibujar la UI
     _voiceHandler.addListener(() {
       if (mounted) setState(() {});
     });
+  }
+
+  Future<void> _loadQuickActions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedIds = prefs.getStringList('ai_quick_actions');
+    if (savedIds != null && savedIds.isNotEmpty) {
+      if (mounted) setState(() => _activeActionIds = savedIds);
+    }
   }
 
   Future<void> _initAudio() async {
@@ -830,6 +844,17 @@ String _formatDate(String? isoDate, bool isDaily) {
 //   }
 
 Widget _buildQuickActions(Color cardColor, Color textColor) {
+    // 🔥 1. Obtenemos el rol del usuario actual
+    final authCore = Provider.of<AuthCoreService>(context, listen: false);
+    final bool isBusiness = authCore.role == 'ROLE_BUSINESS' || authCore.role == 'ROLE_ADMIN';
+
+    // 🔥 2. Filtramos validando que esté en la lista activa Y que tenga permisos para verla
+    final activeActions = AiQuickActionsModal.allActions.where((a) {
+      bool isSaved = _activeActionIds.contains(a['id']);
+      bool hasPermission = !(a['isBusinessOnly'] == true && !isBusiness);
+      return isSaved && hasPermission;
+    }).toList();
+
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.only(left: 16, bottom: 12, top: 4),
@@ -837,10 +862,38 @@ Widget _buildQuickActions(Color cardColor, Color textColor) {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _buildActionChip(Icons.swap_horiz_rounded, "Transferir", "Quiero transferir fondos."),
-            _buildActionChip(Icons.receipt_long_rounded, "Reporte de Gastos", "Genera un reporte de gastos."),
-            _buildActionChip(Icons.analytics_rounded, "Analizar", "Analiza mis finanzas."),
-            _buildActionChip(Icons.group_add_rounded, "Dividir Cuenta", "Quiero dividir una cuenta."),
+            // Botón estático para abrir el modal de personalización
+            GestureDetector(
+              onTap: () {
+                AiQuickActionsModal.show(context, _activeActionIds, (newIds) {
+                  setState(() => _activeActionIds = newIds);
+                });
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFC77DFF).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFC77DFF).withOpacity(0.5)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.tune_rounded, size: 16, color: Color(0xFFC77DFF)),
+                    SizedBox(width: 8),
+                    Text("Personalizar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFC77DFF))),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Renderizamos los chips dinámicos
+            ...activeActions.map((action) => _buildActionChip(
+              action['icon'], 
+              action['label'], 
+              action['prompt']
+            )).toList(),
           ],
         ),
       ),

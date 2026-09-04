@@ -80,11 +80,15 @@ class CreateCrowdfundingModal {
                 ),
                 const SizedBox(height: 24),
 
-                SizedBox(
-                  width: double.infinity, height: 56,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                    onPressed: isProcessing ? null : () async {
+            SizedBox(
+                    width: double.infinity, height: 56,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary, // Limpio!
+                        foregroundColor: colorScheme.onPrimary, // Limpio!
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                      ),
+                      onPressed: isProcessing ? null : () async {
                       if (titleCtrl.text.isEmpty || goalCtrl.text.isEmpty) return;
                       FocusScope.of(contextDialog).unfocus();
 

@@ -1,3 +1,4 @@
+import 'package:dapp_movil/core/helpers/share_helper.dart';
 import 'package:dapp_movil/core/services/local_cache_service.dart';
 import 'package:dapp_movil/modules/admin/modals/tier_users_modal.dart';
 import 'package:flutter/material.dart';
@@ -88,22 +89,156 @@ class _AdminSubscriptionAnalyticsScreenState extends State<AdminSubscriptionAnal
     );
   }
 
-  Widget _buildDashboard(Color onSurface) {
+  // Widget _buildDashboard(Color onSurface) {
+  //   final int totalUsers = _data!['totalUsers'] ?? 0;
+  //   final double revenue = double.tryParse(_data!['estimatedMonthlyRevenueUSD'].toString()) ?? 0.0;
+  //   final Map<String, dynamic> plans = _data!['plans'] ?? {};
+
+  //   final List<Map<String, dynamic>> activeSlices = [];
+    
+  //   // Colores fieles a la imagen: FREE (Gris), BASIC (Azul), PREMIUM (Lila)
+  //   if ((plans['FREE'] ?? 0) > 0) {
+  //     activeSlices.add({"tier": "FREE", "color": Colors.grey.shade600, "value": (plans['FREE']).toDouble()});
+  //   }
+  //   if ((plans['BASIC'] ?? 0) > 0) {
+  //     activeSlices.add({"tier": "BASIC", "color": const Color(0xFF4361EE), "value": (plans['BASIC']).toDouble()});
+  //   }
+  //   if ((plans['PREMIUM'] ?? 0) > 0) {
+  //     activeSlices.add({"tier": "PREMIUM", "color": const Color(0xFFE0B0FF), "value": (plans['PREMIUM']).toDouble()});
+  //   }
+
+  //   if (activeSlices.isEmpty) {
+  //     activeSlices.add({"tier": "NONE", "color": Colors.grey.withOpacity(0.3), "value": 1.0});
+  //   }
+
+  //   return SingleChildScrollView(
+  //     padding: const EdgeInsets.all(24),
+  //     physics: const BouncingScrollPhysics(),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         // TARJETA DE INGRESOS (Gradiente Púrpura-Azul)
+  //         Container(
+  //           width: double.infinity,
+  //           padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+  //           decoration: BoxDecoration(
+  //             gradient: const LinearGradient(
+  //               colors: [Color(0xFF9D00FF), Color(0xFF4361EE)],
+  //               begin: Alignment.topLeft,
+  //               end: Alignment.bottomRight,
+  //             ),
+  //             borderRadius: BorderRadius.circular(24),
+  //           ),
+  //           child: Column(
+  //             children: [
+  //               Text("Ingresos Mensuales Estimados", style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13, fontWeight: FontWeight.w600)),
+  //               const SizedBox(height: 8),
+  //               Text("\$${revenue.toStringAsFixed(2)}", style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w900)),
+  //               const SizedBox(height: 12),
+  //               Row(
+  //                 mainAxisAlignment: MainAxisAlignment.center,
+  //                 children: [
+  //                   const Icon(Icons.people_alt_rounded, color: Colors.white70, size: 16),
+  //                   const SizedBox(width: 8),
+  //                   Text("De un total de $totalUsers usuarios", style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+  //                 ],
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //         const SizedBox(height: 48),
+
+  //         // TÍTULO DEL GRÁFICO
+  //         Row(
+  //           crossAxisAlignment: CrossAxisAlignment.baseline,
+  //           textBaseline: TextBaseline.alphabetic,
+  //           children: [
+  //             Text("Distribución de Planes", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: onSurface)),
+  //             const SizedBox(width: 8),
+  //             Text("(Toca un área)", style: TextStyle(fontSize: 12, color: onSurface.withOpacity(0.5))),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 40),
+
+  //         // GRÁFICO DE DONA (FL_CHART)
+  //         SizedBox(
+  //           height: 260,
+  //           child: PieChart(
+  //             PieChartData(
+  //               sectionsSpace: 0, // Sin espacio entre secciones para efecto de dona pura
+  //               centerSpaceRadius: 80, // Hueco grande en el centro
+  //               pieTouchData: PieTouchData(
+  //                 touchCallback: (FlTouchEvent event, pieTouchResponse) {
+  //                   if (pieTouchResponse == null || pieTouchResponse.touchedSection == null) return;
+  //                   if (event is FlTapUpEvent) {
+  //                     final touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+  //                     if (touchedIndex >= 0 && touchedIndex < activeSlices.length) {
+  //                       String selectedTier = activeSlices[touchedIndex]['tier'];
+  //                       if (selectedTier != "NONE") {
+  //                         TierUsersModal.show(context: context, tier: selectedTier);
+  //                       }
+  //                     }
+  //                   }
+  //                 },
+  //               ),
+  //               sections: activeSlices.map((slice) {
+  //                 return PieChartSectionData(
+  //                   color: slice['color'],
+  //                   value: slice['value'],
+  //                   title: "", // Ocultamos el número dentro de la dona para un diseño más limpio
+  //                   radius: 40, // Grosor del anillo
+  //                 );
+  //               }).toList(),
+  //             ),
+  //           ),
+  //         ),
+  //         const SizedBox(height: 48),
+
+  //         // LEYENDAS INFERIORES
+  //         Row(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             _buildLegend("FREE", Colors.grey.shade600, onSurface),
+  //             const SizedBox(width: 24),
+  //             _buildLegend("BASIC", const Color(0xFF4361EE), onSurface),
+  //             const SizedBox(width: 24),
+  //             _buildLegend("PREMIUM", const Color(0xFFE0B0FF), onSurface),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 100), // Espacio para que el FAB no tape el contenido
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  Widget _buildLegend(String title, Color color, Color onSurface) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 8),
+        Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: onSurface, letterSpacing: 1.0)),
+      ],
+    );
+  }
+Widget _buildDashboard(Color onSurface) {
     final int totalUsers = _data!['totalUsers'] ?? 0;
-    final double revenue = double.tryParse(_data!['estimatedMonthlyRevenueUSD'].toString()) ?? 0.0;
+    final int newUsers = _data!['newUsersThisMonth'] ?? 0;
+    final double growthPct = double.tryParse(_data!['userGrowthPercentage']?.toString() ?? '0') ?? 0.0;
+    final double revenue = double.tryParse(_data!['estimatedMonthlyRevenueUSD']?.toString() ?? '0') ?? 0.0;
     final Map<String, dynamic> plans = _data!['plans'] ?? {};
+    final List<dynamic> recentUsers = _data!['recentUsers'] ?? [];
 
     final List<Map<String, dynamic>> activeSlices = [];
     
-    // Colores fieles a la imagen: FREE (Gris), BASIC (Azul), PREMIUM (Lila)
-    if ((plans['FREE'] ?? 0) > 0) {
-      activeSlices.add({"tier": "FREE", "color": Colors.grey.shade600, "value": (plans['FREE']).toDouble()});
+    if ((plans['FREE']?['count'] ?? 0) > 0) {
+      activeSlices.add({"tier": "FREE", "color": Colors.grey.shade600, "value": (plans['FREE']['count']).toDouble()});
     }
-    if ((plans['BASIC'] ?? 0) > 0) {
-      activeSlices.add({"tier": "BASIC", "color": const Color(0xFF4361EE), "value": (plans['BASIC']).toDouble()});
+    if ((plans['BASIC']?['count'] ?? 0) > 0) {
+      activeSlices.add({"tier": "BASIC", "color": const Color(0xFF4361EE), "value": (plans['BASIC']['count']).toDouble()});
     }
-    if ((plans['PREMIUM'] ?? 0) > 0) {
-      activeSlices.add({"tier": "PREMIUM", "color": const Color(0xFFE0B0FF), "value": (plans['PREMIUM']).toDouble()});
+    if ((plans['PREMIUM']?['count'] ?? 0) > 0) {
+      activeSlices.add({"tier": "PREMIUM", "color": const Color(0xFFE0B0FF), "value": (plans['PREMIUM']['count']).toDouble()});
     }
 
     if (activeSlices.isEmpty) {
@@ -116,7 +251,7 @@ class _AdminSubscriptionAnalyticsScreenState extends State<AdminSubscriptionAnal
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // TARJETA DE INGRESOS (Gradiente Púrpura-Azul)
+          // TARJETA DE INGRESOS Y CRECIMIENTO
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
@@ -133,16 +268,45 @@ class _AdminSubscriptionAnalyticsScreenState extends State<AdminSubscriptionAnal
                 Text("Ingresos Mensuales Estimados", style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Text("\$${revenue.toStringAsFixed(2)}", style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.people_alt_rounded, color: Colors.white70, size: 16),
-                    const SizedBox(width: 8),
-                    Text("De un total de $totalUsers usuarios", style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
-                  ],
+                const SizedBox(height: 24),
+                
+                // Módulo de Crecimiento
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16)
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildMetricMicro("Usuarios", totalUsers.toString(), Icons.people_alt_rounded),
+                      _buildMetricMicro("Nuevos (Mes)", "+$newUsers", Icons.person_add_alt_1_rounded),
+                      _buildMetricMicro("Crecimiento", "${growthPct > 0 ? '+' : ''}$growthPct%", Icons.trending_up_rounded, color: growthPct > 0 ? Colors.greenAccent : (growthPct < 0 ? Colors.redAccent : Colors.white)),
+                    ],
+                  ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // BOTÓN DE DESCARGA DE REPORTE (Añadido)
+       SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFE0B0FF),
+                side: const BorderSide(color: Color(0xFFE0B0FF)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+              ),
+              onPressed: () {
+                
+                ShareHelper.generarYCompartirPDFAdminAnalytics(context, _data!);
+              },
+              icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+              label: const Text("Exportar Reporte Ejecutivo", style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 48),
@@ -164,8 +328,8 @@ class _AdminSubscriptionAnalyticsScreenState extends State<AdminSubscriptionAnal
             height: 260,
             child: PieChart(
               PieChartData(
-                sectionsSpace: 0, // Sin espacio entre secciones para efecto de dona pura
-                centerSpaceRadius: 80, // Hueco grande en el centro
+                sectionsSpace: 0, 
+                centerSpaceRadius: 80, 
                 pieTouchData: PieTouchData(
                   touchCallback: (FlTouchEvent event, pieTouchResponse) {
                     if (pieTouchResponse == null || pieTouchResponse.touchedSection == null) return;
@@ -184,8 +348,8 @@ class _AdminSubscriptionAnalyticsScreenState extends State<AdminSubscriptionAnal
                   return PieChartSectionData(
                     color: slice['color'],
                     value: slice['value'],
-                    title: "", // Ocultamos el número dentro de la dona para un diseño más limpio
-                    radius: 40, // Grosor del anillo
+                    title: "", 
+                    radius: 40, 
                   );
                 }).toList(),
               ),
@@ -204,159 +368,55 @@ class _AdminSubscriptionAnalyticsScreenState extends State<AdminSubscriptionAnal
               _buildLegend("PREMIUM", const Color(0xFFE0B0FF), onSurface),
             ],
           ),
-          const SizedBox(height: 100), // Espacio para que el FAB no tape el contenido
+          const SizedBox(height: 48),
+
+          // NUEVA SECCIÓN: USUARIOS RECIENTES
+          Text("Últimos Registros", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: onSurface)),
+          const SizedBox(height: 16),
+          if (recentUsers.isEmpty)
+            Text("No hay usuarios recientes.", style: TextStyle(color: onSurface.withOpacity(0.5))),
+          ...recentUsers.map((user) {
+            bool isBusiness = user['accountType'] == 'BUSINESS';
+            String date = user['createdAt'] != null ? DateTime.parse(user['createdAt']).toLocal().toString().substring(0, 10) : "";
+            
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              color: Theme.of(context).cardColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: onSurface.withOpacity(0.05))),
+              elevation: 0,
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: isBusiness ? Colors.orange.withOpacity(0.2) : Colors.blue.withOpacity(0.2),
+                  child: Icon(isBusiness ? Icons.storefront_rounded : Icons.person_rounded, color: isBusiness ? Colors.orange : Colors.blue),
+                ),
+                title: Text(user['alias'] ?? 'Sin Alias', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text("${user['walletAddress'] ?? ''}\n$date", style: TextStyle(fontSize: 11, color: onSurface.withOpacity(0.6))),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: onSurface.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                  child: Text(user['membershipTier'] ?? 'FREE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: onSurface)),
+                ),
+              ),
+            );
+          }),
+          
+          const SizedBox(height: 100), 
         ],
       ),
     );
   }
 
-  Widget _buildLegend(String title, Color color, Color onSurface) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+  // WIDGET HELPER PARA LAS MICRO-MÉTRICAS (Crecimiento)
+  Widget _buildMetricMicro(String label, String value, IconData icon, {Color color = Colors.white}) {
+    return Column(
       children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 8),
-        Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: onSurface, letterSpacing: 1.0)),
+        Icon(icon, color: Colors.white70, size: 18),
+        const SizedBox(height: 4),
+        Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10)),
       ],
     );
   }
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   final theme = Theme.of(context);
-  //   final colorScheme = theme.colorScheme;
-
-  //   return Scaffold(
-  //     backgroundColor: theme.scaffoldBackgroundColor,
-  //     appBar: AppBar(
-  //       title: const Text("Suscripciones", style: TextStyle(fontWeight: FontWeight.bold)),
-  //       centerTitle: true,
-  //       actions: [
-  //         IconButton(
-  //           icon: const Icon(Icons.refresh),
-  //           onPressed: _loadAnalytics,
-  //         )
-  //       ],
-  //     ),
-  //     floatingActionButton: FloatingActionButton.extended(
-  //       backgroundColor: Colors.purpleAccent,
-  //       icon: const Icon(Icons.manage_accounts, color: Colors.white),
-  //       label: const Text("Gestionar Usuario", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-  //       onPressed: () => UpdateUserTierModal.show(context: context, onUpdateSuccess: _loadAnalytics),
-  //     ),
-  //     body: _isLoading
-  //         ? const Center(child: CircularProgressIndicator())
-  //         : _data == null
-  //             ? const Center(child: Text("Error al cargar datos"))
-  //             : _buildDashboard(colorScheme),
-  //   );
-  // }
-
-  // Widget _buildDashboard(ColorScheme colorScheme) {
-  //   final int totalUsers = _data!['totalUsers'] ?? 0;
-  //   final double revenue = double.tryParse(_data!['estimatedMonthlyRevenueUSD'].toString()) ?? 0.0;
-  //   final Map<String, dynamic> plans = _data!['plans'] ?? {};
-
-  //   final List<Map<String, dynamic>> activeSlices = [];
-    
-  //   if ((plans['FREE'] ?? 0) > 0) {
-  //     activeSlices.add({"tier": "FREE", "color": Colors.grey, "value": (plans['FREE']).toDouble(), "radius": 40.0});
-  //   }
-  //   if ((plans['BASIC'] ?? 0) > 0) {
-  //     activeSlices.add({"tier": "BASIC", "color": Colors.blueAccent, "value": (plans['BASIC']).toDouble(), "radius": 45.0});
-  //   }
-  //   if ((plans['PREMIUM'] ?? 0) > 0) {
-  //     activeSlices.add({"tier": "PREMIUM", "color": Colors.purpleAccent, "value": (plans['PREMIUM']).toDouble(), "radius": 50.0});
-  //   }
-
-  //   // Si la BD está totalmente vacía, mostramos un gráfico gris por defecto
-  //   if (activeSlices.isEmpty) {
-  //     activeSlices.add({"tier": "NONE", "color": Colors.grey.withOpacity(0.3), "value": 1.0, "radius": 40.0});
-  //   }
-
-  //   return ListView(
-  //     padding: const EdgeInsets.all(24),
-  //     children: [
-  //       // TARJETA DE INGRESOS
-  //       Container(
-  //         padding: const EdgeInsets.all(24),
-  //         decoration: BoxDecoration(
-  //           gradient: const LinearGradient(colors: [Colors.purpleAccent, Colors.deepPurple]),
-  //           borderRadius: BorderRadius.circular(24),
-  //           boxShadow: [BoxShadow(color: Colors.purple.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 5))]
-  //         ),
-  //         child: Column(
-  //           children: [
-  //             const Text("Ingresos Mensuales Estimados", style: TextStyle(color: Colors.white70, fontSize: 14)),
-  //             const SizedBox(height: 10),
-  //             Text("\$${revenue.toStringAsFixed(2)}", style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900)),
-  //             const SizedBox(height: 10),
-  //             Text("De un total de $totalUsers usuarios", style: const TextStyle(color: Colors.white, fontSize: 14)),
-  //           ],
-  //         ),
-  //       ),
-  //       const SizedBox(height: 40),
-
-  //       // GRÁFICO DE PASTEL (FL_CHART)
-  //       const Text("Distribución de Planes (Toca un área)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-  //       const SizedBox(height: 20),
-  //       SizedBox(
-  //         height: 200,
-  //         child: PieChart(
-  //           PieChartData(
-  //             sectionsSpace: 2,
-  //             centerSpaceRadius: 50,
-  //             pieTouchData: PieTouchData(
-  //               touchCallback: (FlTouchEvent event, pieTouchResponse) {
-  //                 if (pieTouchResponse == null || pieTouchResponse.touchedSection == null) return;
-                  
-  //                 if (event is FlTapUpEvent) {
-  //                   final touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                    
-  //                   if (touchedIndex >= 0 && touchedIndex < activeSlices.length) {
-  //                     String selectedTier = activeSlices[touchedIndex]['tier'];
-  //                     if (selectedTier != "NONE") {
-  //                       TierUsersModal.show(context: context, tier: selectedTier);
-  //                     }
-  //                   }
-  //                 }
-  //               },
-  //             ),
-  //             // Construimos las secciones dinámicamente
-  //             sections: activeSlices.map((slice) {
-  //               return PieChartSectionData(
-  //                 color: slice['color'],
-  //                 value: slice['value'],
-  //                 title: slice['tier'] == "NONE" ? "0" : slice['value'].toInt().toString(),
-  //                 radius: slice['radius'],
-  //                 titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-  //               );
-  //             }).toList(),
-  //           ),
-  //         ),
-  //       ),
-  //       const SizedBox(height: 20),
-
-  //       // LEYENDAS (Siempre mostramos las 3 para referencia visual)
-  //       Row(
-  //         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-  //         children: [
-  //           _buildLegend("FREE", Colors.grey),
-  //           _buildLegend("BASIC", Colors.blueAccent),
-  //           _buildLegend("PREMIUM", Colors.purpleAccent),
-  //         ],
-  //       ),
-  //       const SizedBox(height: 80), // Espacio para el FAB
-  //     ],
-  //   );
-  // }
-  // Widget _buildLegend(String title, Color color) {
-  //   return Row(
-  //     children: [
-  //       Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-  //       const SizedBox(width: 8),
-  //       Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-  //     ],
-  //   );
-  // }
+ 
 }

@@ -46,8 +46,6 @@ class _SyncContactsContent extends StatefulWidget {
 class _SyncContactsContentState extends State<_SyncContactsContent> {
   String _searchQuery = "";
   List<String> _contactosYaSincronizados = [];
-
-  // Mapeamos los registrados para fácil búsqueda
   late Map<String, dynamic> _registradosMap;
 
   @override
@@ -58,13 +56,96 @@ class _SyncContactsContentState extends State<_SyncContactsContent> {
     };
   }
 
-  void _invitarWhatsapp(String phone) async {
-    String msj = "¡Hola! Estoy usando TTC Wallet para manejar mis finanzas. Únete a la red aquí: https://ttc-wallet.com/download";
+  // 🔥 NUEVO: Método para elegir por dónde invitar
+  void _mostrarOpcionesInvitacion(BuildContext context, String phone, String nombreAgenda) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).cardColor,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Invitar a $nombreAgenda", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text("Elige el medio para enviar tu invitación.", style: TextStyle(color: Colors.grey, fontSize: 13)),
+              const SizedBox(height: 24),
+              
+              // Opcion WhatsApp
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: const Color(0xFF22C55E).withOpacity(0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.wechat_rounded, color: Color(0xFF22C55E)),
+                ),
+                title: const Text("Enviar por WhatsApp", style: TextStyle(fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _invitarWhatsapp(phone, nombreAgenda);
+                },
+              ),
+              const Divider(height: 1),
+              
+              // Opción Correo (Genérica)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.email_rounded, color: Colors.blueAccent),
+                ),
+                title: const Text("Enviar por Correo (Email)", style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text("Abrirá tu app de correo predeterminada", style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _invitarCorreo(nombreAgenda);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _invitarWhatsapp(String phone, String nombre) async {
+    String msj = "¡Hola $nombre! Estoy usando TTC Wallet para manejar mis finanzas sin fronteras. Únete a la red aquí: https://ttc-wallet.com/download";
     final Uri url = Uri.parse("https://wa.me/$phone?text=${Uri.encodeComponent(msj)}");
+    
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
       UIHelper.showCustomSnackbar("No se pudo abrir WhatsApp.", isError: true);
+    }
+  }
+
+ String? _encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((MapEntry<String, String> e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+  }
+
+  Future<void> _invitarCorreo(String nombre) async {
+    String subject = "Únete a mi red en TTC Wallet";
+    String body = "¡Hola $nombre!\n\nEstoy usando TTC Wallet para manejar mis finanzas y hacer transferencias al instante.\n\nPuedes descargarla gratis y unirte a mi red desde este enlace:\nhttps://ttc-wallet.com/download\n\n¡Nos vemos en la DApp!";
+    
+    // Construcción oficial recomendada por url_launcher para mailto:
+    final Uri emailUrl = Uri(
+      scheme: 'mailto',
+      path: '', // path vacío significa que no hay destinatario fijo aún
+      query: _encodeQueryParameters(<String, String>{
+        'subject': subject,
+        'body': body,
+      }),
+    );
+    
+    try {
+      // Forzamos el lanzamiento directamente (canLaunchUrl causa falsos negativos en Android 11+)
+      await launchUrl(emailUrl, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      UIHelper.showCustomSnackbar("No se encontró una app de correo configurada en este dispositivo.", isError: true);
     }
   }
 
@@ -74,7 +155,6 @@ class _SyncContactsContentState extends State<_SyncContactsContent> {
     final colorScheme = theme.colorScheme;
     final onSurface = colorScheme.onSurface;
 
-    // Convertimos el map de la agenda a una lista para poder filtrarla
     List<MapEntry<String, String>> contactosMostrados = widget.phoneToNameMap.entries.where((entry) {
       return entry.value.toLowerCase().contains(_searchQuery.toLowerCase()) || 
              entry.key.contains(_searchQuery);
@@ -138,7 +218,6 @@ class _SyncContactsContentState extends State<_SyncContactsContent> {
                   ),
                   child: Row(
                     children: [
-                      // Avatar circular con iniciales
                       CircleAvatar(
                         radius: 24,
                         backgroundColor: (estaEnTtc ? colorScheme.primary : colorScheme.tertiary).withOpacity(0.2),
@@ -148,7 +227,6 @@ class _SyncContactsContentState extends State<_SyncContactsContent> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      // Nombres
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,6 +237,7 @@ class _SyncContactsContentState extends State<_SyncContactsContent> {
                           ],
                         ),
                       ),
+                      
                       // Botones de acción dinámicos
                       if (estaEnTtc && !yaAgregado)
                         ElevatedButton.icon(
@@ -196,11 +275,12 @@ class _SyncContactsContentState extends State<_SyncContactsContent> {
                           ),
                         )
                       else
+                        // 🔥 FIX: Modificado para invocar el menú inferior
                         TextButton.icon(
                           style: TextButton.styleFrom(foregroundColor: onSurface.withOpacity(0.8)),
-                          icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
+                          icon: const Icon(Icons.send_rounded, size: 16),
                           label: const Text("Invitar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                          onPressed: () => _invitarWhatsapp(phone),
+                          onPressed: () => _mostrarOpcionesInvitacion(context, phone, nombreAgenda),
                         ),
                     ],
                   ),
@@ -209,20 +289,20 @@ class _SyncContactsContentState extends State<_SyncContactsContent> {
             ),
           ),
 
-          // BOTON INFERIOR GENERAL
+          // BOTÓN INFERIOR GENERAL
           Padding(
             padding: const EdgeInsets.all(24.0),
             child: SizedBox(
               height: 56,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF22C55E), // Verde WhatsApp
-                  foregroundColor: Colors.white,
+                  backgroundColor: colorScheme.primary, // Cambiado para que combine con ambos
+                  foregroundColor: colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
                 ),
-                icon: const Icon(Icons.share_rounded),
-                label: const Text("Invitar a otros por WhatsApp", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                onPressed: () => _invitarWhatsapp(""),
+                icon: const Icon(Icons.people_alt_rounded),
+                label: const Text("Invitar a mis contactos", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                onPressed: () => _mostrarOpcionesInvitacion(context, "", "Amigo"),
               ),
             ),
           ),

@@ -85,35 +85,42 @@ class _BusinessGroupsScreenState extends State<BusinessGroupsScreen> {
               Expanded(
                 child: _filteredGroups.isEmpty
                   ? UIHelper.emptyState(context: context, icon: Icons.groups_rounded, title: "Sin Grupos", message: "No se encontraron grupos corporativos.")
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _filteredGroups.length,
-                      itemBuilder: (ctx, i) {
-                        final g = _filteredGroups[i];
-                        int membersCount = (g['members'] as List?)?.length ?? 0;
+                  : RefreshIndicator( // 🔥 NUEVO: Recarga al deslizar
+                      onRefresh: _loadGroups,
+                      child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _filteredGroups.length,
+                          itemBuilder: (ctx, i) {
+                            final g = _filteredGroups[i];
+                            
+                            // 🔥 Usamos la variable optimizada totalMembers del DTO Backend
+                            int membersCount = g['totalMembers'] ?? 0;
+                            int goalsCount = g['totalGoals'] ?? 0;
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          color: theme.cardColor,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: onSurface.withOpacity(0.05))),
-                          elevation: 0,
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(16),
-                            leading: CircleAvatar(
-                              backgroundColor: colorScheme.primary.withOpacity(0.1),
-                              child: Icon(Icons.home_work_rounded, color: colorScheme.primary),
-                            ),
-                            title: Text(g['name'] ?? 'Grupo', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            subtitle: Text("Área: ${g['area'] ?? 'General'} • $membersCount miembros", style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 12)),
-                            trailing: Icon(Icons.chevron_right_rounded, color: onSurface.withOpacity(0.4)),
-                            onTap: () async {
-                              await Navigator.push(context, RouteHelper.slideUpRoute(BusinessGroupDetailsScreen(group: g, isEmployer: widget.isEmployer)));
-                              _loadGroups();
-                            },
-                          ),
-                        );
-                      }
-                    ),
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              color: theme.cardColor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: onSurface.withOpacity(0.05))),
+                              elevation: 0,
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.all(16),
+                                leading: CircleAvatar(
+                                  backgroundColor: colorScheme.primary.withOpacity(0.1),
+                                  child: Icon(Icons.home_work_rounded, color: colorScheme.primary),
+                                ),
+                                title: Text(g['name'] ?? 'Grupo', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                subtitle: Text("Área: ${g['area'] ?? 'General'} • $membersCount miembros • $goalsCount Metas", style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 12)),
+                                trailing: Icon(Icons.chevron_right_rounded, color: onSurface.withOpacity(0.4)),
+                                onTap: () async {
+                                  // Cuando el usuario entra al grupo, se lanza la segunda petición pesada
+                                  await Navigator.push(context, RouteHelper.slideUpRoute(BusinessGroupDetailsScreen(group: g, isEmployer: widget.isEmployer)));
+                                  _loadGroups(); // Refrescar al volver
+                                },
+                              ),
+                            );
+                          }
+                        ),
+                  ),
               )
             ],
           )

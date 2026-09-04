@@ -31,6 +31,7 @@ class _BusinessGroupDetailsScreenState extends State<BusinessGroupDetailsScreen>
 
   IOWebSocketChannel? _wsChannel;
   Key _tabsKey = UniqueKey();
+  bool _isFirstLoad = true;
 
   @override
   void initState() {
@@ -38,6 +39,10 @@ class _BusinessGroupDetailsScreenState extends State<BusinessGroupDetailsScreen>
     // Preparando espacio para 3 tabs: Miembros, Recursos (próximamente), Métricas (próximamente)
     _tabController = TabController(length: 3, vsync: this);
     _conectarWebSocket();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshGroupData();
+    });
   }
 
 @override
@@ -66,13 +71,15 @@ class _BusinessGroupDetailsScreenState extends State<BusinessGroupDetailsScreen>
     } catch (_) {}
   }
 
-  Future<void> _refreshGroupData() async {
+ Future<void> _refreshGroupData() async {
     final service = Provider.of<BusinessGroupService>(context, listen: false);
     final updatedGroup = await service.getGroupById(widget.group['id']);
+    
     if (updatedGroup != null && mounted) {
       setState(() {
-        widget.group.addAll(updatedGroup); // Actualiza la data del grupo en memoria
-        _tabsKey = UniqueKey(); // 🔥 Cambia la llave, forzando a las Tabs a repintarse
+        widget.group.addAll(updatedGroup); 
+        _tabsKey = UniqueKey(); 
+        _isFirstLoad = false;
       });
     }
   }
@@ -120,7 +127,7 @@ class _BusinessGroupDetailsScreenState extends State<BusinessGroupDetailsScreen>
     if (guardado == true) UIHelper.showCustomSnackbar("Anuncio actualizado");
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -129,10 +136,8 @@ class _BusinessGroupDetailsScreenState extends State<BusinessGroupDetailsScreen>
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          widget.group['name'] ?? 'Espacio de Trabajo',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
+        title: Text(widget.group['name'] ?? 'Espacio de Trabajo', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -155,8 +160,10 @@ class _BusinessGroupDetailsScreenState extends State<BusinessGroupDetailsScreen>
           const SizedBox(width: 8),
         ],
       ),
-    body: Column(
-        children: [
+   body: _isFirstLoad 
+        ? const Center(child: CircularProgressIndicator()) // 🔥 Evita pintar UI sin data
+        : Column(
+            children: [
       
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

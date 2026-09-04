@@ -22,50 +22,30 @@ class CrowdfundingService {
     }
   }
 
-  /// Obtiene la lista de campañas filtrada (Pública, no requiere JWT estricto)
   // Future<List<dynamic>> getCampaigns({String filter = "WORLDWIDE", String region = "", double lat = 0, double lon = 0}) async {
+  //   final cacheService = LocalCacheService();
+  //   // No cacheamos "NEARBY" porque las coordenadas cambian constantemente
+  //   final bool canCache = filter != "NEARBY"; 
+
   //   try {
-  //   //String url = "${ApiConfig.getCampaigns}?filterType=$filter";
   //     String url = "${ApiConfig.getCampaigns}?filterType=$filter";
   //     if (filter == "NEARBY") url += "&lat=$lat&lon=$lon&radiusKm=50"; 
-  //     if (filter == "REGION") url += "&region=${Uri.encodeComponent(region)}"; // 🔥 Transforma ", Azuay" en "%2C+Azuay"
+  //     if (filter == "REGION") url += "&region=${Uri.encodeComponent(region)}";
 
-  //     print("📡 [CROWDFUNDING GET] URL: $url");
-  //     final res = await http.get(Uri.parse(url));
+  //     final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 12));
   //     if (res.statusCode == 200) {
-  //       return jsonDecode(res.body);
+  //       final data = jsonDecode(res.body);
+  //       if (canCache) await cacheService.saveCampaigns(filter, region, data); // 🔥 GUARDAR CACHÉ
+  //       return data;
   //     }
-  //     return [];
   //   } catch (e) {
-  //     print("Error obteniendo campañas: $e");
-  //     return [];
+  //     print("Error obteniendo campañas de red: $e");
   //   }
-  // }
-
-  Future<List<dynamic>> getCampaigns({String filter = "WORLDWIDE", String region = "", double lat = 0, double lon = 0}) async {
-    final cacheService = LocalCacheService();
-    // No cacheamos "NEARBY" porque las coordenadas cambian constantemente
-    final bool canCache = filter != "NEARBY"; 
-
-    try {
-      String url = "${ApiConfig.getCampaigns}?filterType=$filter";
-      if (filter == "NEARBY") url += "&lat=$lat&lon=$lon&radiusKm=50"; 
-      if (filter == "REGION") url += "&region=${Uri.encodeComponent(region)}";
-
-      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 12));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        if (canCache) await cacheService.saveCampaigns(filter, region, data); // 🔥 GUARDAR CACHÉ
-        return data;
-      }
-    } catch (e) {
-      print("Error obteniendo campañas de red: $e");
-    }
     
-    // 🔥 FALLBACK
-    if (canCache) return cacheService.getCachedCampaigns(filter, region);
-    return [];
-  }
+  //   // 🔥 FALLBACK
+  //   if (canCache) return cacheService.getCachedCampaigns(filter, region);
+  //   return [];
+  // }
 
   /// 1. Lanza la campaña y la guarda en MongoDB
   // Future<String> launchCampaign(String title, String description, String category, String region, double targetAmount, int durationDays) async {
@@ -96,6 +76,47 @@ class CrowdfundingService {
   //   }
   // }
 
+
+  Future<Map<String, dynamic>> getCampaignsPaged({
+    String filter = "WORLDWIDE", String region = "", double lat = 0, double lon = 0, int page = 0, int size = 15
+  }) async {
+    final cacheService = LocalCacheService();
+    final bool canCache = filter != "NEARBY" && page == 0; 
+
+    try {
+      String url = "${ApiConfig.getCampaigns}?filterType=$filter&page=$page&size=$size";
+      if (filter == "NEARBY") url += "&lat=$lat&lon=$lon&radiusKm=50"; 
+      if (filter == "REGION") url += "&region=${Uri.encodeComponent(region)}";
+
+      final res = await http.get(Uri.parse(url), headers: authCore.authHeaders).timeout(const Duration(seconds: 12));
+      
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (canCache && data['content'] != null) {
+          await cacheService.saveCampaigns(filter, region, data['content']);
+        }
+        return data;
+      }
+    } catch (e) {
+      print("Error obteniendo campañas paginadas: $e");
+    }
+    
+    // Fallback local solo para la primera página si falla la red
+    if (canCache) return {"content": cacheService.getCachedCampaigns(filter, region), "last": true};
+    return {"content": [], "last": true};
+  }
+
+Future<Map<String, dynamic>?> getCampaignById(String id) async {
+    try {
+      final url = ApiConfig.getCampaignById.replaceAll("{id}", id);
+      final res = await http.get(Uri.parse(url), headers: authCore.authHeaders).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (e) {
+      print("Error obteniendo detalle de campaña: $e");
+    }
+    return null;
+  }
+  
   Future<String> launchCampaign(String title, String desc, String cat, String reg, double target, int days, double lat, double lon) async {
     if (authCore.publicAddress.isEmpty) return "Error: Billetera no conectada";
     try {

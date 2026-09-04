@@ -1,4 +1,5 @@
 import 'package:dapp_movil/core/helpers/share_helper.dart';
+import 'package:dapp_movil/core/helpers/ui_helper.dart';
 import 'package:dapp_movil/core/services/smart_avatar.dart';
 import 'package:dapp_movil/modules/auth_and_security/services/auth_core_service.dart';
 import 'package:dapp_movil/modules/document_notary/services/notary_service.dart';
@@ -334,20 +335,22 @@ AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: fa
                               height: 54,
                               child: ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF4361EE),
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: colorScheme.primary, // Limpiado de Color quemado
+                                  foregroundColor: colorScheme.onPrimary,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 ),
                                 onPressed: () {
-                                  if (_docInfo!['fileUrl'] != null && _docInfo!['fileUrl'].toString().isNotEmpty) {
-                                    _abrirPDF(_docInfo!['fileUrl']);
+                                  // Verificamos si la cadena existe y parece un enlace
+                                  String url = _docInfo!['fileUrl']?.toString() ?? "";
+                                  if (url.startsWith('http') || url.startsWith('ipfs')) {
+                                    _abrirPDFExterno(url); // Utilizamos la app del teléfono para evitar problemas de compatibilidad del visor interno
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El archivo no está disponible')));
+                                    UIHelper.showCustomSnackbar("El creador no ha proporcionado un enlace público para visualizar el documento original.", isError: true);
                                   }
                                 },
-                                icon: const Icon(Icons.picture_as_pdf_rounded, size: 20),
-                                label: const Text("Ver Documento Original", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                icon: const Icon(Icons.open_in_browser_rounded, size: 20),
+                                label: const Text("Abrir Archivo Original", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -356,8 +359,8 @@ AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: fa
                               height: 54,
                               child: OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFF4361EE),
-                                  side: const BorderSide(color: Color(0xFF4361EE)),
+                                  foregroundColor: colorScheme.primary, // Limpiado de Color quemado
+                                  side: BorderSide(color: colorScheme.primary.withOpacity(0.5)),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 ),
                                 onPressed: () {

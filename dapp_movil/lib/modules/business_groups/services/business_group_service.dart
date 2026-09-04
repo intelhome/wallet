@@ -32,17 +32,17 @@ class BusinessGroupService {
 
 Future<List<dynamic>> getBusinessGroups(bool isEmployer) async {
     try {
-      // 🔥 FIX: Asegúrate de que las rutas de API coincidan con las del Backend (Controller)
       String url = isEmployer 
           ? "${ApiConfig.baseUrl}/business-groups/business/${authCore.publicAddress.toLowerCase()}"
           : "${ApiConfig.baseUrl}/business-groups/employee/${authCore.publicAddress.toLowerCase()}";
           
-      final res = await http.get(Uri.parse(url), headers: authCore.authHeaders);
+      final res = await http.get(Uri.parse(url), headers: authCore.authHeaders).timeout(const Duration(seconds: 15));
       return res.statusCode == 200 ? jsonDecode(res.body) : [];
     } catch (e) { 
       return []; 
     }
   }
+
   Future<List<dynamic>> getGroupMembers(String groupId) async {
     try {
       final url = ApiConfig.getBusinessGroupMembers.replaceAll("{groupId}", groupId);
@@ -104,7 +104,7 @@ Future<List<dynamic>> getBusinessGroups(bool isEmployer) async {
   Future<Map<String, dynamic>?> getGroupById(String groupId) async {
     try {
       final url = ApiConfig.getBusinessGroupById.replaceAll("{groupId}", groupId);
-      final res = await http.get(Uri.parse(url), headers: authCore.authHeaders);
+      final res = await http.get(Uri.parse(url), headers: authCore.authHeaders).timeout(const Duration(seconds: 10));
       return res.statusCode == 200 ? jsonDecode(res.body) : null;
     } catch (e) { return null; }
   }

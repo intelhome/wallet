@@ -34,29 +34,38 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
 
   IOWebSocketChannel? _wsChannel;
 
+  final ScrollController _scrollController = ScrollController();
+  bool _isFetchingMore = false;
+  bool _hasMoreData = true;
+  int _currentPage = 0;
+
   //  AGREGAR:
   AuthCoreService get authCore => Provider.of<AuthCoreService>(context, listen: false);
   NotaryService get notaryService => Provider.of<NotaryService>(context, listen: false);
 
-  @override
+@override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    // _cargarPendientes();
-    // _cargarHistorial();
     _cargarDatos();
     _conectarWebSocket();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _revisarNotificacionesPendientes();
     });
+
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        _cargarMasHistorial();
+      }
+    });
   }
 
-  Future<void> _cargarDatos() async {
+Future<void> _cargarDatos() async {
     final cacheService = LocalCacheService();
     final wallet = authCore.publicAddress.toLowerCase();
 
-    // 1. Caché
+    // Caché Inicial Inmediata
     final cachedPending = cacheService.getCachedPendingDocuments(wallet);
     final cachedHistory = cacheService.getCachedDocumentHistory(wallet);
 
@@ -66,14 +75,40 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
       if (mounted) setState(() => _isLoading = true);
     }
 
-    // 2. Red
-    var results = await Future.wait([
+    _currentPage = 0;
+    _hasMoreData = true;
+
+    // Red
+ var results = await Future.wait([
       notaryService.getPendingDocuments(),
-      notaryService.getDocumentHistory()
+      notaryService.getDocumentHistoryPaged(page: 0) // 🔥 Nueva llamada
     ]);
 
     if (mounted) {
-      setState(() { _pendingDocs = results[0]; _historyDocs = results[1]; _isLoading = false; });
+      setState(() { 
+       
+        _pendingDocs = results[0] as List<dynamic>; 
+        
+        _historyDocs = (results[1] as Map)['content'] ?? []; 
+        _hasMoreData = !((results[1] as Map)['last'] ?? true);
+        _isLoading = false; 
+      });
+    }
+  }
+
+  Future<void> _cargarMasHistorial() async {
+    if (_isFetchingMore || !_hasMoreData || _isLoading) return;
+    setState(() => _isFetchingMore = true);
+    _currentPage++;
+
+    final data = await notaryService.getDocumentHistoryPaged(page: _currentPage);
+    
+    if (mounted) {
+      setState(() {
+        _historyDocs.addAll(data['content'] ?? []);
+        _hasMoreData = !(data['last'] ?? true);
+        _isFetchingMore = false;
+      });
     }
   }
 
@@ -188,8 +223,9 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
   }
 
   
-  @override
+ @override
   void dispose() {
+    _scrollController.dispose();
     _wsChannel?.sink.close();
     _tabController.dispose();
     super.dispose();
@@ -490,7 +526,7 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
                 ),
               ),
               _buildFiltrosHistorial(),
-              Expanded(
+             Expanded(
                 child: RefreshIndicator(
                   onRefresh: _cargarDatos,
                   child: _isLoading && docsFiltrados.isEmpty
@@ -498,14 +534,20 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
                     : docsFiltrados.isEmpty
                       ? UIHelper.emptyState(context: context, icon: Icons.folder_open_rounded, title: "Sin documentos", message: "No se encontraron registros.")
                       : ListView.builder(
+                          controller: _scrollController, // 🔥 Agregado
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          itemCount: docsFiltrados.length,
+                          itemCount: docsFiltrados.length + (_isFetchingMore ? 1 : 0),
                           itemBuilder: (ctx, i) {
+                            if (i == docsFiltrados.length) return const Padding(padding: EdgeInsets.all(16.0), child: Center(child: CircularProgressIndicator()));
+                            
                             var doc = docsFiltrados[i];
                             bool isDone = doc['fullySigned'] ?? false;
-                            
-                            // 🔥 HASH COMPLETO EN LUGAR DE RECORTADO
                             String fullHash = doc['docHash'].toString();
+                            
+                            // 🔥 Nuevos campos optimizados del DTO
+                            int totalFirmas = doc['totalSigned'] ?? 0;
+                            int metaFirmas = doc['totalRequiredSigners'] ?? 1;
 
                             return GestureDetector(
                               onTap: () {
@@ -527,7 +569,6 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
                                         color: isDone ? Colors.teal.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
                                         shape: BoxShape.circle,
                                       ),
-                                      // 🔥 ICONOS DINÁMICOS SEGÚN ESTADO
                                       child: Icon(
                                         isDone ? Icons.check_circle_rounded : Icons.pending_actions_rounded, 
                                         color: isDone ? Colors.teal : Colors.orange
@@ -538,10 +579,10 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(doc['title'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface)),
+                                          Text(doc['title'] ?? 'Documento', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface)),
                                           const SizedBox(height: 4),
                                           Text(
-                                            isDone ? "Firmado inmutablemente" : "Faltan firmas", 
+                                            isDone ? "Firmado inmutablemente" : "Firmas: $totalFirmas/$metaFirmas", // 🔥 Modificado para mostrar progreso 
                                             style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 13)
                                           ),
                                           const SizedBox(height: 8),
@@ -552,9 +593,9 @@ class _DocumentNotaryScreenState extends State<DocumentNotaryScreen> with Single
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Text(
-                                              fullHash, //  Mostrar hash completo
+                                              fullHash, 
                                               style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7), fontSize: 11, fontFamily: 'monospace'),
-                                              overflow: TextOverflow.ellipsis, // Por si acaso es muy largo para una sola línea
+                                              overflow: TextOverflow.ellipsis, 
                                             ),
                                           ),
                                         ],
