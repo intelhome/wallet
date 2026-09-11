@@ -357,27 +357,71 @@ class EditTaskModal {
                   const SizedBox(height: 32),
 
                   // BOTÓN FINAL
+                  // SizedBox(
+                  //   width: double.infinity, height: 56,
+                  //   child: ElevatedButton.icon(
+                  //     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBAC3FF), foregroundColor: const Color(0xFF00218d), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)), elevation: 0),
+                  //     onPressed: isProcessing ? null : () async {
+                  //       if (titleCtrl.text.isEmpty) return;
+                  //       setStateModal(() => isProcessing = true);
+                        
+                  //       String res = await Provider.of<BusinessTaskService>(context, listen: false).editTask(task['id'], {
+                  //         "assignedWallet": assignToDept ? null : selectedWallet, 
+                  //         "departmentId": assignToDept ? selectedDept : null,     
+                  //         "title": titleCtrl.text,
+                  //         "description": descCtrl.text,
+                  //         "urgency": urgency,
+                  //         "allocatedResources": double.tryParse(budgetCtrl.text) ?? 0.0,
+                  //         "estimatedHours": int.tryParse(hoursCtrl.text) ?? 0,
+                  //       });
+
+                  //       if (res == "SUCCESS") {
+                  //         Navigator.pop(ctx);
+                  //         UIHelper.showCustomSnackbar("Tarea actualizada");
+                  //         onSuccess();
+                  //       } else {
+                  //         UIHelper.showCustomSnackbar(res, isError: true);
+                  //         setStateModal(() => isProcessing = false);
+                  //       }
+                  //     },
+                  //     icon: isProcessing ? const SizedBox() : const Icon(Icons.save_rounded),
+                  //     label: isProcessing ? const CircularProgressIndicator() : const Text("Guardar Cambios", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  //   ),
+                  // ),
                   SizedBox(
                     width: double.infinity, height: 56,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBAC3FF), foregroundColor: const Color(0xFF00218d), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)), elevation: 0),
                       onPressed: isProcessing ? null : () async {
-                        if (titleCtrl.text.isEmpty) return;
+                        if (titleCtrl.text.isEmpty) {
+                          UIHelper.showCustomSnackbar("El título no puede estar vacío", isError: true);
+                          return;
+                        }
                         setStateModal(() => isProcessing = true);
                         
-                        String res = await Provider.of<BusinessTaskService>(context, listen: false).editTask(task['id'], {
-                          "assignedWallet": assignToDept ? null : selectedWallet, 
-                          "departmentId": assignToDept ? selectedDept : null,     
+                        // Empaquetar como espera EditTaskDTO en Spring Boot
+                        Map<String, dynamic> updatePayload = {
                           "title": titleCtrl.text,
                           "description": descCtrl.text,
                           "urgency": urgency,
                           "allocatedResources": double.tryParse(budgetCtrl.text) ?? 0.0,
                           "estimatedHours": int.tryParse(hoursCtrl.text) ?? 0,
-                        });
+                        };
+
+                        // Si hay cambios en la asignación, los incluimos para reasignar lógicamente
+                        if (assignToDept && selectedDept != null) {
+                          updatePayload["departmentId"] = selectedDept;
+                        } else if (!assignToDept && selectedWallet != null) {
+                          updatePayload["assignedWallet"] = selectedWallet;
+                        }
+
+                        // Si el presupuesto aumentó, idealmente se debería crear un Burner o fondear,
+                        // pero la edición básica mantiene la lógica original
+                        String res = await Provider.of<BusinessTaskService>(context, listen: false).editTask(task['id'], updatePayload);
 
                         if (res == "SUCCESS") {
                           Navigator.pop(ctx);
-                          UIHelper.showCustomSnackbar("Tarea actualizada");
+                          UIHelper.showCustomSnackbar("Tarea actualizada correctamente");
                           onSuccess();
                         } else {
                           UIHelper.showCustomSnackbar(res, isError: true);

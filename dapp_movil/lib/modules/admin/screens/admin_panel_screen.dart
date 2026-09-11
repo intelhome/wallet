@@ -3,7 +3,11 @@ import 'package:dapp_movil/core/services/local_cache_service.dart';
 import 'package:dapp_movil/core/services/smart_avatar.dart';
 import 'package:dapp_movil/core/services/user_card.dart';
 import 'package:dapp_movil/modules/admin/modals/configurar_plan_modal.dart';
+import 'package:dapp_movil/modules/admin/screens/admin_compliance_screen.dart';
 import 'package:dapp_movil/modules/admin/screens/admin_subscription_analytics_screen.dart';
+import 'package:dapp_movil/modules/admin/screens/admin_support_screen.dart';
+import 'package:dapp_movil/modules/admin/screens/admin_transaction_audit_screen.dart';
+import 'package:dapp_movil/modules/admin/screens/admin_user_compliance_deep_dive_screen.dart';
 import 'package:dapp_movil/modules/admin/screens/pending_businesses_screen.dart';
 import 'package:dapp_movil/modules/admin/services/admin_service.dart';
 import 'package:flutter/material.dart';
@@ -81,103 +85,6 @@ Future<void> _cargarPlanes() async {
     }
   }
 
-  // Future<void> _guardarPlan(Map<String, dynamic> plan) async {
-  //   final adminService = Provider.of<AdminService>(context, listen: false);
-  //   String res = await adminService.updatePlan(plan);
-    
-  //   if (res == "Exito") {
-  //     UIHelper.showCustomSnackbar("Plan ${plan['tier']} actualizado");
-  //     _cargarPlanes();
-  //   } else {
-  //     UIHelper.showCustomSnackbar(res, isError: true);
-  //   }
-  // }
-
-  // void _abrirModalGestionPlan(Map<String, dynamic> plan) {
-  //   List<String> activos = List<String>.from(plan['allowedFeatures']);
-  //   TextEditingController priceController = TextEditingController(text: plan['price'].toString());
-
-  //   showModalBottomSheet(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     backgroundColor: Colors.transparent,
-  //     builder: (ctx) => StatefulBuilder( 
-  //       builder: (ctx, setModalState) {
-  //         return Container(
-  //           height: MediaQuery.of(ctx).size.height * 0.85,
-  //           decoration: BoxDecoration(
-  //             color: Theme.of(ctx).scaffoldBackgroundColor,
-  //             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-  //           ),
-  //           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, top: 24, left: 24, right: 24),
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2)))),
-  //               Text("Gestionar Plan ${plan['tier']}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.purpleAccent)),
-  //               const SizedBox(height: 24),
-                
-  //               TextField(
-  //                 controller: priceController,
-  //                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-  //                 decoration: InputDecoration(
-  //                   labelText: "Precio Mensual (\$)",
-  //                   filled: true,
-  //                   fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
-  //                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-  //                   prefixIcon: const Icon(Icons.attach_money),
-  //                 ),
-  //                 onChanged: (val) => plan['price'] = double.tryParse(val) ?? plan['price'],
-  //               ),
-  //               const SizedBox(height: 24),
-  //               const Text("Módulos Habilitados:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-  //               const SizedBox(height: 10),
-                
-  //               Expanded(
-  //                 child: ListView.builder(
-  //                   itemCount: _todosLosModulos.length,
-  //                   itemBuilder: (context, index) {
-  //                     final modulo = _todosLosModulos[index];
-  //                     bool isEnabled = activos.contains(modulo);
-  //                     return SwitchListTile(
-  //                       title: Text(modulo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-  //                       value: isEnabled,
-  //                       activeColor: Colors.purpleAccent,
-  //                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-  //                       onChanged: (bool val) {
-  //                         setModalState(() {
-  //                           if (val) activos.add(modulo);
-  //                           else activos.remove(modulo);
-  //                           plan['allowedFeatures'] = activos;
-  //                         });
-  //                       },
-  //                     );
-  //                   },
-  //                 ),
-  //               ),
-  //               const SizedBox(height: 16),
-  //               SizedBox(
-  //                 width: double.infinity,
-  //                 height: 55,
-  //                 child: ElevatedButton.icon(
-  //                   style: ElevatedButton.styleFrom(backgroundColor: Colors.purpleAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-  //                   icon: const Icon(Icons.cloud_upload_rounded),
-  //                   label: const Text("Guardar en Base de Datos", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-  //                   onPressed: () {
-  //                     _guardarPlan(plan);
-  //                     Navigator.pop(ctx);
-  //                   },
-  //                 ),
-  //               ),
-  //               const SizedBox(height: 24),
-  //             ],
-  //           ),
-  //         );
-  //       }
-  //     ),
-  //   );
-  // }
-
  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -238,6 +145,71 @@ Future<void> _cargarPlanes() async {
                       onToggleDiscreet: () {},
                     ),
                     const SizedBox(height: 32),
+
+                    Text("Auditoría y Soporte", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: onSurface)),
+                    const SizedBox(height: 16),
+
+                    ListTile(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminComplianceScreen())),
+                      tileColor: theme.cardColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: onSurface.withOpacity(0.05))),
+                      leading: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                        child: const Icon(Icons.policy_rounded, color: Colors.blue),
+                      ),
+                      title: Text("Gestor de Transacciones", style: TextStyle(fontWeight: FontWeight.bold, color: onSurface)),
+                      subtitle: Text("Monitor de ballenas y operaciones fallidas", style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 12)),
+                      trailing: Icon(Icons.chevron_right_rounded, color: onSurface.withOpacity(0.4)),
+                    ),
+                    const SizedBox(height: 12),
+
+                    ListTile(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminSupportScreen())),
+                      tileColor: theme.cardColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: onSurface.withOpacity(0.05))),
+                      leading: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                        child: const Icon(Icons.support_agent_rounded, color: Colors.red),
+                      ),
+                      title: Text("Soporte de Campañas", style: TextStyle(fontWeight: FontWeight.bold, color: onSurface)),
+                      subtitle: Text("Reembolsos forzados de Escrow atascados", style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 12)),
+                      trailing: Icon(Icons.chevron_right_rounded, color: onSurface.withOpacity(0.4)),
+                    ),
+                    ListTile(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTransactionAuditScreen())),
+                      tileColor: theme.cardColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: onSurface.withOpacity(0.05))),
+                      leading: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                        child: const Icon(Icons.troubleshoot_rounded, color: Colors.teal),
+                      ),
+                      title: Text("Auditoría de Transacción", style: TextStyle(fontWeight: FontWeight.bold, color: onSurface)),
+                      subtitle: Text("Inspección forense de Hash y perfiles", style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 12)),
+                      trailing: Icon(Icons.chevron_right_rounded, color: onSurface.withOpacity(0.4)),
+                    ),
+                    const SizedBox(height: 12),
+
+                  
+                    ListTile(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminUserComplianceDeepDiveScreen())),
+                      tileColor: theme.cardColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: onSurface.withOpacity(0.05))),
+                      leading: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.indigo.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                        child: const Icon(Icons.person_search_rounded, color: Colors.indigo),
+                      ),
+                      title: Text("Auditoría de Perfil", style: TextStyle(fontWeight: FontWeight.bold, color: onSurface)),
+                      subtitle: Text("Análisis profundo de actividad por usuario", style: TextStyle(color: onSurface.withOpacity(0.6), fontSize: 12)),
+                      trailing: Icon(Icons.chevron_right_rounded, color: onSurface.withOpacity(0.4)),
+                    ),
+
+                    const SizedBox(height: 40),
+                    Text("Gestión de Planes", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: onSurface)),
+                    const SizedBox(height: 16),
 
                     // 🔥 LISTA DE PLANES (DISEÑO DASHBOARD ADMIN)
                     _planes.isEmpty
@@ -392,159 +364,3 @@ Future<void> _cargarPlanes() async {
     );
   }
 }
-  
-// @override
-//   Widget build(BuildContext context) {
-//     final theme = Theme.of(context);
-//     final authCore = Provider.of<AuthCoreService>(context, listen: false);
-
-//     return Scaffold(
-//       backgroundColor: theme.scaffoldBackgroundColor,
-//       appBar: AppBar(
-//         backgroundColor: Colors.transparent,
-//         elevation: 0,
-//         title: const Row(
-//           mainAxisSize: MainAxisSize.min,
-//           children: [
-//             Text("Centro de Control", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purpleAccent)),
-//           ],
-//         ),
-//         centerTitle: true,
-//         leading: Padding(
-//           padding: const EdgeInsets.all(8.0),
-//           child: SmartAvatar(address: authCore.publicAddress, size: 40),
-//         ),
-//         actions: [
-//           IconButton(
-//             icon: const Icon(Icons.power_settings_new_rounded, color: Colors.redAccent),
-//             onPressed: () {
-//               authCore.deleteWallet();
-//               Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const InitialRouter()));
-//             },
-//           )
-//         ],
-//       ),
-//       body: _isLoading
-//           ? const Center(child: CircularProgressIndicator(color: Colors.purpleAccent))
-//           : RefreshIndicator(
-//               onRefresh: _cargarPlanes,
-//               color: Colors.purpleAccent,
-//               child: SingleChildScrollView(
-//                 physics: const AlwaysScrollableScrollPhysics(),
-//                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     const SizedBox(height: 16),
-//                     UserCard(
-//                       address: authCore.publicAddress, balanceTTC: "ADMIN", stakedTTC: "N/A",
-//                       currentTier: "ADMIN", isDiscreet: false, useAvatarColors: true,
-//                       onToggleDiscreet: () {},
-//                     ),
-//                     const SizedBox(height: 40),
-
-//                     Text("Auditoría y Negocios", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
-//                     const SizedBox(height: 16),
-                    
-//                     ListTile(
-//                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PendingBusinessesScreen())),
-//                       tileColor: theme.cardColor,
-//                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-//                       leading: Container(
-//                         padding: const EdgeInsets.all(10),
-//                         decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-//                         child: const Icon(Icons.storefront_rounded, color: Colors.orange),
-//                       ),
-//                       title: const Text("Solicitudes de Empresa", style: TextStyle(fontWeight: FontWeight.bold)),
-//                       subtitle: const Text("Revisa y aprueba nuevas cuentas RUC"),
-//                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
-//                     ),
-                    
-//                     const SizedBox(height: 12),
-
-//                     ListTile(
-//                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminSubscriptionAnalyticsScreen())),
-//                       tileColor: theme.cardColor,
-//                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-//                       leading: Container(
-//                         padding: const EdgeInsets.all(10),
-//                         decoration: BoxDecoration(color: Colors.purpleAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-//                         child: const Icon(Icons.pie_chart_rounded, color: Colors.purpleAccent),
-//                       ),
-//                       title: const Text("Analíticas de Suscripciones", style: TextStyle(fontWeight: FontWeight.bold)),
-//                       subtitle: const Text("Ingresos y control de planes de usuarios"),
-//                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
-//                     ),
-                    
-//                     const SizedBox(height: 40),
-
-//                     // SECCIÓN DE PLANES
-//                     Text("Gestión de Membresías", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
-//                     const SizedBox(height: 16),
-//                     _planes.isEmpty
-//                         ? Padding(
-//                             padding: const EdgeInsets.symmetric(vertical: 20),
-//                             child: Center(
-//                               child: Text(
-//                                 "No se encontraron planes registrados en la Base de Datos.",
-//                                 style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5), fontSize: 14),
-//                               ),
-//                             ),
-//                           )
-//                         : Wrap(
-//                             spacing: 16,
-//                             runSpacing: 16,
-//                             children: _planes.map((plan) {
-//                               final String tierName = plan['tier'] ?? 'Desconocido';
-//                               final double rawPrice = (plan['price'] is int) 
-//                                   ? (plan['price'] as int).toDouble() 
-//                                   : (plan['price'] ?? 0.0);
-//                               final List allowedFeat = plan['allowedFeatures'] ?? [];
-
-//                               // Determinar el color según el plan
-//                               Color planColor = Colors.grey; // Default para FREE
-//                               if (tierName.toUpperCase() == 'BASIC') planColor = const Color(0xFF4361EE);
-//                               if (tierName.toUpperCase() == 'PREMIUM') planColor = Colors.amber;
-
-//                               return GestureDetector(
-//                                 onTap: () => _abrirModalGestionPlan(plan),
-//                                 child: Container(
-//                                   width: (MediaQuery.of(context).size.width / 2) - 32,
-//                                   padding: const EdgeInsets.all(20),
-//                                   decoration: BoxDecoration(
-//                                     color: theme.cardColor,
-//                                     borderRadius: BorderRadius.circular(24),
-//                                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 5))],
-//                                   ),
-//                                   child: Column(
-//                                     crossAxisAlignment: CrossAxisAlignment.start,
-//                                     children: [
-//                                       Container(
-//                                         padding: const EdgeInsets.all(12),
-//                                         decoration: BoxDecoration(color: planColor.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-//                                         child: Icon(Icons.workspace_premium_rounded, color: planColor, size: 28),
-//                                       ),
-//                                       const SizedBox(height: 16),
-//                                       Text(tierName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
-//                                       const SizedBox(height: 4),
-//                                       Text("\$$rawPrice / mes", style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface.withOpacity(0.5))),
-//                                       const SizedBox(height: 12),
-//                                       Container(
-//                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-//                                         decoration: BoxDecoration(color: Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-//                                         child: Text("${allowedFeat.length} módulos", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal)),
-//                                       ),
-//                                     ],
-//                                   ),
-//                                 ),
-//                               );
-//                             }).toList(),
-//                           ),
-//                     const SizedBox(height: 40),
-//                   ],
-//                 ),
-//               ),
-//             ),
-//     );
-//   }
-//}

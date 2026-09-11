@@ -173,6 +173,64 @@ Future<Map<String, dynamic>?> getSubscriptionAnalytics() async {
     return cacheService.getCachedUsersByTier(tier); 
   }
   
+Future<Map<String, dynamic>> getWhaleTransactions(double minAmount, {int page = 0, int size = 20}) async {
+    try {
+      final res = await http.get(
+        Uri.parse("${ApiConfig.adminWhaleTransactions}?minAmount=$minAmount&page=$page&size=$size"),
+        headers: authCore.authHeaders,
+      ).timeout(const Duration(seconds: 10));
+      
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (e) {
+      print("🚨 Error en getWhaleTransactions: $e");
+    }
+    return {"content": [], "last": true};
+  }
 
+  Future<Map<String, dynamic>> getFailedTransactions({int page = 0, int size = 20}) async {
+    try {
+      final res = await http.get(
+        Uri.parse("${ApiConfig.adminFailedTransactions}?page=$page&size=$size"),
+        headers: authCore.authHeaders,
+      ).timeout(const Duration(seconds: 10));
+      
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (e) {
+      print("🚨 Error en getFailedTransactions: $e");
+    }
+    return {"content": [], "last": true};
+  }
+
+  // ==========================================
+  // SOPORTE Y REEMBOLSOS FORZADOS (Crowdfunding)
+  // ==========================================
+  Future<Map<String, dynamic>> getStuckCampaigns({int page = 0, int size = 20}) async {
+    try {
+      final res = await http.get(
+        Uri.parse("${ApiConfig.adminStuckCampaigns}?page=$page&size=$size"),
+        headers: authCore.authHeaders,
+      ).timeout(const Duration(seconds: 10));
+      
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (e) {
+      print("🚨 Error en getStuckCampaigns: $e");
+    }
+    return {"content": [], "last": true};
+  }
+
+  Future<String> forceRefundCampaign(String campaignId, String reason) async {
+    try {
+      final res = await http.put(
+        Uri.parse(ApiConfig.adminForceRefundCampaign(campaignId)),
+        headers: authCore.authHeaders,
+        body: jsonEncode({"reason": reason}),
+      ).timeout(const Duration(seconds: 20)); // Damos tiempo porque interactúa con Smart Contract
+
+      if (res.statusCode == 200) return "Exito";
+      return _extractError(res.body);
+    } catch (e) {
+      return "Error de red al forzar reembolso: $e";
+    }
+  }
   
 }

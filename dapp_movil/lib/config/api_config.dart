@@ -110,6 +110,7 @@ static const String cancelScheduledPayment = "$baseUrl/payments/scheduled/{id}";
   static const String signDocument = "$baseUrl/documents/{hash}/sign";
   static const String getDocumentInfo = "$baseUrl/documents/info/{hash}";
   static const String getDocumentHistory = "$baseUrl/documents/history/{address}";
+  static const String getDocumentHistoryPaged = "$baseUrl/documents/history/paged/{address}";
   static String get wsDocumentUpdates => baseUrl.replaceFirst("http", "ws") + "/ws/documents/{address}";
 
   //Seguridad
@@ -150,7 +151,8 @@ static const String cancelScheduledPayment = "$baseUrl/payments/scheduled/{id}";
   static const String getDecoy = "$baseUrl/panic/{address}";
 
   // --- CROWDFUNDING (DeFi GoFundMe) ---
- static const String getCampaigns = "$baseUrl/campaigns";
+ static const String getCampaigns = "$baseUrl/campaigns"; 
+  static const String getCampaignById = "$baseUrl/campaigns/{id}";
   static const String createCampaign = "$baseUrl/campaigns";
   static const String pledgeCampaign = "$baseUrl/campaigns/{id}/pledge";
   static const String toggleCrowdfunding = "$baseUrl/users/{address}/crowdfunding";
@@ -168,6 +170,10 @@ static const String cancelScheduledPayment = "$baseUrl/payments/scheduled/{id}";
   static const String adminSubscriptionAnalytics = "$baseUrl/admin/subscriptions/analytics";
   static String adminUpdateUserTier(String wallet) => "$baseUrl/admin/users/$wallet/tier";
   static String adminUsersByTier(String tier) => "$baseUrl/admin/subscriptions/users/$tier";
+  static const String adminWhaleTransactions = "$baseUrl/admin/compliance/whales";
+  static const String adminFailedTransactions = "$baseUrl/admin/compliance/failures";
+  static const String adminStuckCampaigns = "$baseUrl/admin/support/stuck-campaigns";
+  static String adminForceRefundCampaign(String id) => "$baseUrl/admin/support/campaigns/$id/force-refund";
 
   static const String chatWebSocket = "ws://10.0.2.2:8082/api/ws/chat";
   //static const String chatWebSocket = "ws://192.168.0.102:8082/api/ws/chat";
@@ -250,6 +256,8 @@ static const String cancelScheduledPayment = "$baseUrl/payments/scheduled/{id}";
   static const String addBusinessGroupGoalProgress = "$baseUrl/business-groups/{groupId}/goals/{goalId}/progress";
   static const String updateBusinessGroupResource = "$baseUrl/business-groups/{groupId}/resources/{resourceId}";
   static const String updateBusinessGroupGoal = "$baseUrl/business-groups/{groupId}/goals/{goalId}";
+
+  static const String getHistoryPaged = "$baseUrl/history/paged/{address}";
 
   static String aiStream(String address) => "$baseUrl/ai/memory/$address/stream";
   static String aiExtract(String address) => "$baseUrl/ai/memory/$address/extract";

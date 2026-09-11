@@ -782,6 +782,117 @@ showModalBottomSheet(
                   // ==========================================
                   // BOTÓN FINAL (LÓGICA ORIGINAL INTACTA)
                   // ==========================================
+                  // SizedBox(
+                  //   width: double.infinity, height: 56,
+                  //   child: ElevatedButton.icon(
+                  //     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBAC3FF), foregroundColor: const Color(0xFF00218d), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)), elevation: 0),
+                  //     icon: isProcessing ? const SizedBox() : const Icon(Icons.add_task_rounded),
+                  //     label: isProcessing ? const CircularProgressIndicator() : const Text("Crear Actividad", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  //     onPressed: isProcessing ? null : () async {
+                  //       if (titleCtrl.text.isEmpty) return;
+                        
+                  //       final txService = Provider.of<TransactionService>(context, listen: false);
+                  //       double allocatedBudget = double.tryParse(budgetCtrl.text) ?? 0.0;
+
+                  //       if (allocatedBudget > 0) {
+                  //         String saldoRealStr = await txService.getBalance();
+                  //         double saldoReal = double.tryParse(saldoRealStr) ?? 0.0;
+                  //         if (allocatedBudget > saldoReal) {
+                  //           UIHelper.showCustomSnackbar("Saldo insuficiente. Tienes ${saldoReal.toStringAsFixed(2)} TTC.", isError: true);
+                  //           return;
+                  //         }
+                  //       }
+
+                  //       // HUELLA OBLIGATORIA SIEMPRE AL CREAR
+                  //       FocusScope.of(context).unfocus();
+                  //       showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Autenticación", message: "Autoriza la asignación de la tarea."));
+                  //       HapticFeedback.mediumImpact();
+                  //       final auth = Provider.of<AuthCoreService>(context, listen: false);
+                  //       bool isAuth = await auth.authenticateUser();
+                  //       Navigator.pop(context); 
+                        
+                  //       if (!isAuth) return;
+
+                  //       setStateModal(() => isProcessing = true);
+                  //       String? assignedBurnerAddress;
+                        
+                  //       if (allocatedBudget > 0) {
+                  //         final burnerService = Provider.of<BurnerService>(context, listen: false);
+                  //         String label = "Tarea: ${titleCtrl.text}";
+                          
+                  //         print("🚀 [CREATE-TASK] Creando Burner Wallet...");
+                  //         Map<String, dynamic> resBurner = await burnerService.createBurnerWallet(label, allocatedBudget);
+                          
+                  //         if (resBurner["success"] == true) {
+                  //           String newBurnerAddress = resBurner["data"]["burnerAddress"];
+                  //           BigInt amountWei = BigInt.from(allocatedBudget * 1e18);
+                  //           String? signature = await auth.generateDelegatedSignature("SEND", toAddress: newBurnerAddress.toLowerCase(), amountWei: amountWei);
+                            
+                  //           if (signature != null) {
+                  //             print("💸 [CREATE-TASK] Ejecutando fondeo on-chain...");
+                  //             final resFondeo = await txService.sendTokensL2(newBurnerAddress, allocatedBudget, signature);
+                              
+                  //             // 🔥 FIX 2: VALIDAR QUE EL FONDEO ON-CHAIN FUE EXITOSO
+                  //             if (resFondeo.startsWith("Error")) {
+                  //               UIHelper.showCustomSnackbar("Error al transferir presupuesto: $resFondeo", isError: true);
+                  //               setStateModal(() => isProcessing = false);
+                  //               return;
+                  //             }
+                  //             print("✅ [CREATE-TASK] Fondeo on-chain completado.");
+                  //           }
+
+                  //           List<dynamic> burners = await burnerService.getActiveBurners();
+                  //           if (burners.isNotEmpty) {
+                  //             assignedBurnerAddress = burners.first['burnerAddress'];
+                  //           }
+                  //         } else {
+                  //           UIHelper.showCustomSnackbar("Error al crear billetera virtual", isError: true);
+                  //           setStateModal(() => isProcessing = false);
+                  //           return;
+                  //         }
+                  //       }
+                        
+                  //       final service = Provider.of<BusinessTaskService>(context, listen: false);
+                        
+                  //       Map<String, dynamic> payloadDTO = {
+                  //         "businessWallet": auth.publicAddress.toLowerCase(),
+                  //         "assignedWallet": assignToDept ? null : selectedWallet, 
+                  //         "departmentId": assignToDept ? selectedDept : null,
+                  //         "taskType": selectedTaskType, 
+                  //         "title": titleCtrl.text,
+                  //         "description": descCtrl.text,
+                  //         "urgency": urgency,
+                  //         "allocatedResources": allocatedBudget,
+                  //         "burnerAddress": assignedBurnerAddress,
+                  //         "estimatedHours": int.tryParse(hoursCtrl.text) ?? 0,
+                  //         "deadline": selectedDeadline.toIso8601String(),
+                  //         "subTasks": subTaskCtrls.where((c) => c['title']!.text.isNotEmpty).map((c) => {
+                  //           "title": c['title']!.text, 
+                  //           "estimatedHours": int.tryParse(c['hours']!.text) ?? 0
+                  //         }).toList()
+                  //       };
+
+                  //       if (selectedTaskType == "MEET") payloadDTO["meetUrl"] = meetLinkCtrl.text;
+                  //       if (selectedTaskType == "GPS") {
+                  //         payloadDTO["gpsLat"] = double.tryParse(gpsLatCtrl.text);
+                  //         payloadDTO["gpsLon"] = double.tryParse(gpsLngCtrl.text);
+                  //       }
+                  //       if (selectedTaskType == "OPINION") {
+                  //         payloadDTO["opinionQuestion"] = opinionQuestionCtrl.text;
+                  //         if (isPoll) payloadDTO["pollOptions"] = pollOptionsCtrls.map((c)=>c.text).toList();
+                  //       }
+
+                  //       String res = await service.createTask(payloadDTO);
+
+                  //       if (res == "SUCCESS") {
+                  //         Navigator.pop(ctx);
+                  //         UIHelper.showCustomSnackbar("Tarea asignada correctamente");
+                  //         onSuccess();
+                  //       } else {
+                  //         UIHelper.showCustomSnackbar(res, isError: true);
+                  //         setStateModal(() => isProcessing = false);
+                  //       }
+                  //     },
                   SizedBox(
                     width: double.infinity, height: 56,
                     child: ElevatedButton.icon(
@@ -789,7 +900,10 @@ showModalBottomSheet(
                       icon: isProcessing ? const SizedBox() : const Icon(Icons.add_task_rounded),
                       label: isProcessing ? const CircularProgressIndicator() : const Text("Crear Actividad", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       onPressed: isProcessing ? null : () async {
-                        if (titleCtrl.text.isEmpty) return;
+                        if (titleCtrl.text.isEmpty) {
+                          UIHelper.showCustomSnackbar("El título es obligatorio", isError: true);
+                          return;
+                        }
                         
                         final txService = Provider.of<TransactionService>(context, listen: false);
                         double allocatedBudget = double.tryParse(budgetCtrl.text) ?? 0.0;
@@ -805,7 +919,7 @@ showModalBottomSheet(
 
                         // HUELLA OBLIGATORIA SIEMPRE AL CREAR
                         FocusScope.of(context).unfocus();
-                        showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Autenticación", message: "Autoriza la asignación de la tarea."));
+                        showDialog(context: context, barrierDismissible: false, builder: (_) => const TransactionSkeleton(title: "Autenticación", message: "Autoriza la creación de la tarea."));
                         HapticFeedback.mediumImpact();
                         final auth = Provider.of<AuthCoreService>(context, listen: false);
                         bool isAuth = await auth.authenticateUser();
@@ -816,6 +930,7 @@ showModalBottomSheet(
                         setStateModal(() => isProcessing = true);
                         String? assignedBurnerAddress;
                         
+                        // 1. GESTIÓN DE BURNER WALLETS (Si hay presupuesto)
                         if (allocatedBudget > 0) {
                           final burnerService = Provider.of<BurnerService>(context, listen: false);
                           String label = "Tarea: ${titleCtrl.text}";
@@ -824,15 +939,17 @@ showModalBottomSheet(
                           Map<String, dynamic> resBurner = await burnerService.createBurnerWallet(label, allocatedBudget);
                           
                           if (resBurner["success"] == true) {
+                            // El backend crea la tarjeta vacía, devolvemos la dirección
                             String newBurnerAddress = resBurner["data"]["burnerAddress"];
+                            
+                            // Firmar y Fondear la tarjeta desde la cuenta principal
                             BigInt amountWei = BigInt.from(allocatedBudget * 1e18);
                             String? signature = await auth.generateDelegatedSignature("SEND", toAddress: newBurnerAddress.toLowerCase(), amountWei: amountWei);
                             
                             if (signature != null) {
-                              print("💸 [CREATE-TASK] Ejecutando fondeo on-chain...");
+                              print("💸 [CREATE-TASK] Ejecutando fondeo on-chain a $newBurnerAddress...");
                               final resFondeo = await txService.sendTokensL2(newBurnerAddress, allocatedBudget, signature);
                               
-                              // 🔥 FIX 2: VALIDAR QUE EL FONDEO ON-CHAIN FUE EXITOSO
                               if (resFondeo.startsWith("Error")) {
                                 UIHelper.showCustomSnackbar("Error al transferir presupuesto: $resFondeo", isError: true);
                                 setStateModal(() => isProcessing = false);
@@ -840,11 +957,8 @@ showModalBottomSheet(
                               }
                               print("✅ [CREATE-TASK] Fondeo on-chain completado.");
                             }
-
-                            List<dynamic> burners = await burnerService.getActiveBurners();
-                            if (burners.isNotEmpty) {
-                              assignedBurnerAddress = burners.first['burnerAddress'];
-                            }
+                            
+                            assignedBurnerAddress = newBurnerAddress;
                           } else {
                             UIHelper.showCustomSnackbar("Error al crear billetera virtual", isError: true);
                             setStateModal(() => isProcessing = false);
@@ -852,6 +966,7 @@ showModalBottomSheet(
                           }
                         }
                         
+                        // 2. EMPAQUETAR DTO PARA EL BACKEND (CreateTaskDTO)
                         final service = Provider.of<BusinessTaskService>(context, listen: false);
                         
                         Map<String, dynamic> payloadDTO = {
@@ -863,7 +978,7 @@ showModalBottomSheet(
                           "description": descCtrl.text,
                           "urgency": urgency,
                           "allocatedResources": allocatedBudget,
-                          "burnerAddress": assignedBurnerAddress,
+                          "burnerAddress": assignedBurnerAddress, // 🔥 Asociamos la billetera
                           "estimatedHours": int.tryParse(hoursCtrl.text) ?? 0,
                           "deadline": selectedDeadline.toIso8601String(),
                           "subTasks": subTaskCtrls.where((c) => c['title']!.text.isNotEmpty).map((c) => {
@@ -872,6 +987,7 @@ showModalBottomSheet(
                           }).toList()
                         };
 
+                        // Campos Meta según el tipo
                         if (selectedTaskType == "MEET") payloadDTO["meetUrl"] = meetLinkCtrl.text;
                         if (selectedTaskType == "GPS") {
                           payloadDTO["gpsLat"] = double.tryParse(gpsLatCtrl.text);
@@ -882,11 +998,12 @@ showModalBottomSheet(
                           if (isPoll) payloadDTO["pollOptions"] = pollOptionsCtrls.map((c)=>c.text).toList();
                         }
 
+                        // 3. LLAMAR AL SERVICIO
                         String res = await service.createTask(payloadDTO);
 
                         if (res == "SUCCESS") {
                           Navigator.pop(ctx);
-                          UIHelper.showCustomSnackbar("Tarea asignada correctamente");
+                          UIHelper.showCustomSnackbar("Tarea y presupuesto asignados correctamente");
                           onSuccess();
                         } else {
                           UIHelper.showCustomSnackbar(res, isError: true);

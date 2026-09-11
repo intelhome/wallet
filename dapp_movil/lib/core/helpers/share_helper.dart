@@ -1070,6 +1070,121 @@ String statusMessage = "";
     await Printing.sharePdf(bytes: await pdf.save(), filename: 'Reporte_Ejecutivo_Admin_TTC.pdf');
   }
 
+  static Future<void> generarYCompartirPDFCompliance(BuildContext context, List<dynamic> transactions, String titulo) async {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Generando Reporte de Compliance...", style: TextStyle(color: Colors.white))));
+
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (pw.Context context) {
+          return [
+            pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Text("TTC WALLET", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.deepPurple800)),
+                pw.Text("Monitor de Seguridad y Cumplimiento (AML)", style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
+              ]),
+              pw.Text("Fecha: ${DateTime.now().toString().substring(0, 10)}", style: const pw.TextStyle(fontSize: 10)),
+            ]),
+            pw.SizedBox(height: 20),
+
+            pw.Text(titulo, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.red900)),
+            pw.SizedBox(height: 10),
+            
+            transactions.isEmpty 
+              ? pw.Text("No hay transacciones registradas en este reporte.", style: const pw.TextStyle(color: PdfColors.grey))
+              : pw.TableHelper.fromTextArray(
+                  context: context,
+                  headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey800),
+                  headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 9),
+                  cellStyle: const pw.TextStyle(fontSize: 8),
+                  cellAlignments: { 0: pw.Alignment.centerLeft, 1: pw.Alignment.centerLeft, 2: pw.Alignment.centerLeft, 3: pw.Alignment.centerRight, 4: pw.Alignment.center },
+                  data: <List<String>>[
+                    <String>['Fecha', 'Remitente', 'Destinatario', 'Monto (TTC)', 'Estado'],
+                    ...transactions.map((tx) {
+                      String date = tx['timestamp'] != null ? tx['timestamp'].toString().substring(0, 16).replaceAll("T", " ") : "N/A";
+                      String sender = tx['senderAddress'] ?? 'N/A';
+                      String receiver = tx['receiverAddress'] ?? 'N/A';
+                      String senderShort = sender.length > 15 ? "${sender.substring(0, 8)}...${sender.substring(sender.length - 4)}" : sender;
+                      String receiverShort = receiver.length > 15 ? "${receiver.substring(0, 8)}...${receiver.substring(receiver.length - 4)}" : receiver;
+                      double amount = double.tryParse(tx['amount']?.toString() ?? '0') ?? 0.0;
+                      String status = tx['status'] ?? 'UNKNOWN';
+
+                      return <String>[date, senderShort, receiverShort, amount.toStringAsFixed(2), status];
+                    })
+                  ]
+                ),
+
+            pw.SizedBox(height: 30),
+            pw.Divider(),
+            pw.Text("Reporte confidencial generado por TTC Wallet para uso administrativo.", style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600), textAlign: pw.TextAlign.center),
+          ];
+        }
+      )
+    );
+
+    await Printing.sharePdf(bytes: await pdf.save(), filename: 'Reporte_Compliance_TTC.pdf');
+  }
+
+  static Future<void> generarYCompartirPDFSoporte(BuildContext context, List<dynamic> campaigns) async {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Generando Reporte Escrow...", style: TextStyle(color: Colors.white))));
+
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (pw.Context context) {
+          return [
+            pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Text("TTC WALLET", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.deepPurple800)),
+                pw.Text("Auditoría de Soporte y Escrow", style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
+              ]),
+              pw.Text("Fecha: ${DateTime.now().toString().substring(0, 10)}", style: const pw.TextStyle(fontSize: 10)),
+            ]),
+            pw.SizedBox(height: 20),
+
+            pw.Text("Campañas Crowdfunding Atascadas", style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.orange900)),
+            pw.SizedBox(height: 10),
+            
+            campaigns.isEmpty 
+              ? pw.Text("No hay campañas atascadas.", style: const pw.TextStyle(color: PdfColors.grey))
+              : pw.TableHelper.fromTextArray(
+                  context: context,
+                  headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey800),
+                  headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 9),
+                  cellStyle: const pw.TextStyle(fontSize: 8),
+                  data: <List<String>>[
+                    <String>['Título de Campaña', 'Creador', 'Meta (TTC)', 'Recaudado (TTC)', 'Vencimiento'],
+                    ...campaigns.map((c) {
+                      String title = c['title'] ?? 'N/A';
+                      if (title.length > 20) title = "${title.substring(0, 17)}...";
+                      String creator = c['creatorAddress'] ?? 'N/A';
+                      String creatorShort = creator.length > 15 ? "${creator.substring(0, 6)}...${creator.substring(creator.length - 4)}" : creator;
+                      double target = double.tryParse(c['targetAmount']?.toString() ?? '0') ?? 0.0;
+                      double raised = double.tryParse(c['raisedAmount']?.toString() ?? '0') ?? 0.0;
+                      String deadline = c['deadline'] != null ? c['deadline'].toString().substring(0, 10) : "N/A";
+
+                      return <String>[title, creatorShort, target.toStringAsFixed(2), raised.toStringAsFixed(2), deadline];
+                    })
+                  ]
+                ),
+
+            pw.SizedBox(height: 30),
+            pw.Divider(),
+            pw.Text("Documento generado para revisión de soporte técnico y reembolsos.", style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600), textAlign: pw.TextAlign.center),
+          ];
+        }
+      )
+    );
+
+    await Printing.sharePdf(bytes: await pdf.save(), filename: 'Reporte_Escrow_Soporte.pdf');
+  }
+
   // Helper privado para los KPIs del PDF Admin
   static pw.Widget _buildAdminKpi(String label, String value, {PdfColor color = PdfColors.black}) {
     return pw.Column(
